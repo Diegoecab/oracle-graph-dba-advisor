@@ -1,0 +1,63 @@
+--------------------------------------------------------------------------------
+-- 00_README.sql
+-- Catalog Compatibility Graph — Workload Generation Guide
+--
+-- SOURCE: AWR Report — CATALOGCOMPATSOCIASH3 (Oracle 19c, RAC 2-node)
+-- TARGET: Oracle 23ai / 26ai with native SQL/PGQ (GRAPH_TABLE + MATCH)
+--
+-- EXECUTION ORDER:
+--   1. @01_create_schema.sql         — Vertex + edge tables, partitioned by SITE_ID
+--   2. @02_create_property_graph.sql — CATALOG_COMPAT_GRAPH definition
+--   3. @03_generate_data.sql         — ~450K vertices + ~500K edges
+--   4. @04_workload_queries.sql      — 14 queries (individual, manual use)
+--   5. @05_run_workload.sql          — Automated mixed workload (reads + writes)
+--
+-- SCALING:
+--   Edit v_scale in 03_generate_data.sql:
+--     1  = ~500K edges (default)
+--     10 = ~5M edges
+--     50 = ~25M edges (production-like)
+--
+-- KEY CHARACTERISTICS OF THIS WORKLOAD (vs FRAUD):
+--   ┌───────────────────────────────────────────────────────────────────┐
+--   │ Dimension          │ Fraud Graph       │ Catalog Compat Graph    │
+--   ├────────────────────┼───────────────────┼─────────────────────────┤
+--   │ Read/Write ratio   │ ~99% read         │ ~55% read / 45% write   │
+--   │ Dominant pattern   │ Multi-hop traversal│ Point lookups + inserts │
+--   │ Edge table count   │ 11 types          │ 3 types                 │
+--   │ Partitioning       │ None              │ LIST by SITE_ID         │
+--   │ Hotspot            │ N_USER PK (RAC)   │ CWUP PK (sequence hot)  │
+--   │ Top wait event     │ CPU (76%)         │ I/O (44%) + TX contention│
+--   │ Graph depth        │ 2-hop common      │ 1-hop + multi-hop new   │
+--   │ Key challenge      │ Missing FK indexes│ Insert contention + FTS │
+--   └───────────────────────────────────────────────────────────────────┘
+--
+-- AWR PATTERN MAPPING:
+--   ┌────────────────────────────────────────────────────────────────┐
+--   │ AWR SQL_ID      │ Elapsed(s) │ Execs │ Query │ Pattern        │
+--   ├─────────────────┼────────────┼───────┼───────┼────────────────┤
+--   │ 9vx4g0cpxwdfw   │ 126,162    │ 73.4M │ Q08   │ INSERT CWUP    │
+--   │ 8bqmta2f9vb7d   │  62,050    │ 13.3M │ Q01   │ UP compat read │
+--   │ 74ksw0fy8t037   │  46,976    │  4.7M │ Q02   │ CWI by note    │
+--   │ 44b96x0576t5b   │  46,047    │ 71.9M │ Q03   │ UP all compats │
+--   │ 89zj9whdrpwwq   │  34,328    │  825K │ Q09   │ DELETE batch   │
+--   │ 78zc9a2fbx85u   │  33,262    │  2.3M │ Q04   │ CWI full detail│
+--   │ 0b3vgxa6vu26t   │  29,571    │ 30.2M │ Q05   │ Exist check    │
+--   │ 0x3k7g83nyyk2   │  29,217    │  3.5M │ Q04   │ CWI variant    │
+--   │ dw45c8yhcxtj5   │  20,036    │ 25.8M │ Q05   │ CWUP exist     │
+--   │ 07fnnw6qk1k3s   │    N/A     │ 82.2M │ Q06   │ Item lookup    │
+--   │ (new PGQ)       │    N/A     │  N/A  │ Q10-13│ Multi-hop      │
+--   └────────────────────────────────────────────────────────────────┘
+--
+-- INTENTIONAL PERFORMANCE GAPS (for Advisor to find):
+--   1. Sequence-generated PK on edge tables → hot block contention
+--      (AWR showed 91% of buffer busy waits on CWUP PK index)
+--   2. No covering index for (ITEM_ID, SITE_ID, NOTE_STATUS) on CWI
+--   3. No index on COMPATIBLE_WITH_PRODUCT for reverse lookups
+--      (SECONDARY_PRODUCT_ID) → full table scans on CWP
+--   4. Multi-hop graph queries (Q10-Q13) expose missing composite
+--      indexes on (MAIN_PRODUCT_ID, SITE_ID) for the join paths
+--   5. Partition pruning effectiveness depends on SITE_ID in WHERE
+--------------------------------------------------------------------------------
+
+SELECT 'Read this file for instructions. Execute scripts 01-05 in order.' AS instructions FROM DUAL;

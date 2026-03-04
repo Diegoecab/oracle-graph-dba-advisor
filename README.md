@@ -90,9 +90,38 @@ Unlike Oracle's built-in Automatic Indexing (which is a black box that says "ben
 
 ---
 
+## Multi-LLM Client Support
+
+This project works with any MCP-compatible LLM client. Configuration files are included for each:
+
+| Client | Config File | Auto-loaded |
+|--------|-------------|-------------|
+| **Claude Code** | `.mcp.json` (root) | Yes |
+| **Claude Desktop** | See setup below | Manual |
+| **VS Code + Copilot** | `.vscode/mcp.json` + `.github/copilot-instructions.md` | Yes |
+| **Cline** | `.clinerules` | Yes |
+| **Cursor** | `.cursor/rules/oracle-graph-dba.mdc` | Yes |
+| **Continue** | `clients/continue-config-example.json` | Manual |
+
+See `clients/README.md` for detailed setup instructions per client.
+
+---
+
 ## Setup
 
 ### Step 1: Configure SQLcl as MCP Server
+
+**Claude Code** — use the `.mcp.json` already in the project root, or create your own:
+```json
+{
+  "mcpServers": {
+    "sqlcl": {
+      "command": "/path/to/sqlcl/bin/sql",
+      "args": ["-mcp"]
+    }
+  }
+}
+```
 
 **Claude Desktop** — edit `claude_desktop_config.json`:
 ```json
@@ -106,9 +135,9 @@ Unlike Oracle's built-in Automatic Indexing (which is a black box that says "ben
 }
 ```
 
-**VS Code + SQL Developer Extension** — MCP is registered automatically when the extension is installed.
+**VS Code + Copilot** — the `.vscode/mcp.json` is already configured. If using the Oracle SQL Developer Extension, MCP is registered automatically.
 
-**Cline** — edit `cline_mcp_settings.json`:
+**Cline** — the `.clinerules` file is auto-loaded. Configure MCP in Cline settings:
 ```json
 {
   "mcpServers": {
@@ -121,6 +150,8 @@ Unlike Oracle's built-in Automatic Indexing (which is a black box that says "ben
 }
 ```
 
+**Cursor** — the `.cursor/rules/oracle-graph-dba.mdc` is auto-loaded for matching files.
+
 ### Step 2: Load the System Prompt
 
 **Option A — Claude Project (recommended):**
@@ -129,8 +160,8 @@ Create a Claude Project and add `SYSTEM_PROMPT.md` as Project Instructions. This
 **Option B — Paste at conversation start:**
 Copy the contents of `SYSTEM_PROMPT.md` and paste it as the first message in a new conversation with the prefix "Use these instructions for this conversation:".
 
-**Option C — Claude Code / Cline:**
-Place `SYSTEM_PROMPT.md` and the `sql-templates/` directory in your project root. The agent can read them with file access tools.
+**Option C — Claude Code / Cline / Cursor:**
+Place `SYSTEM_PROMPT.md` and the `sql-templates/` directory in your project root. The agent reads them with file access tools. Client-specific rules files (`.clinerules`, `.cursor/rules/`) reference the system prompt automatically.
 
 ### Step 3: Connect and Analyze
 
@@ -199,9 +230,9 @@ The system prompt encodes deep knowledge about how Oracle processes SQL/PGQ inte
 
 ---
 
-## Always Free Compatibility
+## AWR/ASH Support and Always Free Compatibility
 
-All diagnostic queries use `V$SQL`, `V$SQL_PLAN`, and `USER_*` views — fully available on Always Free tier. The system prompt instructs the agent to avoid AWR/ASH history views (`DBA_HIST_*`) when operating on Always Free.
+The advisor **prefers AWR/ASH views** (`DBA_HIST_SQLSTAT`, `DBA_HIST_ACTIVE_SESS_HISTORY`) for historical trends, P90/P99 analysis, and workload evolution. If access is denied (Always Free tier or restricted privileges), it automatically falls back to `V$SQL`, `V$SQL_PLAN`, and `USER_*` views.
 
 | View | Always Free | Paid |
 |------|-------------|------|
@@ -273,28 +304,89 @@ Agent: [connect MyADB]
 ## Project Structure
 
 ```
-oracle-graph-dba/
+oracle-graph-dba-advisor/
 ├── README.md                              # This file
 ├── SYSTEM_PROMPT.md                       # The AI DBA brain — load as project instructions
-└── sql-templates/
-    ├── 01-discovery.sql                   # Graph topology, indexes, stats
-    ├── 02-identify.sql                    # Top expensive graph queries
-    ├── 03-analyze.sql                     # Execution plans, full scans, joins
-    ├── 04-selectivity-and-simulate.sql    # Selectivity + index simulation
-    └── 05-utilities.sql                   # Stats, index mgmt, reporting
+├── .mcp.json                              # Claude Code MCP config
+├── .clinerules                            # Cline rules (auto-loaded)
+├── .gitignore
+├── .vscode/
+│   └── mcp.json                           # VS Code MCP server config
+├── .github/
+│   └── copilot-instructions.md            # GitHub Copilot agent instructions
+├── .cursor/
+│   └── rules/
+│       └── oracle-graph-dba.mdc           # Cursor rules (auto-loaded)
+├── clients/
+│   ├── README.md                          # Client setup guide
+│   └── continue-config-example.json       # Continue MCP config example
+├── sql-templates/
+│   ├── 01-discovery.sql                   # Graph topology, indexes, stats
+│   ├── 02-identify.sql                    # Top expensive graph queries
+│   ├── 03-analyze.sql                     # Execution plans, full scans, joins
+│   ├── 04-selectivity-and-simulate.sql    # Selectivity + index simulation
+│   └── 05-utilities.sql                   # Stats, index mgmt, reporting
+├── knowledge/
+│   ├── README.md                          # Extension guide
+│   ├── graph-patterns/
+│   │   ├── README.md                      # Pattern format specification
+│   │   ├── fraud-detection.md             # 5 fraud graph patterns
+│   │   ├── social-network.md              # 5 social graph patterns
+│   │   └── supply-chain.md                # 4 supply chain patterns
+│   ├── optimization-rules/
+│   │   └── advanced-indexing.md           # 7 advanced indexing strategies
+│   └── oracle-internals/
+│       ├── pgq-optimizer-behavior.md      # CBO behavior with GRAPH_TABLE
+│       └── official-documentation-reference.md  # Feature matrix, URLs, perf models
+└── workload/
+    └── fraud/                             # Fraud detection workload generator
+        ├── 00_README.sql                  # Execution guide
+        ├── 01_create_schema.sql           # Vertex + edge tables
+        ├── 02_create_property_graph.sql   # FRAUD_GRAPH definition
+        ├── 03_generate_data.sql           # ~420K edges, ~108K vertices
+        ├── 04_workload_queries.sql        # Individual test queries
+        └── 05_run_workload.sql            # Automated workload runner
 ```
+
+---
+
+## Knowledge Extensions
+
+The `knowledge/` directory provides domain-specific graph patterns and advanced optimization rules that the advisor uses to enhance its recommendations:
+
+### Graph Patterns (`knowledge/graph-patterns/`)
+
+| Domain | File | Patterns | Key Scenarios |
+|--------|------|----------|---------------|
+| Fraud Detection | `fraud-detection.md` | 5 | Shared device, 2-hop chains, triangles, temporal change, risk scoring |
+| Social Network | `social-network.md` | 5 | Mutual friends, influence, communities, recommendations, shortest path |
+| Supply Chain | `supply-chain.md` | 4 | BOM dependencies, risk propagation, logistics routing, commonality |
+
+Each pattern includes: SQL/PGQ query, performance characteristics, index strategy, anti-patterns, and real-world frequency.
+
+### Advanced Indexing (`knowledge/optimization-rules/`)
+
+7 strategies beyond the base 5: bidirectional FK coverage, composite graph covering indexes, function-based indexes, partial indexes (23ai), IOT edge tables, bitmap indexes, invisible index A/B testing.
+
+### Oracle Internals (`knowledge/oracle-internals/`)
+
+CBO behavior with GRAPH_TABLE (6 topics), plus official documentation reference with SQL/PGQ feature matrix by version, variable-length path `{n,m}` performance model, ONE ROW PER cardinality multipliers, JSON property indexing, and verified Oracle documentation URLs.
+
+### Adding Your Own
+
+See `knowledge/README.md` for the extension guide and `knowledge/graph-patterns/README.md` for the pattern format specification.
 
 ---
 
 ## Extending
 
-**Add new graph patterns**: Edit SYSTEM_PROMPT.md section "Pattern Classification" to add new pattern types specific to your domain.
+**Add new graph patterns**: Create a new `.md` file in `knowledge/graph-patterns/` following the format in `knowledge/graph-patterns/README.md`. The advisor automatically picks up new files.
 
 **Add AWR templates**: For paid tier, add an `06-awr.sql` template file with `DBA_HIST_SQLSTAT` and `DBA_HIST_ACTIVE_SESS_HISTORY` queries for historical trend analysis.
 
 **Multi-schema support**: The templates use `USER_*` views (current schema). To analyze other schemas, replace with `ALL_*` or `DBA_*` views and add an `:owner` bind variable.
 
-**Custom MCP server**: If you need higher-level tools (e.g., `analyze_graph_workload` as a single tool call), wrap the SQL templates in a custom MCP server that delegates to SQLcl or ORDS. See the architecture discussion in the project context document.
+**Custom MCP server**: If you need higher-level tools (e.g., `analyze_graph_workload` as a single tool call), wrap the SQL templates in a custom MCP server that delegates to SQLcl or ORDS.
 
 ---
 

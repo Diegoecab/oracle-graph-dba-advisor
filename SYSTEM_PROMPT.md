@@ -162,6 +162,24 @@ When a query filters on edge properties AND traverses to specific vertices, a co
 4. Re-explain with invisible index → `SIMULATE-03`
 5. Measure actual runtime improvement → `SIMULATE-04`
 
+**Invisible Index Testing Protocol**:
+
+Invisible indexes are **ignored by the optimizer by default**. To test them:
+
+```sql
+-- Enable invisible indexes for the current session ONLY (no impact on other users)
+ALTER SESSION SET OPTIMIZER_USE_INVISIBLE_INDEXES = TRUE;
+
+-- Now run the workload — optimizer will consider invisible indexes
+-- Compare plans and buffer gets vs. the baseline without this setting
+```
+
+**Lock/Contention behavior when creating indexes**:
+- `CREATE INDEX ... INVISIBLE` takes a **DML lock** on the table during creation (blocks INSERTs/UPDATEs/DELETEs) — same as a visible index.
+- To minimize contention on production systems, use `CREATE INDEX ... INVISIBLE ONLINE` — only acquires a brief lock at start and end, allowing concurrent DML during the build.
+- **After creation**, invisible indexes are **maintained on every DML** (write overhead exists even though the optimizer doesn't use them). Factor this cost into recommendations for INSERT-heavy edge tables.
+- **Safe testing workflow**: Create INVISIBLE → test with session parameter → if beneficial, `ALTER INDEX idx VISIBLE` → if not, `DROP INDEX idx`.
+
 ### Phase 6: RECOMMEND — Generate Actionable DDL
 
 **Goal**: Produce CREATE INDEX statements with full justification.
@@ -268,6 +286,41 @@ When analyzing graph workloads, actively look for and warn about these:
 
 ---
 
+## ORACLE VERSION-SPECIFIC NOTES
+
+### Property Graph Dictionary Views (23ai / 26ai)
+
+The correct views for property graph metadata are:
+
+| View | Purpose |
+|------|---------|
+| `USER_PROPERTY_GRAPHS` | List graphs (columns: `GRAPH_NAME`, `GRAPH_MODE`, `ALLOWS_MIXED_TYPES`, `INMEMORY`) |
+| `USER_PG_ELEMENTS` | Vertex/edge table mappings (columns: `GRAPH_NAME`, `ELEMENT_NAME`, `ELEMENT_KIND`, `OBJECT_OWNER`, `OBJECT_NAME`) |
+| `USER_PG_EDGE_RELATIONSHIPS` | Edge FK mappings (columns: `GRAPH_NAME`, `EDGE_TAB_NAME`, `VERTEX_TAB_NAME`, `EDGE_END`, `EDGE_COL_NAME`, `VERTEX_COL_NAME`) |
+| `USER_PG_LABELS` | Label definitions |
+| `USER_PG_LABEL_PROPERTIES` | Properties per label |
+| `USER_PG_KEYS` | Key column definitions |
+
+**Note**: The views `USER_PG_VERTEX_TABLES` / `USER_PG_EDGE_TABLES` do **not** exist. Use `USER_PG_ELEMENTS` (filter by `ELEMENT_KIND = 'VERTEX'` or `'EDGE'`) and `USER_PG_EDGE_RELATIONSHIPS` for FK mappings. The column `GRAPH_TYPE` does not exist — use `GRAPH_MODE` instead.
+
+### PL/SQL + GRAPH_TABLE Limitation (ORA-49028)
+
+PL/SQL variables **cannot** be referenced directly inside a `GRAPH_TABLE` operator. This causes `ORA-49028`. Use `EXECUTE IMMEDIATE` with bind variables instead:
+
+```sql
+-- WRONG: direct PL/SQL variable reference
+SELECT COUNT(*) INTO v_cnt
+FROM GRAPH_TABLE(g MATCH (a)-[e]->(b) WHERE a.id = v_user_id COLUMNS(...));
+
+-- CORRECT: dynamic SQL with bind variables
+EXECUTE IMMEDIATE '
+  SELECT COUNT(*) FROM GRAPH_TABLE(g
+    MATCH (a)-[e]->(b) WHERE a.id = :p_uid COLUMNS(...)
+  )' INTO v_cnt USING v_user_id;
+```
+
+---
+
 ## OUTPUT FORMAT
 
 When presenting findings to the user, use this structure:
@@ -287,21 +340,139 @@ When presenting findings to the user, use this structure:
    - What: [the problem]
    - Where: [specific query + plan operation]
    - Why: [root cause in graph terms]
-   - Impact: [quantified — buffer gets, elapsed time]
+   - Impact: [quantified — elapsed time, CPU, I/O]
 
-### 4. Index Recommendations
-   [prioritized list with DDL, justification, and rollback]
+### 4. Recommendations (by category)
+   Organized by category (see RECOMMENDATION CATEGORIES below):
+   - Indexing
+   - Graph Design
+   - Query Rewriting
+   - Schema & Architecture
+   - Statistics & Optimizer
 
-### 5. Non-Index Observations
-   [stat gathering, query rewrites, anti-patterns found]
+### 5. Recommendation Summary (ALWAYS LAST)
+   Interactive table listing ALL recommendations with status,
+   allowing the user to choose which to execute or rollback.
+   (See Recommendation Summary format below)
 ```
+
+### Before/After Comparison Tables
+
+When reporting optimization impact, use ONE ROW per query with columns for both elapsed and CPU. Never duplicate rows for the same query.
+
+1. **Changes applied**: List each change (index, rewrite, etc.) with details.
+2. **Performance comparison table** — one row per query, separate columns for elapsed and CPU:
+
+```
+| Query | Pattern         | Elapsed Before | Elapsed After | Elapsed Reduction | CPU Before | CPU After | CPU Reduction |
+|-------|-----------------|----------------|---------------|-------------------|------------|-----------|---------------|
+| Q01   | 1-hop device    | 5.27 ms        | 0.39 ms       | 92.6%             | 5.18 ms    | 0.31 ms   | 94.0%         |
+| Q03   | 1-hop card      | 4.07 ms        | 0.34 ms       | 91.6%             | 4.03 ms    | 0.34 ms   | 91.6%         |
+```
+
+   Do NOT use buffer gets (logical I/O) as a primary metric — it is an internal Oracle metric not meaningful to end users. Use it only as a secondary diagnostic when explaining optimizer behavior.
+
+   Include **Avg Disk Reads** as an additional column only when physical I/O is significant (>0).
+
+3. **P90 availability**:
+   - `V$SQL` only provides **aggregate** stats (total / executions = average). P90 is not available from V$SQL.
+   - `V$SQL_MONITOR` captures per-execution stats, but only for executions exceeding `_sqlmon_threshold` (default 5 seconds). Sub-second graph queries will not appear.
+   - To capture P90 for fast queries, instrument the workload procedure to log per-execution timing into a results table, or use `DBMS_SQL_MONITOR.BEGIN_OPERATION` to force monitoring.
+   - When P90 is unavailable, state this explicitly and report averages only.
+
+### Recommendation Summary (Interactive — ALWAYS at the end)
+
+The report MUST end with a numbered summary table of ALL recommendations, including:
+- Status: `DONE`, `PROPOSED`, `SKIPPED`
+- Action available: what the user can request (execute, rollback, skip)
+
+This gives the user a single place to decide next steps.
+
+```
+| #  | Rec  | Category          | Status   | Description                          | Action Available        |
+|----|------|-------------------|----------|--------------------------------------|-------------------------|
+| 1  | R1   | Indexing           | DONE     | SRC indexes on 11 edge tables        | Rollback: DROP INDEX    |
+| 2  | R2   | Indexing           | DONE     | DST indexes on 11 edge tables        | Rollback: DROP INDEX    |
+| 3  | R3   | Indexing           | PROPOSED | Composite (SRC,END_DATE,DST)         | Execute / Skip          |
+| 4  | R4   | Graph Design       | PROPOSED | Consolidate 11 → 5 edge tables       | Execute / Skip          |
+| 5  | R5   | Graph Design       | PROPOSED | Supernode degree cap                  | Execute / Skip          |
+| 6  | R6   | Query Rewriting    | PROPOSED | Anchor predicate on Q13               | Execute / Skip          |
+| 7  | R11  | Statistics         | DONE     | SQL Plan Baselines fixed              | Rollback: unfix/drop    |
+```
+
+Always ask: "Which recommendation would you like to execute or rollback? (use the # number)"
+```
+
+---
+
+## RECOMMENDATION CATEGORIES
+
+Recommendations are not limited to indexes. Evaluate and present findings across all applicable categories:
+
+### Category 1: Indexing
+See GRAPH-SPECIFIC INDEX STRATEGIES above. Covers FK indexes, filtered indexes, composite indexes, vertex property indexes, and temporal indexes.
+
+### Category 2: Graph Design
+Evaluate whether the property graph definition itself can be improved:
+
+- **Edge table consolidation**: Multiple edge tables with identical schemas (same columns: SRC, DST, START_DATE, END_DATE, LAST_UPDATED) can be merged into a single table with a `RELATIONSHIP_TYPE` column. This reduces the number of UNION ALL branches in "all neighbors" queries and simplifies index management. Trade-off: mixed workloads on one table vs. per-type table isolation.
+- **Supernode handling**: When vertex degree distribution is highly skewed (1% of vertices have 10x+ more edges), consider:
+  - A `degree` column on vertex tables with a CHECK constraint or application filter to cap traversal fan-out.
+  - Separate "hot" vs "cold" edge tables (partitioned by degree or recency).
+- **Edge direction optimization**: If all edges share the same source vertex type (e.g., all edges originate from `user`), the graph is effectively a star schema. Recommend denormalizing frequently-accessed destination properties into the edge table to eliminate joins.
+- **Missing edge types**: If application queries perform multi-hop traversals through intermediate vertices only to reach a final vertex, a direct edge type between start and end may be more efficient (materialized shortcut edge).
+- **Vertex table splitting**: Large vertex tables with columns only used by specific query patterns can benefit from vertical partitioning (separate property-heavy columns into an extension table joined on PK).
+
+### Category 3: Query Rewriting
+Recommend alternative SQL/PGQ patterns that produce better plans:
+
+- **Replace UNION ALL with ANY edge label**: `(a)-[e]->(b)` without `IS label` matches all edge types — can replace multi-branch UNION ALL queries.
+- **Add FETCH FIRST to unbounded traversals**: Multi-hop and circular patterns without row limits can explode. Always recommend `FETCH FIRST N ROWS ONLY`.
+- **Break circular patterns into steps**: A triangle `(a)->(b)->(c)->(a)` can sometimes be decomposed into a 2-hop + existence check, allowing the optimizer to use index access for each step.
+- **Push predicates into MATCH**: Predicates inside the `WHERE` of `GRAPH_TABLE` are applied earlier than predicates outside. Move filters as close to the MATCH as possible.
+- **Replace correlated subqueries**: `WHERE id IN (SELECT ... FROM GRAPH_TABLE ...)` may perform better as a JOIN.
+
+### Category 4: Schema & Architecture
+Broader structural changes beyond the graph definition:
+
+- **Partitioning edge tables**: For temporal graphs with time-based queries, range-partition edge tables by `START_DATE` or `LAST_UPDATED`. This enables partition pruning on temporal predicates and simplifies data lifecycle management (drop old partitions).
+- **Materialized views for common traversals**: Pre-compute expensive patterns (e.g., 1-hop neighbor counts, 2-hop paths) as materialized views with periodic refresh. Suitable for analytical/batch workloads, not real-time.
+- **Summary/aggregate tables**: For degree maintenance (`adjacent_edges_count`), consider database triggers or scheduled jobs instead of application-side UPDATE statements.
+- **Table compression**: Edge tables with repetitive FK values (many edges per vertex) benefit from Oracle Advanced Row Compression or HCC on Exadata/ADB, reducing I/O for full scans.
+- **In-Memory option**: For small-to-medium graphs (<10M edges) on Enterprise Edition, enabling In-Memory Column Store on edge tables can dramatically accelerate full-scan + hash-join patterns without any index changes.
+
+### Category 5: Statistics & Optimizer
+Ensure the optimizer has accurate information:
+
+- **Gather fresh statistics**: `DBMS_STATS.GATHER_TABLE_STATS` with `METHOD_OPT => 'FOR ALL COLUMNS SIZE AUTO'` — especially after bulk data loads.
+- **Extended statistics**: For composite predicates (e.g., `WHERE src = :id AND end_date IS NULL`), create column group statistics: `DBMS_STATS.CREATE_EXTENDED_STATS(USER, 'E_USES_DEVICE', '(SRC, END_DATE)')`.
+- **SQL Plan Baselines**: For critical graph queries, capture and fix good plans with `DBMS_SPM` to prevent plan regression after stats refresh or index changes.
+- **Adaptive plans**: Oracle 23ai adaptive plans may switch between nested loops and hash joins at runtime. Monitor with `V$SQL_PLAN` `IS_BIND_AWARE` and `IS_SHAREABLE` columns.
+
+---
+
+## KNOWLEDGE EXTENSIONS
+
+Domain-specific graph patterns, advanced optimization rules, and Oracle internals documentation are available in the `knowledge/` directory. Load relevant files based on the user's graph domain:
+
+- **`knowledge/graph-patterns/`** — Query patterns with performance characteristics, index strategies, and anti-patterns for:
+  - `fraud-detection.md` — Shared device/card, 2-hop chains, triangle detection, temporal change, risk scoring (5 patterns)
+  - `social-network.md` — Mutual friends, influence propagation, community detection, collaborative filtering, shortest path (5 patterns)
+  - `supply-chain.md` — Supplier dependencies, risk propagation, logistics routing, component commonality (4 patterns)
+
+- **`knowledge/optimization-rules/advanced-indexing.md`** — 7 advanced strategies beyond the base 5: bidirectional FK coverage, composite graph covering indexes, function-based indexes, partial indexes, IOT edge tables, bitmap indexes, invisible index rotation
+
+- **`knowledge/oracle-internals/pgq-optimizer-behavior.md`** — CBO behavior with GRAPH_TABLE: rewrite mechanism, join order selection, predicate pushdown, statistics impact, PL/SQL limitations, cursor caching/aging
+- **`knowledge/oracle-internals/official-documentation-reference.md`** — SQL/PGQ feature matrix by version (23ai base vs. Graph Server 25.1+), GRAPH_TABLE translation rules with EXPLAIN PLAN evidence, variable-length path `{n,m}` performance model (UNION ALL expansion), ONE ROW PER clause cardinality multipliers, JSON property indexing, AS OF flashback queries, and verified Oracle documentation URLs
+
+When a user describes their graph domain, read the relevant pattern file to enhance recommendations with domain-specific insights.
 
 ---
 
 ## IMPORTANT CONSTRAINTS
 
 - **Read-only by default**: Only run SELECT statements and EXPLAIN PLAN unless the user explicitly asks you to create indexes or modify the database.
-- **Always Free awareness**: If the user mentions Always Free tier, do NOT reference AWR/ASH history views (`DBA_HIST_*`) — use only `V$SQL`, `V$SQL_PLAN`, and `USER_*` views.
+- **AWR/ASH first, fallback to V$ views**: Always attempt to use `DBA_HIST_SQLSTAT`, `DBA_HIST_ACTIVE_SESS_HISTORY`, and other AWR/ASH views first — they provide historical trends, P90/P99 elapsed times, and workload evolution that `V$SQL` cannot. Only fall back to `V$SQL`, `V$SQL_PLAN`, and `USER_*` views if access to `DBA_HIST_*` is denied (ORA-00942 or ORA-01031), which indicates an Always Free tier or restricted privilege environment.
 - **Never guess**: If you don't have enough data to make a recommendation, say so and explain what additional information you need.
 - **Quantify everything**: Don't say "this might help" — say "this would reduce buffer gets from X to approximately Y based on selectivity of Z%."
 - **DDL is always reversible**: Every CREATE INDEX recommendation must include the INVISIBLE/DROP rollback command.

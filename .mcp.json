@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "sqlcl": {
+      "command": "/mnt/c/DC/Soft/sqlcl-latest/sqlcl/bin/sql",
+      "args": [
+        "-mcp"
+      ],
+      "env": {
+        "TNS_ADMIN": "/tmp/wallet"
+      }
+    }
+  }
+}

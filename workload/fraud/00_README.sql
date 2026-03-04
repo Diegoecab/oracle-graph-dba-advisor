@@ -1,0 +1,59 @@
+--------------------------------------------------------------------------------
+-- 00_README.sql
+-- Fraud Detection Graph — Workload Generation Guide
+--
+-- SOURCE: AWR Report — FRAUDACCRELDEFAULT (Oracle 19c, PDB on RAC 5-node)
+-- TARGET: Oracle 23ai / 26ai with native SQL/PGQ (GRAPH_TABLE + MATCH)
+--
+-- EXECUTION ORDER:
+--   1. @01_create_schema.sql       — Creates vertex + edge tables with FKs
+--   2. @02_create_property_graph.sql — Defines FRAUD_GRAPH property graph
+--   3. @03_generate_data.sql       — Generates ~420K edges, ~108K vertices
+--   4. @04_workload_queries.sql    — Individual queries (run manually)
+--   5. @05_run_workload.sql        — Automated workload runner (proc + exec)
+--
+-- SCALING:
+--   Edit v_scale_factor in 03_generate_data.sql:
+--     1  = ~420K edges (default, fast setup, ~2 min)
+--     5  = ~2.1M edges (moderate workload, ~10 min)
+--     10 = ~4.2M edges (stress test, ~20 min setup)
+--     50 = ~21M edges (production-like, ~1-2 hours)
+--
+-- AWR PATTERN MAPPING:
+--   ┌─────────────────────────────────────────────────────────────────────┐
+--   │ AWR SQL_ID      │ % DB Time │ Workload Query │ Pattern             │
+--   ├─────────────────┼───────────┼────────────────┼─────────────────────┤
+--   │ 0ammkzmpnsa49   │ 21.93%    │ Q01, Q10       │ 1-hop all types     │
+--   │ 2k831rbg4c5rh   │ 11.93%    │ Q04            │ 2-hop device        │
+--   │ 344vpc9wb8rbr   │  5.29%    │ Q10 (partial)  │ Edge listing        │
+--   │ bs7dfvh6ukjcx   │  4.45%    │ Q03            │ 1-hop card          │
+--   │ amk2tmn54mfvz   │  3.70%    │ Q10 (partial)  │ Edge listing        │
+--   │ 0g34jw7zk93g7   │  3.43%    │ Q05            │ 2-hop cross-type    │
+--   │ a1gd2pnpbwhcq   │  2.84%    │ Q06            │ Change detection    │
+--   │ 2utqsn146c7yd   │  2.67%    │ Q04 (variant)  │ 2-hop validate      │
+--   │ 1xwk8sjg4gdj2   │  2.53%    │ Q01 (variant)  │ 1-hop smart_id      │
+--   │ 7g2uc57ksjy9m   │  2.52%    │ Q07            │ Edge count          │
+--   │ dr4xhkun2vxjr   │  N/A      │ Q09            │ Temporal+degree     │
+--   │ g3kwbf8q76fgw   │  N/A      │ Q08            │ Degree maintenance  │
+--   └─────────────────────────────────────────────────────────────────────┘
+--
+-- INTENTIONAL PERFORMANCE GAPS (for the Advisor to find):
+--   1. NO indexes on edge FK columns (SRC, DST) — the #1 gap
+--   2. NO indexes on END_DATE (every query filters end_date IS NULL)
+--   3. NO indexes on LAST_UPDATED (temporal queries use this)
+--   4. NO composite indexes (SRC, END_DATE, DST) which would cover
+--      both the filter and the join in a single index scan
+--   5. Large fan-out on supernode devices/cards (1% of nodes get 10-15x
+--      more edges) — triggers suboptimal hash joins
+--
+-- AFTER RUNNING WORKLOAD:
+--   Use the Oracle Graph DBA Advisor (system_prompt.md) to:
+--   - Phase 1: Discover the graph topology
+--   - Phase 2: Identify expensive queries in V$SQL
+--   - Phase 3: Analyze execution plans
+--   - Phase 4: Quantify selectivity and index benefit
+--   - Phase 5: Simulate with invisible indexes
+--   - Phase 6: Generate recommendations
+--------------------------------------------------------------------------------
+
+SELECT 'Read this file for instructions. Execute scripts 01-05 in order.' AS instructions FROM DUAL;
