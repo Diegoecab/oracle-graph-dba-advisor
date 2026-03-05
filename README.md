@@ -133,20 +133,33 @@ The agent will connect, discover your graphs, find expensive queries, analyze ex
 
 ## What the Agent Knows
 
-**GRAPH_TABLE translation model** — Every `GRAPH_TABLE(MATCH ...)` becomes relational joins. A 2-hop pattern = 2 edge joins + 3 vertex joins; costs grow multiplicatively.
+The advisor carries a built-in knowledge base that combines Oracle internal documentation with field-tested optimization patterns. No external lookups needed — everything is embedded in the system prompt and the `knowledge/` directory.
 
-**Graph design review** — Evaluates edge/vertex table granularity, key choices (natural vs. surrogate), property placement, label cardinality, and whether the graph structure matches actual query patterns.
+### Oracle Internals (built-in)
 
-**Index strategies** (prioritized):
-1. Edge FK indexes (source_key, destination_key) — almost always missing, almost always beneficial
+- **GRAPH_TABLE translation model** — Every `GRAPH_TABLE(MATCH ...)` rewrites to relational joins. The agent reads execution plans as relational plans (TABLE ACCESS FULL, HASH JOIN, NESTED LOOPS — never "graph traversal") and traces each operation back to the original graph pattern.
+- **SQL/PGQ feature matrix** — Knows which features are available in 23ai base vs. Graph Server 25.1+, including variable-length paths `{n,m}` (UNION ALL expansion, max 10), ONE ROW PER cardinality multipliers, JSON property indexing, and AS OF flashback queries.
+- **CBO behavior with GRAPH_TABLE** — Rewrite mechanism, join order selection, predicate pushdown rules, statistics impact on plan quality, cursor caching, and adaptive plan behavior.
+- **AWR/ASH analysis** — Uses `DBA_HIST_SQLSTAT` and `DBA_HIST_ACTIVE_SESS_HISTORY` for historical trends and P90/P99 analysis. Falls back to `V$SQL` automatically if access is denied (Always Free tier).
+
+### Optimization Strategies (built-in)
+
+**5 index strategies** (prioritized):
+1. Edge FK indexes (SRC, DST) — almost always missing, almost always beneficial
 2. Filtered edge indexes — for selective predicates like `is_suspicious = 'Y'`
-3. Composite edge indexes — filter + FK in one index
+3. Composite covering indexes — filter + FK in one index (index-only scans)
 4. Vertex property indexes — for filtered traversal start points
 5. Temporal indexes — for date-range filtered graph queries
 
-**Best practices** — Stale statistics detection, variable-length quantifier `{n,m}` misuse, cartesian explosion patterns, fan-out characteristics, and SQL/PGQ limitations requiring hybrid approaches.
+Plus 7 advanced strategies: bidirectional FK coverage, function-based indexes, partial indexes (23ai), IOT edge tables, bitmap indexes, and invisible index A/B rotation.
 
-**Anti-patterns** — Missing DBMS_STATS, over-indexing INSERT-heavy edge tables, redundant PK indexes, optimal full scans on small tables, N+1 application patterns, unconstrained multi-hop explosions.
+### Domain Patterns (knowledge base)
+
+14 pre-built graph query patterns across 3 domains (fraud detection, social network, supply chain), each with: SQL/PGQ query, expected plan shape, index strategy, anti-patterns, and real-world frequency data.
+
+### Anti-patterns (actively flagged)
+
+Missing DBMS_STATS, over-indexing INSERT-heavy edge tables, redundant PK indexes, optimal full scans on small tables, N+1 application patterns, unconstrained multi-hop cartesian explosions, variable-length quantifier `{n,m}` misuse.
 
 ---
 
@@ -280,13 +293,9 @@ oracle-graph-dba-advisor/
 
 ## Extending
 
-**New graph patterns** — Add `.md` files to `knowledge/graph-patterns/`.
+**New graph patterns** — Add `.md` files to `knowledge/graph-patterns/` following the format in `knowledge/graph-patterns/README.md`. The advisor picks them up automatically.
 
-**AWR/ASH support** — Add `06-awr.sql` with `DBA_HIST_SQLSTAT` queries for historical trend analysis (requires Diagnostics Pack license).
-
-**Multi-schema** — Replace `USER_*` views with `ALL_*` or `DBA_*` and add an `:owner` bind variable.
-
-**Custom MCP tools** — Wrap SQL templates in a custom MCP server for higher-level tools like `analyze_graph_workload`.
+**Custom SQL templates** — Add new `.sql` files to `sql-templates/` for domain-specific diagnostics. Reference them in `SYSTEM_PROMPT.md` under the appropriate phase.
 
 ---
 
