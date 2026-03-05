@@ -52,9 +52,7 @@ Agent:   1. Discovers property graphs, tables, volumes, and design
 └────────────────────────────┘
 ```
 
-The advisor queries `V$SQL`, `V$SQL_PLAN`, `USER_PROPERTY_GRAPHS`, `USER_PG_EDGE_TABLES`, `DBA_INDEX_USAGE`, `DBMS_XPLAN` and related views to analyze graph workloads. All views are available on Always Free tier — no AWR/ASH license required.
-
-> **Note:** This advisor requires **Oracle Database 23ai or later**. It is not compatible with 19c — see [why](#why-not-19c) at the bottom of this page.
+The advisor uses AWR/ASH views (`DBA_HIST_SQLSTAT`, `DBA_HIST_ACTIVE_SESS_HISTORY`) for historical trend analysis and P90/P99 metrics when available. On Always Free tier or restricted environments, it automatically falls back to `V$SQL`, `V$SQL_PLAN`, `ALL_PG_ELEMENTS`, `DBA_INDEX_USAGE`, and `DBMS_XPLAN`.
 
 ---
 
