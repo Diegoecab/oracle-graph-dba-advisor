@@ -1,117 +1,82 @@
 # Oracle Graph DBA Advisor
 
-An AI-powered DBA advisor **specialized in Oracle Property Graph (SQL/PGQ) workload optimization**. Built on top of the official Oracle SQLcl MCP Server — zero custom infrastructure required.
+An AI-powered advisor for **Oracle Property Graph (SQL/PGQ) on Oracle Database 23ai and 26ai** — covering performance optimization, graph design review, best practices validation, and workload diagnostics.
+
+Built on top of the official **Oracle SQLcl MCP Server** — zero custom infrastructure required.
 
 ---
 
 ## What This Is
 
-A **system prompt framework + diagnostic SQL templates** that turns Claude (or any MCP-compatible LLM) into an expert Oracle DBA that specifically understands how `GRAPH_TABLE` queries translate into relational plans, where the optimizer struggles with graph patterns, and what indexes actually help.
+A **system prompt + diagnostic SQL templates** that turns any MCP-compatible LLM into an Oracle Graph advisor. It understands how `GRAPH_TABLE` queries expand into relational joins, identifies performance bottlenecks, reviews graph design decisions, and recommends improvements.
 
 ```
 You:     "Analyze my graph workload and tell me what's slow and why"
 
-Agent:   1. Discovers your property graphs, tables, volumes
+Agent:   1. Discovers property graphs, tables, volumes, and design
          2. Finds the most expensive graph queries in V$SQL
-         3. Reads their execution plans, identifies full scans on edge tables
-         4. Analyzes column selectivity to quantify index benefit
-         5. Simulates improvements with invisible indexes
-         6. Produces CREATE INDEX DDL with plain-language justification
-         7. Includes rollback commands for every recommendation
+         3. Reads execution plans, identifies bottlenecks
+         4. Reviews graph modeling (edge/vertex design, key choices)
+         5. Analyzes selectivity to quantify index benefit
+         6. Simulates improvements with invisible indexes
+         7. Produces recommendations with DDL, justification, and rollback
 ```
-
-Unlike Oracle's built-in Automatic Indexing (which is a black box that says "benefit: 847"), this advisor **explains why** each index helps in graph-specific terms: "This composite index on `transfers(is_suspicious, merchant_id)` eliminates 99.5% of edge rows before the hash join to merchants, reducing the fan-in pattern from 1M to 5K intermediate rows."
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                Claude / MCP-compatible LLM                   │
-│                                                              │
-│  SYSTEM_PROMPT.md loaded as project instructions             │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  Graph DBA Methodology                                 │ │
-│  │  ├─ How GRAPH_TABLE expands to joins internally        │ │
-│  │  ├─ 6-phase diagnostic workflow                        │ │
-│  │  ├─ 5 index strategies ranked by impact                │ │
-│  │  ├─ Anti-patterns to flag                              │ │
-│  │  └─ Output format for recommendations                  │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                          │                                   │
-│                     MCP Protocol                             │
-│                    (run-sql tool)                             │
-│                          │                                   │
-└──────────────────────────┼──────────────────────────────────┘
-                           │
-                           ▼
-               ┌───────────────────────┐
-               │   SQLcl MCP Server    │
-               │   (Oracle official)   │
-               │                       │
-               │   Tools:              │
-               │   ├─ list-connections │
-               │   ├─ connect          │
-               │   ├─ run-sql     ◄────── Executes SQL templates
-               │   ├─ run-sqlcl        │
-               │   └─ disconnect       │
-               └───────────┬───────────┘
-                           │
-                    mTLS / TCP / ORDS
-                           │
-                           ▼
-               ┌───────────────────────┐
-               │   Oracle ADB-S 23ai  │
-               │   (or 26ai, or 19c+) │
-               │                       │
-               │   V$SQL               │  ← Always Free ✓
-               │   V$SQL_PLAN          │  ← Always Free ✓
-               │   V$SQL_PLAN_STATS    │  ← Always Free ✓
-               │   USER_PROPERTY_GRAPHS│  ← Always Free ✓
-               │   USER_TAB_COL_STATS  │  ← Always Free ✓
-               │   DBA_INDEX_USAGE     │  ← 23ai+ ✓
-               │   DBMS_XPLAN         │  ← Always Free ✓
-               └───────────────────────┘
+┌──────────────────────────────────────────┐
+│           MCP-compatible LLM             │
+│                                          │
+│  SYSTEM_PROMPT.md (auto-loaded)          │
+│  sql-templates/  (diagnostic queries)    │
+│  knowledge/      (graph patterns & rules)│
+│                                          │
+└────────────────┬─────────────────────────┘
+                 │ MCP Protocol
+                 ▼
+┌────────────────────────────┐
+│     SQLcl MCP Server       │
+│     (Oracle official)      │
+│                            │
+│  connect · run-sql         │
+│  run-sqlcl · disconnect    │
+└────────────┬───────────────┘
+             │ mTLS / TCP / ORDS
+             ▼
+┌────────────────────────────┐
+│   Oracle Database 23ai    │
+│        (or 26ai)          │
+└────────────────────────────┘
 ```
+
+The advisor queries `V$SQL`, `V$SQL_PLAN`, `USER_PROPERTY_GRAPHS`, `USER_PG_EDGE_TABLES`, `DBA_INDEX_USAGE`, `DBMS_XPLAN` and related views to analyze graph workloads. All views are available on Always Free tier — no AWR/ASH license required.
+
+> **Note:** This advisor requires **Oracle Database 23ai or later**. It is not compatible with 19c — see [why](#why-not-19c) at the bottom of this page.
 
 ---
 
 ## Prerequisites
 
-1. **Oracle SQLcl 25.2+** installed (`sql -version`)
-2. **Java 17+** (`java -version`)
-3. **A saved database connection** with the password stored:
+1. **Oracle Database 23ai or 26ai** (ADB-S, ADB-D, Base DB, or Free tier)
+2. **Oracle SQLcl 25.2+** (`sql -version`)
+3. **Java 17+** (`java -version`)
+4. A **saved database connection** with password stored:
    ```bash
    sql /nolog
    SQL> conn -save MyADB -savepwd admin/MyPass@adb_host:1522/mydb_low
    ```
-4. **Claude Desktop**, **VS Code + Copilot**, **Cline**, or any MCP client
 
 ---
 
-## Multi-LLM Client Support
+## Quick Start
 
-This project works with any MCP-compatible LLM client. Configuration files are included for each:
+### Step 1: Configure SQLcl MCP
 
-| Client | Config File | Auto-loaded |
-|--------|-------------|-------------|
-| **Claude Code** | `.mcp.json` (root) | Yes |
-| **Claude Desktop** | See setup below | Manual |
-| **VS Code + Copilot** | `.vscode/mcp.json` + `.github/copilot-instructions.md` | Yes |
-| **Cline** | `.clinerules` | Yes |
-| **Cursor** | `.cursor/rules/oracle-graph-dba.mdc` | Yes |
-| **Continue** | `clients/continue-config-example.json` | Manual |
+Add the SQLcl MCP server to your client. The configuration is the same for all clients:
 
-See `clients/README.md` for detailed setup instructions per client.
-
----
-
-## Setup
-
-### Step 1: Configure SQLcl as MCP Server
-
-**Claude Code** — use the `.mcp.json` already in the project root, or create your own:
 ```json
 {
   "mcpServers": {
@@ -123,47 +88,21 @@ See `clients/README.md` for detailed setup instructions per client.
 }
 ```
 
-**Claude Desktop** — edit `claude_desktop_config.json`:
-```json
-{
-  "mcpServers": {
-    "sqlcl": {
-      "command": "/path/to/sqlcl/bin/sql",
-      "args": ["-mcp"]
-    }
-  }
-}
-```
+Where to put it depends on your client:
 
-**VS Code + Copilot** — the `.vscode/mcp.json` is already configured. If using the Oracle SQL Developer Extension, MCP is registered automatically.
+| Client | Config location |
+|--------|----------------|
+| **Claude Code** | `.mcp.json` in project root (already included) |
+| **Claude Desktop** | `claude_desktop_config.json` |
+| **VS Code + Copilot** | `.vscode/mcp.json` (already included) |
+| **Cline** | Cline MCP settings panel |
+| **Cursor** | Cursor MCP settings |
 
-**Cline** — the `.clinerules` file is auto-loaded. Configure MCP in Cline settings:
-```json
-{
-  "mcpServers": {
-    "sqlcl": {
-      "command": "/path/to/sqlcl/bin/sql",
-      "args": ["-mcp"],
-      "disabled": false
-    }
-  }
-}
-```
+> **VS Code tip:** If you have the Oracle SQL Developer Extension installed, MCP is registered automatically.
 
-**Cursor** — the `.cursor/rules/oracle-graph-dba.mdc` is auto-loaded for matching files.
+The system prompt and advisor persona are **auto-loaded** via client-specific config files already included in the project (`.github/copilot-instructions.md`, `.clinerules`, `.cursor/rules/`, `CLAUDE.md`). No manual prompt setup needed.
 
-### Step 2: Load the System Prompt
-
-**Option A — Claude Project (recommended):**
-Create a Claude Project and add `SYSTEM_PROMPT.md` as Project Instructions. This way every conversation in the project gets the Graph DBA persona automatically.
-
-**Option B — Paste at conversation start:**
-Copy the contents of `SYSTEM_PROMPT.md` and paste it as the first message in a new conversation with the prefix "Use these instructions for this conversation:".
-
-**Option C — Claude Code / Cline / Cursor:**
-Place `SYSTEM_PROMPT.md` and the `sql-templates/` directory in your project root. The agent reads them with file access tools. Client-specific rules files (`.clinerules`, `.cursor/rules/`) reference the system prompt automatically.
-
-### Step 3: Connect and Analyze
+### Step 2: Connect and Analyze
 
 Start a conversation:
 
@@ -173,84 +112,69 @@ Start a conversation:
  and some queries are slow."
 ```
 
-The agent will:
-1. Use `connect` tool to establish the database session
-2. Run DISCOVERY templates to map the graph topology
-3. Run IDENTIFY templates to find expensive queries
-4. Deep-dive into execution plans
-5. Analyze selectivity and simulate improvements
-6. Present recommendations with DDL and justification
+The agent will connect, discover your graphs, find expensive queries, analyze execution plans, and deliver recommendations with DDL and rollback commands.
 
 ---
 
-## SQL Template Reference
+## Multi-LLM Client Support
 
-All templates are in `sql-templates/` and organized by diagnostic phase. The agent selects and parameterizes them dynamically — you don't need to run them manually.
+| Client | Config File | System Prompt |
+|--------|-------------|---------------|
+| **Claude Code** | `.mcp.json` | `CLAUDE.md` (auto-loaded) |
+| **Claude Desktop** | Manual config | Create a Project → add `SYSTEM_PROMPT.md` as instructions |
+| **VS Code + Copilot** | `.vscode/mcp.json` | `.github/copilot-instructions.md` (auto-loaded) |
+| **Cline** | MCP settings | `.clinerules` (auto-loaded) |
+| **Cursor** | MCP settings | `.cursor/rules/oracle-graph-dba.mdc` (auto-loaded) |
+| **Continue** | `clients/continue-config-example.json` | Manual |
 
-| File | Phase | Templates |
-|------|-------|-----------|
-| `01-discovery.sql` | Discovery | DISCOVERY-01 through DISCOVERY-06 |
-| `02-identify.sql` | Identify | IDENTIFY-01 through IDENTIFY-05 |
-| `03-analyze.sql` | Deep Dive | ANALYZE-01 through ANALYZE-05 |
-| `04-selectivity-and-simulate.sql` | Selectivity + Simulate | SELECTIVITY-01 through -04, SIMULATE-01 through -05 |
-| `05-utilities.sql` | Actions | UTIL-01 through UTIL-09 (stats, index mgmt, reporting) |
-
-### Key Templates
-
-**DISCOVERY-06** (Edge FK Index Gap Analysis) — The single most important diagnostic query. Finds edge table foreign key columns that lack indexes. This is the #1 optimization opportunity in virtually every property graph deployment.
-
-**ANALYZE-03** (Full Table Scans on Graph Tables) — Finds all full scans on graph underlying tables across all cached SQL. Each one is a potential index candidate.
-
-**SELECTIVITY-04** (Edge Degree Distribution) — Shows vertex degree distribution (edges per vertex). Essential for understanding fan-out explosion in multi-hop patterns.
-
-**UTIL-09** (Complete Diagnostic Snapshot) — Single query that combines discovery + identify + analyze into a health check summary.
+**Minimum model size**: 30B+ parameters recommended. Smaller models may struggle with execution plan interpretation. Tested with: Claude Sonnet/Opus, GPT-4o, Gemini Pro, Qwen2.5-72B, Llama-3.1-70B.
 
 ---
 
-## What the Agent Knows About Graphs
+## What the Agent Knows
 
-The system prompt encodes deep knowledge about how Oracle processes SQL/PGQ internally:
+**GRAPH_TABLE translation model** — Every `GRAPH_TABLE(MATCH ...)` becomes relational joins. A 2-hop pattern = 2 edge joins + 3 vertex joins; costs grow multiplicatively.
 
-**Translation model**: Every `GRAPH_TABLE(MATCH ...)` expression becomes a set of relational joins. The agent understands that a 2-hop pattern = 2 edge joins + 3 vertex joins, and costs grow multiplicatively.
+**Graph design review** — Evaluates edge/vertex table granularity, key choices (natural vs. surrogate), property placement, label cardinality, and whether the graph structure matches actual query patterns.
 
-**Five index strategies**, prioritized:
+**Index strategies** (prioritized):
 1. Edge FK indexes (source_key, destination_key) — almost always missing, almost always beneficial
-2. Filtered edge indexes — for predicates like `is_suspicious = 'Y'`
-3. Composite edge indexes — filter + FK in one index (highest single-query impact)
+2. Filtered edge indexes — for selective predicates like `is_suspicious = 'Y'`
+3. Composite edge indexes — filter + FK in one index
 4. Vertex property indexes — for filtered traversal start points
 5. Temporal indexes — for date-range filtered graph queries
 
-**Six anti-patterns** the agent actively flags:
-1. Missing DBMS_STATS after data load
-2. Over-indexing INSERT-heavy edge tables
-3. Redundant indexes on PK columns
-4. Full scans that are actually optimal (small tables)
-5. N+1 query patterns in application code
-6. Unconstrained multi-hop cartesian explosions
+**Best practices** — Stale statistics detection, variable-length quantifier `{n,m}` misuse, cartesian explosion patterns, fan-out characteristics, and SQL/PGQ limitations requiring hybrid approaches.
+
+**Anti-patterns** — Missing DBMS_STATS, over-indexing INSERT-heavy edge tables, redundant PK indexes, optimal full scans on small tables, N+1 application patterns, unconstrained multi-hop explosions.
 
 ---
 
-## AWR/ASH Support and Always Free Compatibility
+## SQL Templates
 
-The advisor **prefers AWR/ASH views** (`DBA_HIST_SQLSTAT`, `DBA_HIST_ACTIVE_SESS_HISTORY`) for historical trends, P90/P99 analysis, and workload evolution. If access is denied (Always Free tier or restricted privileges), it automatically falls back to `V$SQL`, `V$SQL_PLAN`, and `USER_*` views.
+All in `sql-templates/`, selected and parameterized by the agent automatically:
 
-| View | Always Free | Paid |
-|------|-------------|------|
-| `V$SQL` | ✅ | ✅ |
-| `V$SQL_PLAN` | ✅ | ✅ |
-| `V$SQL_PLAN_STATISTICS_ALL` | ✅ | ✅ |
-| `USER_PROPERTY_GRAPHS` | ✅ | ✅ |
-| `USER_TAB_COL_STATISTICS` | ✅ | ✅ |
-| `DBA_INDEX_USAGE` (23ai+) | ✅ | ✅ |
-| `DBA_HIST_SQLSTAT` (AWR) | ❌ | ✅ |
+| File | Phase | Templates |
+|------|-------|-----------|
+| `01-discovery.sql` | Discovery | DISCOVERY-01 to -06 |
+| `02-identify.sql` | Identify | IDENTIFY-01 to -05 |
+| `03-analyze.sql` | Deep Dive | ANALYZE-01 to -05 |
+| `04-selectivity-and-simulate.sql` | Selectivity + Simulate | SELECTIVITY-01 to -04, SIMULATE-01 to -05 |
+| `05-utilities.sql` | Actions | UTIL-01 to -09 |
+
+**Highlights:**
+- **DISCOVERY-06** — Edge FK gap analysis. Finds FK columns missing indexes — the #1 optimization opportunity in most graph deployments.
+- **ANALYZE-03** — Full table scans on graph tables across all cached SQL.
+- **SELECTIVITY-04** — Edge degree distribution (fan-out per vertex).
+- **UTIL-09** — Complete health check snapshot in a single query.
 
 ---
 
 ## Example Session
 
 ```
-User: Connect to my graph database and check if there are any
-      index optimization opportunities for my property graphs.
+User: Connect to my graph database and analyze my property graphs.
+      The transfers table has 1M rows and some queries are slow.
 
 Agent: [connect MyADB]
        [run-sql UTIL-08]  → Graph topology summary
@@ -258,46 +182,64 @@ Agent: [connect MyADB]
 
        I found 2 property graphs: social_pg and transaction_pg.
        
-       Critical finding: the TRANSFERS edge table (1M rows) is
-       missing indexes on both FK columns:
+       DESIGN OBSERVATION
+       ━━━━━━━━━━━━━━━━━━
+       The TRANSFERS edge table uses a composite natural key
+       (from_account_id, to_account_id, transfer_date) as PK.
+       This is good for uniqueness but suboptimal for graph
+       traversals — the CBO cannot use this PK efficiently for
+       single-column FK lookups.
+       
+       Critical finding: TRANSFERS (1M rows) is missing indexes
+       on both FK columns:
        - from_account_id (SOURCE_FK) — NO INDEX
        - merchant_id (DESTINATION_FK) — NO INDEX
        
-       This means every graph traversal involving transfers does
-       a full table scan of 1M rows for vertex lookups.
-       
-       Let me check which queries are most affected...
-
        [run-sql IDENTIFY-01] → Top queries by elapsed
        [run-sql ANALYZE-01 for top SQL_ID] → Execution plan
        
-       The fraud ring detection query (SQL_ID: abc123) consumes
-       45M buffer gets per execution. The plan shows:
-       
-       HASH JOIN
-         TABLE ACCESS FULL — TRANSFERS (1,000,000 rows)
-           filter: IS_SUSPICIOUS = 'Y'
-         TABLE ACCESS FULL — TRANSFERS (1,000,000 rows)
-         INDEX UNIQUE SCAN — MERCHANTS_PK
+       The fraud ring query (SQL_ID: abc123) does 45M buffer gets.
        
        [run-sql SELECTIVITY-01 for is_suspicious]
        
        is_suspicious = 'Y' matches 0.5% of rows (5,000 of 1M).
        
-       RECOMMENDATION #1
-       ━━━━━━━━━━━━━━━━━━
+       RECOMMENDATION #1 — Index
+       ━━━━━━━━━━━━━━━━━━━━━━━━━
        Target:     TRANSFERS(IS_SUSPICIOUS, MERCHANT_ID)
        DDL:        CREATE INDEX idx_transfers_susp_merch
                    ON transfers(is_suspicious, merchant_id) INVISIBLE;
-       Impact:     Estimated 45M → ~50K buffer gets (99% reduction)
-       Why:        Composite index satisfies both the edge filter
-                   (is_suspicious='Y') and the destination vertex
-                   join (merchant_id) in a single index range scan.
-                   Only 5K rows enter the join instead of 1M.
+       Impact:     45M → ~50K buffer gets (99% reduction)
+       Why:        Composite index covers both the edge filter and
+                   the destination vertex join in a single scan.
        Rollback:   ALTER INDEX idx_transfers_susp_merch INVISIBLE;
        
-       Shall I create this as an invisible index so we can test?
+       RECOMMENDATION #2 — Best Practice
+       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       The fraud ring query uses {1,4} variable-length pattern
+       with no WHERE predicate on the starting vertex — this is a
+       cartesian explosion. Add a filter on the start vertex
+       (risk_score, account_status, or a specific account_id).
+       
+       Shall I create the invisible index so we can test?
 ```
+
+---
+
+## Knowledge Base
+
+The `knowledge/` directory provides domain-specific patterns and rules the advisor consults during analysis:
+
+| Directory | Content |
+|-----------|---------|
+| `graph-patterns/fraud-detection.md` | 5 patterns: shared device, 2-hop chains, triangles, temporal change, risk scoring |
+| `graph-patterns/social-network.md` | 5 patterns: mutual friends, influence, communities, recommendations, shortest path |
+| `graph-patterns/supply-chain.md` | 4 patterns: BOM dependencies, risk propagation, routing, commonality |
+| `optimization-rules/advanced-indexing.md` | 7 strategies: bidirectional FKs, covering indexes, function-based, partial, IOT, bitmap, invisible A/B |
+| `oracle-internals/pgq-optimizer-behavior.md` | CBO behavior with GRAPH_TABLE (6 topics) |
+| `oracle-internals/official-documentation-reference.md` | SQL/PGQ feature matrix by version, `{n,m}` performance model, verified doc URLs |
+
+**Add your own**: Create `.md` files in `knowledge/graph-patterns/` following the format in `knowledge/graph-patterns/README.md`. The advisor picks them up automatically.
 
 ---
 
@@ -305,93 +247,49 @@ Agent: [connect MyADB]
 
 ```
 oracle-graph-dba-advisor/
-├── README.md                              # This file
-├── SYSTEM_PROMPT.md                       # The AI DBA brain — load as project instructions
+├── SYSTEM_PROMPT.md                       # Advisor methodology & knowledge
+├── CLAUDE.md                              # Claude Code auto-loader
 ├── .mcp.json                              # Claude Code MCP config
-├── .clinerules                            # Cline rules (auto-loaded)
-├── .gitignore
-├── .vscode/
-│   └── mcp.json                           # VS Code MCP server config
-├── .github/
-│   └── copilot-instructions.md            # GitHub Copilot agent instructions
-├── .cursor/
-│   └── rules/
-│       └── oracle-graph-dba.mdc           # Cursor rules (auto-loaded)
+├── .clinerules                            # Cline rules
+├── .vscode/mcp.json                       # VS Code MCP config
+├── .github/copilot-instructions.md        # Copilot instructions
+├── .cursor/rules/oracle-graph-dba.mdc     # Cursor rules
 ├── clients/
 │   ├── README.md                          # Client setup guide
-│   └── continue-config-example.json       # Continue MCP config example
+│   └── continue-config-example.json       # Continue config
 ├── sql-templates/
-│   ├── 01-discovery.sql                   # Graph topology, indexes, stats
-│   ├── 02-identify.sql                    # Top expensive graph queries
-│   ├── 03-analyze.sql                     # Execution plans, full scans, joins
-│   ├── 04-selectivity-and-simulate.sql    # Selectivity + index simulation
-│   └── 05-utilities.sql                   # Stats, index mgmt, reporting
+│   ├── 01-discovery.sql
+│   ├── 02-identify.sql
+│   ├── 03-analyze.sql
+│   ├── 04-selectivity-and-simulate.sql
+│   └── 05-utilities.sql
 ├── knowledge/
-│   ├── README.md                          # Extension guide
-│   ├── graph-patterns/
-│   │   ├── README.md                      # Pattern format specification
-│   │   ├── fraud-detection.md             # 5 fraud graph patterns
-│   │   ├── social-network.md              # 5 social graph patterns
-│   │   └── supply-chain.md                # 4 supply chain patterns
-│   ├── optimization-rules/
-│   │   └── advanced-indexing.md           # 7 advanced indexing strategies
-│   └── oracle-internals/
-│       ├── pgq-optimizer-behavior.md      # CBO behavior with GRAPH_TABLE
-│       └── official-documentation-reference.md  # Feature matrix, URLs, perf models
+│   ├── graph-patterns/                    # Domain-specific patterns
+│   ├── optimization-rules/                # Advanced indexing strategies
+│   └── oracle-internals/                  # CBO behavior, feature matrix
 └── workload/
-    └── fraud/                             # Fraud detection workload generator
-        ├── 00_README.sql                  # Execution guide
-        ├── 01_create_schema.sql           # Vertex + edge tables
-        ├── 02_create_property_graph.sql   # FRAUD_GRAPH definition
+    └── fraud/                             # Sample fraud detection workload
+        ├── 01_create_schema.sql
+        ├── 02_create_property_graph.sql
         ├── 03_generate_data.sql           # ~420K edges, ~108K vertices
-        ├── 04_workload_queries.sql        # Individual test queries
-        └── 05_run_workload.sql            # Automated workload runner
+        ├── 04_workload_queries.sql
+        └── 05_run_workload.sql
 ```
-
----
-
-## Knowledge Extensions
-
-The `knowledge/` directory provides domain-specific graph patterns and advanced optimization rules that the advisor uses to enhance its recommendations:
-
-### Graph Patterns (`knowledge/graph-patterns/`)
-
-| Domain | File | Patterns | Key Scenarios |
-|--------|------|----------|---------------|
-| Fraud Detection | `fraud-detection.md` | 5 | Shared device, 2-hop chains, triangles, temporal change, risk scoring |
-| Social Network | `social-network.md` | 5 | Mutual friends, influence, communities, recommendations, shortest path |
-| Supply Chain | `supply-chain.md` | 4 | BOM dependencies, risk propagation, logistics routing, commonality |
-
-Each pattern includes: SQL/PGQ query, performance characteristics, index strategy, anti-patterns, and real-world frequency.
-
-### Advanced Indexing (`knowledge/optimization-rules/`)
-
-7 strategies beyond the base 5: bidirectional FK coverage, composite graph covering indexes, function-based indexes, partial indexes (23ai), IOT edge tables, bitmap indexes, invisible index A/B testing.
-
-### Oracle Internals (`knowledge/oracle-internals/`)
-
-CBO behavior with GRAPH_TABLE (6 topics), plus official documentation reference with SQL/PGQ feature matrix by version, variable-length path `{n,m}` performance model, ONE ROW PER cardinality multipliers, JSON property indexing, and verified Oracle documentation URLs.
-
-### Adding Your Own
-
-See `knowledge/README.md` for the extension guide and `knowledge/graph-patterns/README.md` for the pattern format specification.
 
 ---
 
 ## Extending
 
-**Add new graph patterns**: Create a new `.md` file in `knowledge/graph-patterns/` following the format in `knowledge/graph-patterns/README.md`. The advisor automatically picks up new files.
+**New graph patterns** — Add `.md` files to `knowledge/graph-patterns/`.
 
-**Add AWR templates**: For paid tier, add an `06-awr.sql` template file with `DBA_HIST_SQLSTAT` and `DBA_HIST_ACTIVE_SESS_HISTORY` queries for historical trend analysis.
+**AWR/ASH support** — Add `06-awr.sql` with `DBA_HIST_SQLSTAT` queries for historical trend analysis (requires Diagnostics Pack license).
 
-**Multi-schema support**: The templates use `USER_*` views (current schema). To analyze other schemas, replace with `ALL_*` or `DBA_*` views and add an `:owner` bind variable.
+**Multi-schema** — Replace `USER_*` views with `ALL_*` or `DBA_*` and add an `:owner` bind variable.
 
-**Custom MCP server**: If you need higher-level tools (e.g., `analyze_graph_workload` as a single tool call), wrap the SQL templates in a custom MCP server that delegates to SQLcl or ORDS.
+**Custom MCP tools** — Wrap SQL templates in a custom MCP server for higher-level tools like `analyze_graph_workload`.
 
 ---
 
 ## Credits
 
-Built on: Oracle SQLcl MCP Server (official), Oracle ADB-S 23ai, SQL/PGQ (ISO SQL:2023).
-
-Inspired by: D-Bot/DB-GPT (Tsinghua University) for the LLM-as-DBA concept, adapted and specialized for Oracle Property Graphs.
+Built on [Oracle SQLcl MCP Server](https://docs.oracle.com/en/database/oracle/sql-developer-command-line/) · Oracle Database 23ai/26ai · [SQL/PGQ (ISO SQL:2023)](https://blogs.oracle.com/database/property-graphs-in-oracle-database-23ai-the-sql-pgq-standard)

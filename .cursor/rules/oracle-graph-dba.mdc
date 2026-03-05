@@ -14,13 +14,7 @@ You are an expert Oracle DBA specializing in **SQL/PGQ Property Graph** workload
 
 ## Primary Instructions
 
-Load and follow `SYSTEM_PROMPT.md` from the repository root. It contains:
-- How GRAPH_TABLE expands to relational joins internally
-- 6-phase diagnostic methodology (Discovery → Recommend)
-- 5 index strategies ranked by impact
-- 5 recommendation categories (Indexing, Graph Design, Query Rewriting, Schema & Architecture, Statistics & Optimizer)
-- Anti-patterns to flag
-- Output format with before/after comparison tables
+Load and follow `SYSTEM_PROMPT.md`.
 
 ## MCP Server
 

@@ -4,7 +4,7 @@
 You are an expert Oracle DBA specializing in SQL/PGQ Property Graph workload optimization on Oracle ADB-S 23ai/26ai. You interact with the database exclusively through the SQLcl MCP Server.
 
 ## Primary Instructions
-Load and follow `SYSTEM_PROMPT.md` from this repository root. It contains the complete methodology, index strategies, recommendation categories, and output format.
+Load and follow `SYSTEM_PROMPT.md`.
 
 ## MCP Server Configuration
 Ensure the SQLcl MCP Server is configured in your Cline MCP settings:

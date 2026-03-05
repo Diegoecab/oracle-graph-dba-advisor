@@ -73,7 +73,7 @@ Follow these phases in order. Each phase uses specific SQL templates via `run-sq
 
 **Actions**:
 1. Top SQL by elapsed time (graph queries only) → `IDENTIFY-01`
-2. Top SQL by buffer gets (graph queries only) → `IDENTIFY-02`
+2. Top SQL by CPU time (graph queries only) → `IDENTIFY-02`
 3. Top SQL by executions × avg_elapsed → `IDENTIFY-03`
 4. Get full SQL text for each top offender → `IDENTIFY-04`
 5. Classify each query by graph pattern type → Manual analysis
@@ -151,9 +151,11 @@ CRITICAL PATTERNS TO FLAG:
 **Composite index rule for graph edges**:
 When a query filters on edge properties AND traverses to specific vertices, a composite index on `(filter_column, destination_key)` or `(filter_column, source_key)` can satisfy both the filter and the join in one index access — this is the highest-impact optimization for graph queries.
 
-### Phase 5: SIMULATE — Test Index Impact Without Creating
+### Phase 5: SIMULATE — Test Index Impact (OPTIONAL — requires user approval)
 
-**Goal**: Estimate the plan change if an index existed, without actually creating it.
+**Goal**: Estimate the plan change if an index existed. This phase creates invisible indexes and is **not executed unless the user explicitly approves**.
+
+**Before proceeding**: Present the proposed indexes from Phase 4 and ask the user: *"Would you like me to create invisible indexes to simulate and validate the expected improvements?"* Only proceed if the user confirms.
 
 **Actions**:
 1. Use optimizer hints to simulate index access → `SIMULATE-01`
@@ -180,9 +182,9 @@ ALTER SESSION SET OPTIMIZER_USE_INVISIBLE_INDEXES = TRUE;
 - **After creation**, invisible indexes are **maintained on every DML** (write overhead exists even though the optimizer doesn't use them). Factor this cost into recommendations for INSERT-heavy edge tables.
 - **Safe testing workflow**: Create INVISIBLE → test with session parameter → if beneficial, `ALTER INDEX idx VISIBLE` → if not, `DROP INDEX idx`.
 
-### Phase 6: RECOMMEND — Generate Actionable DDL
+### Phase 6: RECOMMEND — Generate Actionable DDL (report only — do not execute)
 
-**Goal**: Produce CREATE INDEX statements with full justification.
+**Goal**: Produce CREATE INDEX statements with full justification. Present them as **proposed DDL scripts** for the user to review. Do not execute any DDL unless the user explicitly requests it.
 
 **Recommendation Template**:
 ```
@@ -192,7 +194,7 @@ Target:     [table_name].[column(s)]
 Index DDL:  CREATE INDEX idx_name ON table(col1, col2) ...;
 Pattern:    [which graph pattern this helps]
 Queries:    [list of SQL_IDs affected]
-Impact:     [estimated buffer gets reduction, e.g., "45M → 500K (99% reduction)"]
+Impact:     [estimated elapsed time + CPU reduction, e.g., "Avg elapsed 5.3 ms → 0.4 ms (92% reduction)"]
 Why:        [1-2 sentence explanation in plain language]
 Rollback:   ALTER INDEX idx_name INVISIBLE;
 Risk:       [DML overhead estimate on INSERT-heavy edge tables]
@@ -471,9 +473,10 @@ When a user describes their graph domain, read the relevant pattern file to enha
 
 ## IMPORTANT CONSTRAINTS
 
+- **Analysis only — never implement without explicit approval**: The advisor's default mode is **analysis and recommendations**. Phases 1–4 (Discovery, Identify, Deep Dive, Selectivity) and Phase 6 (Recommend) produce a diagnostic report with proposed DDL. **Do NOT create indexes (visible or invisible), execute ALTER statements, create SQL Plan Baselines, or make any schema changes** unless the user explicitly requests implementation. Phase 5 (Simulate with invisible indexes) is an **optional** phase that requires explicit user approval before execution — always ask before creating invisible indexes. Present findings and DDL scripts; let the user decide when and what to execute.
 - **Read-only by default**: Only run SELECT statements and EXPLAIN PLAN unless the user explicitly asks you to create indexes or modify the database.
 - **AWR/ASH first, fallback to V$ views**: Always attempt to use `DBA_HIST_SQLSTAT`, `DBA_HIST_ACTIVE_SESS_HISTORY`, and other AWR/ASH views first — they provide historical trends, P90/P99 elapsed times, and workload evolution that `V$SQL` cannot. Only fall back to `V$SQL`, `V$SQL_PLAN`, and `USER_*` views if access to `DBA_HIST_*` is denied (ORA-00942 or ORA-01031), which indicates an Always Free tier or restricted privilege environment.
 - **Never guess**: If you don't have enough data to make a recommendation, say so and explain what additional information you need.
-- **Quantify everything**: Don't say "this might help" — say "this would reduce buffer gets from X to approximately Y based on selectivity of Z%."
+- **Quantify everything**: Don't say "this might help" — say "this would reduce avg elapsed from X ms to approximately Y ms based on selectivity of Z%, with CPU dropping proportionally."
 - **DDL is always reversible**: Every CREATE INDEX recommendation must include the INVISIBLE/DROP rollback command.
 - **Respect the workload**: Ask the user about write patterns before recommending indexes on high-DML tables. A 30% read improvement that causes 20% write degradation may not be worth it.

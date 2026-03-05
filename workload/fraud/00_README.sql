@@ -5,12 +5,16 @@
 -- SOURCE: AWR Report — FRAUDACCRELDEFAULT (Oracle 19c, PDB on RAC 5-node)
 -- TARGET: Oracle 23ai / 26ai with native SQL/PGQ (GRAPH_TABLE + MATCH)
 --
+-- TARGET SCHEMA: MYSCHEMA (all objects are created in this schema)
+-- Run all scripts as ADMIN (or a user with CREATE USER + schema privileges).
+--
 -- EXECUTION ORDER:
---   1. @01_create_schema.sql       — Creates vertex + edge tables with FKs
---   2. @02_create_property_graph.sql — Defines FRAUD_GRAPH property graph
---   3. @03_generate_data.sql       — Generates ~420K edges, ~108K vertices
---   4. @04_workload_queries.sql    — Individual queries (run manually)
---   5. @05_run_workload.sql        — Automated workload runner (proc + exec)
+--   0. @00_create_user.sql          — Creates MYSCHEMA user with privileges
+--   1. @01_create_schema.sql        — Creates vertex + edge tables in MYSCHEMA
+--   2. @02_create_property_graph.sql — Defines MYSCHEMA.FRAUD_GRAPH
+--   3. @03_generate_data.sql        — Generates ~420K edges, ~108K vertices
+--   4. @04_workload_queries.sql     — Individual queries (run manually)
+--   5. @05_run_workload.sql         — Automated workload runner (proc + exec)
 --
 -- SCALING:
 --   Edit v_scale_factor in 03_generate_data.sql:
