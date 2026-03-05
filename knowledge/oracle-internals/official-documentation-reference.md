@@ -269,12 +269,34 @@ For a path `v1 -[e1]-> v2 -[e2]-> v3 -[e3]-> v4`:
 |-------|-----|
 | GRAPH_TABLE Shape | https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/graph-table-shape.html |
 
+### PGX / Graph Server Documentation
+
+| Topic | URL |
+|-------|-----|
+| Performance Considerations for PGQL | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/performance-considerations-pgql-queries-executed-sql.html |
+| Load Graph to Memory (PGX) | https://docs.oracle.com/en/database/oracle/property-graph/23.1/spgdg/load-graph-memory-and-run-graph-analytics.html |
+| API: Loading Graphs into PGX | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/loading-graph-pgx-server.html |
+| Two-Tier vs Three-Tier Architecture | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/overview-oracle-property-graph.html |
+
+### SQL/PGQ Compliance & Standards
+
+| Topic | URL |
+|-------|-----|
+| SQL/PGQ ISO Compliance | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/sql-property-graph-query-pgq-compliance.html |
+| Graph Developer's Guide PDF (25.1) | https://docs.oracle.com/en/database/oracle/property-graph/25.1/spgdg/property-graph-developer-guide.pdf |
+
 ### Community & Blog References
 
 | Topic | URL |
 |-------|-----|
 | ORACLE-BASE Tutorial | https://oracle-base.com/articles/23/sql-property-graphs-and-sql-pgq-23 |
 | Oracle Blog: SQL/PGQ Standard | https://blogs.oracle.com/database/post/property-graphs-in-oracle-database-23ai-the-sql-pgq-standard |
+
+### Industry References
+
+| Topic | URL |
+|-------|-----|
+| Neo4j Graph Data Modeling Principles | https://neo4j.com/docs/getting-started/data-modeling/guide-data-modeling/ |
 
 ---
 
