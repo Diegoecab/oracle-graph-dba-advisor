@@ -20,3 +20,10 @@ Thumbs.db
 .env
 *.pem
 *.key
+
+# Agent memory (environment-specific, not shared via git)
+memory/shared/
+memory/*/
+!memory/_templates/
+!memory/backends/
+!memory/README.md

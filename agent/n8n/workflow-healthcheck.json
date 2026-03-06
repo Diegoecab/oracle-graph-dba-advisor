@@ -1,0 +1,133 @@
+{
+  "name": "Oracle Graph DBA Advisor — Daily Health Check",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [200, 300],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are an Oracle Graph DBA Advisor. Load SYSTEM_PROMPT.md for full instructions."
+        },
+        "text": "Connect to {{ $json.connection || 'MyADB' }} and run a health check (UTIL-09).\nRead memory/{{ $json.connection || 'MyADB' }}/schema-snapshot.json for the previous state.\nCompare current state with the snapshot.\nReport ONLY:\n1. New issues not present in the last snapshot\n2. Changes in table volumes (>20% growth)\n3. New graph queries that appeared since last check\n4. Status changes on previously reported active issues\nUpdate the schema snapshot and active issues files.\nIf nothing changed, respond with \"No changes detected.\""
+      },
+      "id": "ai-agent",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [450, 300],
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {
+        "model": "claude-sonnet-4-20250514",
+        "options": {
+          "maxTokensToSample": 4096
+        }
+      },
+      "id": "anthropic-model",
+      "name": "Anthropic Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "position": [450, 500],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "name": "run_sql",
+        "description": "Execute a SQL query against the connected Oracle database. Use this for all diagnostic queries from sql-templates/.",
+        "command": "={{ '/opt/sqlcl/bin/sql -S ' + ($json.connection || 'MyADB') + ' <<< \"' + $input.sql.replace(/\"/g, '\\\\\"') + '\"' }}"
+      },
+      "id": "run-sql-tool",
+      "name": "Run SQL Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCustom",
+      "position": [650, 500],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "check-findings",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "No changes detected",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-findings",
+      "name": "Has Findings?",
+      "type": "n8n-nodes-base.if",
+      "position": [700, 300],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: '🔍 *Graph DBA Health Check — Findings*\\n\\n' + $json.output }) }}"
+      },
+      "id": "slack-alert",
+      "name": "Slack Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [950, 250],
+      "typeVersion": 4.2
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [{ "node": "AI Agent", "type": "main", "index": 0 }]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [{ "node": "AI Agent", "type": "ai_languageModel", "index": 0 }]
+      ]
+    },
+    "Run SQL Tool": {
+      "ai_tool": [
+        [{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [{ "node": "Has Findings?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Has Findings?": {
+      "main": [
+        [{ "node": "Slack Alert", "type": "main", "index": 0 }],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

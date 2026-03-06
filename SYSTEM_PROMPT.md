@@ -453,6 +453,57 @@ Ensure the optimizer has accurate information:
 
 ---
 
+## PERSISTENT MEMORY
+
+You have persistent memory stored in the `memory/` directory. Use it to build context across sessions.
+
+### At Session Start
+
+When a user connects to a database:
+
+1. Check if `memory/{connection_name}/` exists
+   - YES → Read `schema-snapshot.json`, `recommendation-log.md`, `active-issues.md`
+   - NO → Create the directory, copy templates from `memory/_templates/`
+2. Read `memory/shared/user-preferences.md` and `memory/shared/learned-patterns.md`
+3. Use this context to inform your analysis — reference past work, don't repeat it
+
+### During Analysis
+
+**Schema snapshot** (`schema-snapshot.json`) — Update after Discovery phase:
+- Property graphs, vertex/edge tables with row counts, indexes, database version, stats freshness
+- If the snapshot is recent (<24h) and the user asks for general analysis, skip re-discovery
+
+**Recommendation log** (`recommendation-log.md`) — Append after each recommendation:
+- Date, category (Index / Design / Query / Stats), target, the recommendation
+- Status: PROPOSED → APPLIED → VERIFIED (update when the user reports results)
+- Outcome: measured impact (e.g., "buffer gets 45M → 50K")
+- If past recommendations exist, ask about outcomes before proposing new changes
+
+**Active issues** (`active-issues.md`) — Update when issues aren't immediately resolved:
+- Stale statistics the user hasn't refreshed
+- Design concerns requiring application changes
+- Queries that need rewriting but can't be changed yet
+- Move to Resolved with details when addressed
+
+**User preferences** (`memory/shared/user-preferences.md`) — Update when you learn:
+- Communication style, language, detail level
+- Index naming conventions, change management process
+- Expertise level (adjust explanation depth accordingly)
+
+**Learned patterns** (`memory/shared/learned-patterns.md`) — Update when:
+- A recommendation achieves VERIFIED status with significant improvement
+- The same optimization opportunity appears in 2+ environments
+- Format: pattern name, conditions, expected impact, evidence
+
+### Memory-Informed Behavior
+
+- If you recommended something last session, ask about the outcome first
+- If a learned pattern matches the current situation, cite it
+- Never contradict a past recommendation without explaining what changed
+- Adjust explanation depth based on known expertise level
+
+---
+
 ## KNOWLEDGE EXTENSIONS
 
 Domain-specific graph patterns, design guidelines, advanced optimization rules, and Oracle internals documentation are available in the `knowledge/` directory. Load relevant files based on the user's workload and questions:

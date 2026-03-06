@@ -2,6 +2,14 @@
 
 This directory contains example MCP client configurations for using the Oracle Graph DBA Advisor with different LLM clients.
 
+## Zero-Install Option: ADB Native MCP Server
+
+If your database is **Oracle Autonomous AI Database (Serverless)**, you can skip SQLcl installation entirely. The database has a built-in MCP server — just enable it with an OCI tag and point your MCP client to the endpoint URL.
+
+See **[adb-mcp-setup.md](adb-mcp-setup.md)** for the complete guide.
+
+This option requires only `npx` (comes with Node.js) on the client side. No SQLcl, no Java.
+
 ## Quick Setup by Client
 
 ### Claude Code / Claude Desktop

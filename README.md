@@ -71,6 +71,8 @@ The advisor uses AWR/ASH views (`DBA_HIST_SQLSTAT`, `DBA_HIST_ACTIVE_SESS_HISTOR
 
 ## Quick Start
 
+> **Zero-install option**: If you're on Oracle Autonomous AI Database (Serverless), you can skip SQLcl installation entirely. The database has a built-in MCP server — see `clients/adb-mcp-setup.md` for the 4-step setup.
+
 ### Step 1: Configure SQLcl MCP
 
 Add the SQLcl MCP server to your client. The configuration is the same for all clients:
@@ -112,6 +114,8 @@ Start a conversation:
 
 The agent will connect, discover your graphs, find expensive queries, analyze execution plans, and deliver recommendations with DDL and rollback commands.
 
+The advisor remembers context between sessions — schemas, past recommendations, and their outcomes — in the `memory/` directory. On first connect it creates a snapshot; on subsequent sessions it uses it to skip re-discovery and track progress. Memory is file-based by default (zero infrastructure). For enterprise teams, it can be upgraded to a centralized Oracle ADB repository with semantic search — see `memory/backends/oracle-adb-memory.md`.
+
 ---
 
 ## Multi-LLM Client Support
@@ -124,6 +128,7 @@ The agent will connect, discover your graphs, find expensive queries, analyze ex
 | **Cline** | MCP settings | `.clinerules` (auto-loaded) |
 | **Cursor** | MCP settings | `.cursor/rules/oracle-graph-dba.mdc` (auto-loaded) |
 | **Continue** | `clients/continue-config-example.json` | Manual |
+| **ADB Native MCP** | Built-in (enable via OCI tag) | Same as other clients (CLAUDE.md, .clinerules, etc.) |
 
 **Minimum model size**: 30B+ parameters recommended. Smaller models may struggle with execution plan interpretation. Tested with: Claude Sonnet/Opus, GPT-4o, Gemini Pro, Qwen2.5-72B, Llama-3.1-70B.
 
@@ -237,6 +242,19 @@ Agent: [connect MyADB]
 
 ---
 
+## Architecture: Skill vs Agent
+
+This project is a **skill** — a system prompt, SQL templates, and knowledge base that works inside any MCP-compatible client. For most users, this is all you need.
+
+| Use case | What to use |
+|---|---|
+| Interactive analysis in Claude Code, Copilot, Cursor | The skill (default) |
+| Autonomous health checks, alerts, post-deploy verification | The agent layer (`agent/`) |
+
+The agent layer is optional. It wraps the same skill in an orchestrator (n8n) to add triggers (cron, Slack, webhooks) and shared state. See `agent/README.md` for details.
+
+---
+
 ## Knowledge Base
 
 The `knowledge/` directory provides domain-specific patterns and rules the advisor consults during analysis:
@@ -259,6 +277,7 @@ The `knowledge/` directory provides domain-specific patterns and rules the advis
 ```
 oracle-graph-dba-advisor/
 ├── SYSTEM_PROMPT.md                       # Advisor methodology & knowledge
+├── SKILL.md                               # Skill manifest (inputs, outputs, limitations)
 ├── CLAUDE.md                              # Claude Code auto-loader
 ├── .mcp.json                              # Claude Code MCP config
 ├── .clinerules                            # Cline rules
@@ -267,6 +286,7 @@ oracle-graph-dba-advisor/
 ├── .cursor/rules/oracle-graph-dba.mdc     # Cursor rules
 ├── clients/
 │   ├── README.md                          # Client setup guide
+│   ├── adb-mcp-setup.md                   # ADB native MCP server (zero-install)
 │   └── continue-config-example.json       # Continue config
 ├── sql-templates/
 │   ├── 01-discovery.sql
@@ -278,6 +298,13 @@ oracle-graph-dba-advisor/
 │   ├── graph-patterns/                    # Domain-specific patterns
 │   ├── optimization-rules/                # Advanced indexing strategies
 │   └── oracle-internals/                  # CBO behavior, feature matrix
+├── memory/                                # Persistent memory (gitignored)
+│   ├── README.md                          # Memory system docs
+│   ├── _templates/                        # Templates for new environments
+│   └── backends/                          # Storage backend guides
+├── agent/                                 # Optional agent layer
+│   ├── README.md                          # When and why to use the agent
+│   └── n8n/                               # n8n workflow templates
 └── workload/
     └── fraud/                             # Sample fraud detection workload
         ├── 01_create_schema.sql
