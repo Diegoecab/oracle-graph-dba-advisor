@@ -2,7 +2,7 @@
 
 An AI-powered advisor for **Oracle Property Graph (SQL/PGQ) on Oracle Database 23ai and 26ai** — covering performance optimization, graph design review, best practices validation, and workload diagnostics.
 
-Built on top of the official **Oracle SQLcl MCP Server** — zero custom infrastructure required.
+Built on top of the **Oracle ADB MCP Server** (fully managed, zero install) or the **SQLcl MCP Server** (local, any Oracle 23ai/26ai).
 
 ---
 
@@ -32,24 +32,21 @@ Agent:   1. Discovers property graphs, tables, volumes, and design
 │                                          │
 │  SYSTEM_PROMPT.md (auto-loaded)          │
 │  sql-templates/  (diagnostic queries)    │
-│  knowledge/      (graph patterns & rules)│
+│  knowledge/      (patterns & rules)      │
 │                                          │
 └────────────────┬─────────────────────────┘
                  │ MCP Protocol
                  ▼
-┌────────────────────────────┐
-│     SQLcl MCP Server       │
-│     (Oracle official)      │
-│                            │
-│  connect · run-sql         │
-│  run-sqlcl · disconnect    │
-└────────────┬───────────────┘
-             │ mTLS / TCP / ORDS
-             ▼
-┌────────────────────────────┐
-│   Oracle Database 23ai    │
-│        (or 26ai)          │
-└────────────────────────────┘
+    ┌──── Primary ────┐  ┌── Alternative ──┐
+    │  ADB MCP Server │  │  SQLcl MCP      │
+    │  (fully managed,│  │  (local,        │
+    │   in-database)  │  │   any Oracle)   │
+    └────────┬────────┘  └───────┬─────────┘
+             │                   │
+             ▼                   ▼
+    ┌────────────────────────────────┐
+    │   Oracle Database 23ai / 26ai  │
+    └────────────────────────────────┘
 ```
 
 The advisor uses AWR/ASH views (`DBA_HIST_SQLSTAT`, `DBA_HIST_ACTIVE_SESS_HISTORY`) for historical trend analysis and P90/P99 metrics when available. On Always Free tier or restricted environments, it automatically falls back to `V$SQL`, `V$SQL_PLAN`, `ALL_PG_ELEMENTS`, `DBA_INDEX_USAGE`, and `DBMS_XPLAN`.
@@ -58,25 +55,68 @@ The advisor uses AWR/ASH views (`DBA_HIST_SQLSTAT`, `DBA_HIST_ACTIVE_SESS_HISTOR
 
 ## Prerequisites
 
-1. **Oracle Database 23ai or 26ai** (ADB-S, ADB-D, Base DB, or Free tier)
-2. **Oracle SQLcl 25.2+** (`sql -version`)
-3. **Java 17+** (`java -version`)
-4. A **saved database connection** with password stored:
-   ```bash
-   sql /nolog
-   SQL> conn -save MyADB -savepwd admin/MyPass@adb_host:1522/mydb_low
-   ```
+**Primary path (ADB Serverless — zero install):**
+1. Oracle Autonomous AI Database (Serverless) — 23ai or 26ai (including Always Free)
+2. MCP server enabled on the ADB instance (one OCI tag)
+3. Any MCP client (Claude Desktop, Cursor, Cline, VS Code + Copilot)
+
+**Alternative path (any Oracle database):**
+1. Oracle Database 23ai or 26ai (ADB-D, Base DB, or Free tier)
+2. Oracle SQLcl 25.2+ installed locally (`sql -version`)
+3. Java 17+ (`java -version`)
+4. A saved database connection: `conn -save MyADB -savepwd admin/MyPass@host:1522/mydb_low`
 
 ---
 
 ## Quick Start
 
-> **Zero-install option**: If you're on Oracle Autonomous AI Database (Serverless), you can skip SQLcl installation entirely. The database has a built-in MCP server — see `clients/adb-mcp-setup.md` for the 4-step setup.
+### Option A: ADB Serverless (recommended — zero install)
 
-### Step 1: Configure SQLcl MCP
+**Step 1:** Enable the MCP server on your ADB instance (OCI Console → free-form tag):
+```
+Tag: adb$feature → {"name":"mcp_server","enable":true}
+```
 
-Add the SQLcl MCP server to your client. The configuration is the same for all clients:
+**Step 2:** Register the advisor's SQL tool — connect to your ADB and run:
+```sql
+BEGIN
+  DBMS_CLOUD_AI_AGENT.CREATE_TOOL(
+    tool_name  => 'RUN_SQL',
+    attributes => '{"instruction": "Execute a read-only SQL query.",
+       "function": "RUN_SQL",
+       "tool_inputs": [
+         {"name":"QUERY","description":"SELECT SQL statement without trailing semicolon."},
+         {"name":"OFFSET","description":"Pagination offset (default 0)."},
+         {"name":"LIMIT","description":"Max rows to return (default 100)."}
+       ]}'
+  );
+END;
+/
+```
 
+**Step 3:** Configure your MCP client with the ADB endpoint:
+```json
+{
+  "mcpServers": {
+    "oracle-graph-advisor": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote",
+        "https://dataaccess.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<ocid>"],
+      "transport": "streamable-http"
+    }
+  }
+}
+```
+
+**Step 4:** Start a conversation — the system prompt loads automatically via CLAUDE.md / .clinerules / copilot-instructions.md.
+
+> Full setup details: `clients/adb-mcp-setup.md`
+
+### Option B: SQLcl local (any Oracle 23ai/26ai)
+
+For ADB Dedicated, Base DB, on-prem, or Free tier where ADB native MCP isn't available:
+
+**Step 1:** Add SQLcl as MCP server in your client config:
 ```json
 {
   "mcpServers": {
@@ -88,23 +128,11 @@ Add the SQLcl MCP server to your client. The configuration is the same for all c
 }
 ```
 
-Where to put it depends on your client:
+**Step 2:** Start a conversation.
 
-| Client | Config location |
-|--------|----------------|
-| **Claude Code** | `.mcp.json` in project root (already included) |
-| **Claude Desktop** | `claude_desktop_config.json` |
-| **VS Code + Copilot** | `.vscode/mcp.json` (already included) |
-| **Cline** | Cline MCP settings panel |
-| **Cursor** | Cursor MCP settings |
+> Full setup details: `clients/README.md`
 
-> **VS Code tip:** If you have the Oracle SQL Developer Extension installed, MCP is registered automatically.
-
-The system prompt and advisor persona are **auto-loaded** via client-specific config files already included in the project (`.github/copilot-instructions.md`, `.clinerules`, `.cursor/rules/`, `CLAUDE.md`). No manual prompt setup needed.
-
-### Step 2: Connect and Analyze
-
-Start a conversation:
+### Connect and Analyze
 
 ```
 "Connect to MyADB and analyze my graph workloads.
@@ -120,15 +148,15 @@ The advisor remembers context between sessions — schemas, past recommendations
 
 ## Multi-LLM Client Support
 
-| Client | Config File | System Prompt |
-|--------|-------------|---------------|
+| Client | MCP Transport | System Prompt |
+|--------|---------------|---------------|
+| **Any client (ADB native)** | HTTPS endpoint (zero install) | Same as below per client |
 | **Claude Code** | `.mcp.json` | `CLAUDE.md` (auto-loaded) |
-| **Claude Desktop** | Manual config | Create a Project → add `SYSTEM_PROMPT.md` as instructions |
+| **Claude Desktop** | Manual config | Create Project → add `SYSTEM_PROMPT.md` |
 | **VS Code + Copilot** | `.vscode/mcp.json` | `.github/copilot-instructions.md` (auto-loaded) |
 | **Cline** | MCP settings | `.clinerules` (auto-loaded) |
 | **Cursor** | MCP settings | `.cursor/rules/oracle-graph-dba.mdc` (auto-loaded) |
 | **Continue** | `clients/continue-config-example.json` | Manual |
-| **ADB Native MCP** | Built-in (enable via OCI tag) | Same as other clients (CLAUDE.md, .clinerules, etc.) |
 
 **Minimum model size**: 30B+ parameters recommended. Smaller models may struggle with execution plan interpretation. Tested with: Claude Sonnet/Opus, GPT-4o, Gemini Pro, Qwen2.5-72B, Llama-3.1-70B.
 

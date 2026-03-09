@@ -1,16 +1,16 @@
-# Client Configuration Examples
+# Client Setup Guide
 
-This directory contains example MCP client configurations for using the Oracle Graph DBA Advisor with different LLM clients.
+## Recommended: ADB Native MCP Server (zero install)
 
-## Zero-Install Option: ADB Native MCP Server
+If your database is **Oracle Autonomous AI Database (Serverless)**, use the built-in MCP server. No SQLcl, Java, or local tools needed — just enable the MCP endpoint and point your client to the URL.
 
-If your database is **Oracle Autonomous AI Database (Serverless)**, you can skip SQLcl installation entirely. The database has a built-in MCP server — just enable it with an OCI tag and point your MCP client to the endpoint URL.
+**[Complete setup guide: adb-mcp-setup.md](adb-mcp-setup.md)**
 
-See **[adb-mcp-setup.md](adb-mcp-setup.md)** for the complete guide.
+---
 
-This option requires only `npx` (comes with Node.js) on the client side. No SQLcl, no Java.
+## Alternative: SQLcl MCP Server (local)
 
-## Quick Setup by Client
+For ADB Dedicated, Base DB, on-prem, or Free tier where ADB native MCP isn't available.
 
 ### Claude Code / Claude Desktop
 
@@ -59,9 +59,11 @@ The `.cursor/rules/oracle-graph-dba.mdc` file is automatically loaded for matchi
 
 See `continue-config-example.json` in this directory for `.continue/config.json` integration.
 
+---
+
 ## Wallet Configuration
 
-If connecting to Oracle Autonomous Database (ADB), set the `TNS_ADMIN` environment variable to your wallet directory:
+If connecting to Oracle Autonomous Database (ADB) via SQLcl, set the `TNS_ADMIN` environment variable to your wallet directory:
 
 ```json
 {
@@ -71,9 +73,9 @@ If connecting to Oracle Autonomous Database (ADB), set the `TNS_ADMIN` environme
 }
 ```
 
-## Creating a Saved Connection
+## Creating a Saved Connection (SQLcl only)
 
-Before using any client, create a saved connection in SQLcl:
+Before using SQLcl MCP, create a saved connection:
 
 ```bash
 sql /nolog

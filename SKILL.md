@@ -32,15 +32,15 @@ Additionally reviews graph design decisions (modeling, key choices, edge/vertex 
 
 ## Required Infrastructure
 
-**Option A — SQLcl MCP (local, any Oracle 19c+):**
+**Primary — ADB Native MCP (zero client installation):**
+- Oracle Autonomous AI Database (Serverless) with MCP server enabled
+- Tools registered via `DBMS_CLOUD_AI_AGENT.CREATE_TOOL`
+- Only `npx` needed on client side (comes with Node.js)
+
+**Alternative — SQLcl MCP (any Oracle 23ai/26ai):**
 - Oracle SQLcl 25.2+ configured as MCP Server (`sql -mcp`)
 - Java 17+
 - A saved database connection with stored password
-
-**Option B — ADB Native MCP (zero-install, ADB Serverless only):**
-- Oracle Autonomous AI Database (Serverless) with MCP server enabled (OCI free-form tag)
-- Tools registered via `DBMS_CLOUD_AI_AGENT.CREATE_TOOL`
-- Only `npx` needed on client side (comes with Node.js)
 
 ## Inputs
 
@@ -71,13 +71,13 @@ Additionally reviews graph design decisions (modeling, key choices, edge/vertex 
 ## How to Invoke
 
 **As a skill in an MCP client** (default):
-Load `SYSTEM_PROMPT.md` as system instructions. The MCP client provides the agent loop. Connect via SQLcl MCP (local) or ADB Native MCP (cloud endpoint). The user interacts directly.
+Load `SYSTEM_PROMPT.md` as system instructions. Connect via ADB native MCP (recommended, zero install) or SQLcl MCP (local). The MCP client provides the agent loop.
+
+**Zero-install path (ADB Serverless):**
+Enable the built-in MCP server, register tools with `DBMS_CLOUD_AI_AGENT`, point any MCP client to the HTTPS endpoint. No SQLcl, Java, or local tooling needed. See `clients/adb-mcp-setup.md`.
 
 **As a skill inside an autonomous agent**:
-The orchestrator (n8n, LangChain, custom) loads `SYSTEM_PROMPT.md` as the system prompt, provides SQLcl MCP tools or ADB MCP endpoint, and injects the trigger context (e.g., "run health check on PROD_ADB"). See `agent/` for n8n workflow templates.
-
-**Zero-install path (ADB Serverless)**:
-Enable the built-in MCP server on your ADB instance, register tools with `DBMS_CLOUD_AI_AGENT`, point any MCP client to the HTTPS endpoint. No SQLcl, Java, or local tooling needed. See `clients/adb-mcp-setup.md`.
+The orchestrator (n8n, LangChain, custom) loads `SYSTEM_PROMPT.md` as the system prompt, provides ADB MCP endpoint or SQLcl MCP tools, and injects the trigger context (e.g., "run health check on PROD_ADB"). See `agent/` for n8n workflow templates.
 
 **Minimum model requirements**:
 30B+ parameters. The skill requires execution plan interpretation, multi-step diagnostic reasoning, and Oracle-specific domain knowledge. Tested with: Claude Sonnet/Opus, GPT-4o, Gemini Pro, Qwen2.5-72B, Llama-3.1-70B.

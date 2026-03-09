@@ -6,12 +6,14 @@ Oracle Autonomous AI Database (Serverless) includes a **built-in, fully managed 
 
 ## When to Use This
 
+This is the **recommended path** for ADB Serverless users. Use SQLcl MCP (local) only for non-ADB environments.
+
 | Scenario | Recommended path |
 |---|---|
-| ADB Serverless (19c or 26ai) | This guide (ADB native MCP) |
+| ADB Serverless (23ai or 26ai) | **This guide (ADB native MCP)** |
 | ADB Dedicated | SQLcl MCP (local) |
 | Base DB / On-prem / Free tier | SQLcl MCP (local) |
-| Want zero client-side installation | This guide |
+| Want zero client-side installation | **This guide** |
 | Need custom SQLcl commands (Data Pump, etc.) | SQLcl MCP (local) |
 
 ## Prerequisites
@@ -46,7 +48,9 @@ https://<hostname_prefix>.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/
 
 ### Step 2: Register the Advisor's SQL Tools
 
-Connect to your ADB as an admin user and register the `run-sql` tool using Select AI Agent:
+> **Note:** We use `DBMS_CLOUD_AI_AGENT.CREATE_TOOL` only as the **tool registration mechanism** for the ADB MCP server. The advisor does NOT use Select AI's NL2SQL capability — the LLM generates SQL directly using the sql-templates and SYSTEM_PROMPT knowledge. The `CREATE_TOOL` API simply exposes PL/SQL functions as MCP-callable tools.
+
+Connect to your ADB as an admin user and register the `run-sql` tool:
 
 ```sql
 BEGIN
@@ -167,7 +171,7 @@ The advisor skill (SYSTEM_PROMPT.md, knowledge/, sql-templates/) works the same 
 | Security | Local wallet / saved passwords | RBAC, VPD, ACLs, lockdown profiles, auditing |
 | Custom tools | 5 fixed (connect, run-sql, etc.) | Customizable via `DBMS_CLOUD_AI_AGENT.CREATE_TOOL` |
 | Multi-tenant | No | Built-in isolation |
-| NL2SQL / RAG | No | Yes (via Select AI) |
+| Custom tool registration | No | Yes (via `DBMS_CLOUD_AI_AGENT.CREATE_TOOL`) |
 | Databases supported | Any Oracle 19c+ | ADB Serverless only |
 | Offline use | Yes | No (requires network) |
 
