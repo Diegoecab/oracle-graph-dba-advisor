@@ -1,0 +1,87 @@
+# =============================================================
+# Production Guard — Custom Rules
+# =============================================================
+# This file defines your organization's rules for identifying
+# production vs non-production databases. The advisor reads this
+# at session start and applies these rules alongside the built-in
+# defaults.
+#
+# Custom rules take PRECEDENCE over built-in rules when they conflict.
+#
+# Location: config/production-guard.yaml
+# To disable custom rules: delete or rename this file.
+# =============================================================
+
+# --- BLOCK rules ---
+# If ANY of these match, the advisor refuses all writes.
+# Uses case-insensitive substring matching against the
+# environment check results (db_name, service_name, container_name).
+block_patterns:
+  db_name:
+    - "prod"
+    - "prd"
+    - "production"
+    # Add your production database names:
+    # - "FINPROD"
+    # - "HRPROD"
+    # - "ERPDB"
+
+  service_name:
+    - "prod"
+    - "prd"
+    - "_high"
+    - "_tp"
+    # Add your production service patterns:
+    # - "myapp_prod_svc"
+    # - "reporting_prod"
+
+  user_name:
+    # Block writes when connected as specific users:
+    # - "APP_OWNER"
+    # - "SCHEMA_PROD"
+    []
+
+# --- SAFE rules ---
+# If ANY of these match (and no BLOCK rules match), writes are allowed.
+safe_patterns:
+  db_name:
+    - "dev"
+    - "test"
+    - "demo"
+    - "free"
+    - "sandbox"
+    - "lab"
+    - "staging"
+    # Add your non-production patterns:
+    # - "FINDEV"
+    # - "HRTEST"
+
+  service_name:
+    - "_low"
+    - "_medium"
+    - "freepdb"
+    - "dev"
+    - "test"
+    # Add your non-production service patterns:
+    # - "myapp_dev_svc"
+
+# --- Confirmation behavior ---
+# What happens when no rules match (environment is ambiguous):
+on_uncertain: "ask"
+# Options:
+#   "ask"   — Ask the user to confirm (default, safest)
+#   "block" — Block all writes (most restrictive)
+#   "allow" — Allow writes (least restrictive — NOT recommended)
+
+# --- Read-only mode message ---
+# Customize the message shown when production is detected:
+production_message: >
+  Production database detected. Operating in read-only mode.
+  Recommendations will be provided as DDL text but not executed.
+  Deploy changes through your organization's change management process.
+
+# --- Override ---
+# Emergency override: Set to true to allow writes on production.
+# This is logged and should only be used by authorized DBAs.
+# The advisor will ask for confirmation even with override enabled.
+allow_production_writes: false

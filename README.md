@@ -6,20 +6,42 @@ Built on top of the **Oracle ADB MCP Server** (fully managed, zero install) or t
 
 ---
 
+## Why Use This Skill vs a Plain LLM
+
+A generic LLM can write SQL and read documentation — but it lacks the **structured methodology, pre-built diagnostic queries, and domain-specific knowledge** needed to reliably optimize Oracle Graph workloads. Here's what the skill adds:
+
+| Capability | Plain LLM | With this skill |
+|---|---|---|
+| **Diagnostic methodology** | Ad-hoc questions, no systematic approach | 6-phase structured methodology (Discovery → Identify → Deep Dive → Selectivity → Simulate → Recommend) executed in order |
+| **SQL templates** | Generates SQL from scratch each time — may be incorrect, incomplete, or use wrong views | 30+ pre-built, tested templates for Oracle 23ai/26ai property graph diagnostics (`V$SQL`, `DBMS_XPLAN`, `ALL_PG_ELEMENTS`, AWR/ASH) |
+| **GRAPH_TABLE understanding** | Treats graph queries as black boxes | Knows that `GRAPH_TABLE(MATCH ...)` expands to relational joins — reads execution plans as join trees and traces each TABLE ACCESS / HASH JOIN back to the graph pattern hop |
+| **Index strategy** | Generic "add an index" advice | 5 prioritized strategies specific to graph workloads: edge FK indexes, filtered edge indexes, composite covering indexes, vertex property indexes, temporal indexes — plus 7 advanced strategies |
+| **Anti-pattern detection** | May not recognize graph-specific pitfalls | Actively flags: missing `DBMS_STATS`, unconstrained `{n,m}` cartesian explosions, over-indexing INSERT-heavy edge tables, redundant PK indexes, `SYSTIMESTAMP` vs `SYSDATE` type mismatch preventing index use |
+| **Evaluation metric** | Often reports optimizer cost (arbitrary CBO units) | Always measures **actual elapsed time** — never evaluates by optimizer cost, which can be misleading (a higher-cost plan can execute faster) |
+| **Recommendations** | Generic suggestions without DDL | Produces complete DDL with impact quantification (elapsed time reduction), rollback commands, and DML overhead assessment |
+| **Persistent memory** | Starts from zero each session | Remembers schemas, past recommendations, and their outcomes across sessions — skips re-discovery on repeat visits |
+| **Domain patterns** | No pre-built knowledge of graph use cases | 14+ pre-built patterns across fraud detection, social network, supply chain, and e-commerce recommendations — each with expected plan shape, index strategy, and anti-patterns |
+| **Use case assessment** | Cannot evaluate whether data fits a graph model | Consultive mode: assesses relational schemas for graph potential, designs vertex/edge models, validates against 8 modeling rules, generates implementation scripts |
+| **Always Free compatible** | May attempt queries that fail on restricted environments | Automatically falls back from AWR/ASH to `V$SQL` + `USER_*` views when access is denied — works on Always Free tier without manual intervention |
+
+**In short**: a plain LLM might get you 60% of the way with generic Oracle advice. This skill provides the remaining 40% — the structured diagnostic process, the graph-specific expertise, and the pre-tested queries that make the difference between a vague suggestion and an actionable recommendation with measured impact.
+
+---
+
 ## What This Is
 
-A **system prompt + diagnostic SQL templates** that turns any MCP-compatible LLM into an Oracle Graph advisor. It understands how `GRAPH_TABLE` queries expand into relational joins, identifies performance bottlenecks, reviews graph design decisions, and recommends improvements.
+A **system prompt + diagnostic SQL templates + knowledge base** that turns any MCP-compatible LLM into an Oracle Graph advisor. It understands how `GRAPH_TABLE` queries expand into relational joins, identifies performance bottlenecks, reviews graph design decisions, and recommends improvements.
 
 ```
 You:     "Analyze my graph workload and tell me what's slow and why"
 
 Agent:   1. Discovers property graphs, tables, volumes, and design
-         2. Finds the most expensive graph queries in V$SQL
+         2. Finds the most expensive graph queries by elapsed time
          3. Reads execution plans, identifies bottlenecks
          4. Reviews graph modeling (edge/vertex design, key choices)
          5. Analyzes selectivity to quantify index benefit
          6. Simulates improvements with invisible indexes
-         7. Produces recommendations with DDL, justification, and rollback
+         7. Produces recommendations with DDL, measured elapsed time reduction, and rollback
 ```
 
 ---
@@ -200,6 +222,7 @@ All in `sql-templates/`, selected and parameterized by the agent automatically:
 
 | File | Phase | Templates |
 |------|-------|-----------|
+| `00-health-check.sql` | Health Check | HEALTH-00 to -06A |
 | `01-discovery.sql` | Discovery | DISCOVERY-01 to -06 |
 | `02-identify.sql` | Identify | IDENTIFY-01 to -05 |
 | `03-analyze.sql` | Deep Dive | ANALYZE-01 to -05 |
@@ -242,18 +265,18 @@ Agent: [connect MyADB]
        [run-sql IDENTIFY-01] → Top queries by elapsed
        [run-sql ANALYZE-01 for top SQL_ID] → Execution plan
        
-       The fraud ring query (SQL_ID: abc123) does 45M buffer gets.
-       
+       The fraud ring query (SQL_ID: abc123) averages 5.3 ms elapsed.
+
        [run-sql SELECTIVITY-01 for is_suspicious]
-       
+
        is_suspicious = 'Y' matches 0.5% of rows (5,000 of 1M).
-       
+
        RECOMMENDATION #1 — Index
        ━━━━━━━━━━━━━━━━━━━━━━━━━
        Target:     TRANSFERS(IS_SUSPICIOUS, MERCHANT_ID)
        DDL:        CREATE INDEX idx_transfers_susp_merch
                    ON transfers(is_suspicious, merchant_id) INVISIBLE;
-       Impact:     45M → ~50K buffer gets (99% reduction)
+       Impact:     Avg elapsed 5.3 ms → 0.4 ms (92% reduction)
        Why:        Composite index covers both the edge filter and
                    the destination vertex join in a single scan.
        Rollback:   ALTER INDEX idx_transfers_susp_merch INVISIBLE;
@@ -316,11 +339,15 @@ oracle-graph-dba-advisor/
 ├── .vscode/mcp.json                       # VS Code MCP config
 ├── .github/copilot-instructions.md        # Copilot instructions
 ├── .cursor/rules/oracle-graph-dba.mdc     # Cursor rules
+├── config/
+│   ├── README.md                          # Configuration guide
+│   └── production-guard.yaml              # Production detection rules (customize per org)
 ├── clients/
 │   ├── README.md                          # Client setup guide
 │   ├── adb-mcp-setup.md                   # ADB native MCP server (zero-install)
 │   └── continue-config-example.json       # Continue config
 ├── sql-templates/
+│   ├── 00-health-check.sql               # Phase 0: DB health check (CPU, I/O, memory)
 │   ├── 01-discovery.sql
 │   ├── 02-identify.sql
 │   ├── 03-analyze.sql
@@ -340,12 +367,16 @@ oracle-graph-dba-advisor/
 │   ├── README.md                          # When and why to use the agent
 │   └── n8n/                               # n8n workflow templates
 └── workload/
-    └── fraud/                             # Sample fraud detection workload
-        ├── 01_create_schema.sql
-        ├── 02_create_property_graph.sql
-        ├── 03_generate_data.sql           # ~420K edges, ~108K vertices
-        ├── 04_workload_queries.sql
-        └── 05_run_workload.sql
+    ├── fraud/                             # Sample fraud detection workload
+    │   ├── 01_create_schema.sql
+    │   ├── 02_create_property_graph.sql
+    │   ├── 03_generate_data.sql           # ~420K edges, ~108K vertices
+    │   ├── 04_workload_queries.sql
+    │   └── 05_run_workload.sql
+    └── demo/                              # End-to-end demo (fraud detection)
+        ├── README.md                      # Demo guide (~45 min)
+        ├── 00_demo_script.sql             # 11-step reference script
+        └── ADVISOR_DEMO_PROMPT.md         # Copy-paste prompt to start demo
 ```
 
 ---

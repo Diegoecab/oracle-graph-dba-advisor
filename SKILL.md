@@ -11,12 +11,14 @@
 
 Analyzes Oracle SQL/PGQ property graph workloads and produces actionable recommendations. Covers six areas:
 
+0. **Health Check** — Assesses database resource utilization (CPU, I/O, memory, tablespace) before graph analysis. Uses AWR/ASH historical data when available (24h trends, percentiles); falls back to V$ real-time views when not. Flags capacity constraints and recommends scaling/tuning
 1. **Discovery** — Maps property graphs, underlying tables, volumes, indexes, statistics freshness
 2. **Identification** — Finds the most expensive graph queries in V$SQL, classifies by pattern type
 3. **Deep Dive** — Reads execution plans, identifies full scans, join order issues, cardinality misestimates
 4. **Selectivity Analysis** — Quantifies index benefit using column statistics and value distribution
 5. **Simulation** — Tests index impact with invisible indexes before committing
 6. **Recommendation** — Produces DDL with justification, rollback commands, and DML impact assessment
+7. **Scalability Testing** — Generates synthetic data at configurable scale (2X, 5X, 10X), re-runs diagnostics, and reports which metrics scale linearly vs. superlinearly
 
 Additionally reviews graph design decisions (modeling, key choices, edge/vertex granularity) and validates query writing best practices (bind variables, projection, depth limits).
 
@@ -58,13 +60,15 @@ Additionally reviews graph design decisions (modeling, key choices, edge/vertex 
 | Schema snapshot | JSON | Graph topology, tables, indexes, volumes |
 | Recommendation log | Markdown | Chronological record with status tracking |
 | Active issues | Markdown | Unresolved items tracked across sessions |
+| Scalability report | Structured text | Before/after/scaled metrics with growth verdicts |
+| Test data | PL/SQL | Synthetic graph data preserving realistic distributions |
 
 ## Files
 
 | File | Role |
 |------|------|
 | `SYSTEM_PROMPT.md` | Full methodology, core knowledge, diagnostic phases, output format |
-| `sql-templates/*.sql` | Parameterized diagnostic queries (30+ templates, 5 phases) |
+| `sql-templates/*.sql` | Parameterized diagnostic queries (30+ templates, 6 phases) |
 | `knowledge/` | Domain patterns, advanced indexing, Oracle internals, design rules |
 | `memory/` | Persistent state across sessions (gitignored) |
 

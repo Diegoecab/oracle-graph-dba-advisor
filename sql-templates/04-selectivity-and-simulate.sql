@@ -135,7 +135,8 @@ ORDER BY
 -- └──────────────────────────────────────────────────────────┘
 -- Step 1: Get current plan (no hint)
 -- Step 2: Get hypothetical plan with INDEX hint
--- Compare cost and operation types.
+-- Compare actual elapsed time, plan structure, and operation types.
+-- NOTE: Never evaluate by optimizer cost alone — always execute and measure real elapsed time.
 --
 -- NOTE: This only works for hint-able queries. For GRAPH_TABLE
 -- queries, the expanded SQL is what gets hinted. The agent

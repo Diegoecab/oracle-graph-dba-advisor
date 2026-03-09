@@ -36,6 +36,9 @@ memory/*/
 !memory/backends/
 !memory/README.md
 
+# Config overrides (if using local-only overrides)
+config/*.local.yaml
+
 # RAG document store (may contain proprietary docs)
 knowledge/rag/docs/
 knowledge/rag/.vectorstore/
