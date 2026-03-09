@@ -2,7 +2,7 @@
   "servers": {
     "sqlcl": {
       "type": "stdio",
-      "command": "sql",
+      "command": "${env:SQLCL_PATH:sql}",
       "args": ["-mcp"],
       "env": {}
     }

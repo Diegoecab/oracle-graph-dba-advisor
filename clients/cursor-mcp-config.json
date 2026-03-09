@@ -1,0 +1,12 @@
+{
+  "_comment": "Add this to Cursor's MCP settings (Settings > MCP). Change the command path to your SQLcl installation. The .cursor/rules/oracle-graph-dba.mdc file is auto-loaded for matching files.",
+  "mcpServers": {
+    "sqlcl": {
+      "command": "/path/to/sqlcl/bin/sql",
+      "args": ["-mcp"],
+      "env": {
+        "TNS_ADMIN": "/path/to/wallet"
+      }
+    }
+  }
+}

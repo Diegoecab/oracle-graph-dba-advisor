@@ -1,0 +1,12 @@
+{
+  "_comment": "Add this to your claude_desktop_config.json under mcpServers. Change the command path to your SQLcl installation. Add TNS_ADMIN if connecting to ADB with a wallet.",
+  "mcpServers": {
+    "sqlcl": {
+      "command": "/path/to/sqlcl/bin/sql",
+      "args": ["-mcp"],
+      "env": {
+        "TNS_ADMIN": "/path/to/wallet"
+      }
+    }
+  }
+}

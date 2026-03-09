@@ -18,8 +18,16 @@ Thumbs.db
 
 # Environment
 .env
+*.env
 *.pem
 *.key
+.demo-config.env
+
+# Output
+output/
+
+# Wallet directories
+wallet_*/
 
 # Agent memory (environment-specific, not shared via git)
 memory/shared/

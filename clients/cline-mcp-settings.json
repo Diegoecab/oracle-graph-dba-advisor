@@ -1,0 +1,13 @@
+{
+  "_comment": "Add this to Cline's MCP settings (Cline Settings > MCP Servers). Change the command path to your SQLcl installation. The .clinerules file in the project root is auto-loaded for agent behavior.",
+  "mcpServers": {
+    "sqlcl": {
+      "command": "/path/to/sqlcl/bin/sql",
+      "args": ["-mcp"],
+      "disabled": false,
+      "env": {
+        "TNS_ADMIN": "/path/to/wallet"
+      }
+    }
+  }
+}
