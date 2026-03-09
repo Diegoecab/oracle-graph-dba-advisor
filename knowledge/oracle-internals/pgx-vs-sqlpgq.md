@@ -1,3 +1,15 @@
+---
+verified_version: "23ai"
+last_verified: "2026-03-09"
+oracle_doc_urls:
+  - https://docs.oracle.com/en/database/oracle/property-graph/23.1/spgdg/load-graph-memory-and-run-graph-analytics.html
+next_review: "on_new_oracle_release"
+confidence: "medium"
+version_sensitive_facts:
+  - "PGX not available on ADB-S Serverless"
+  - "PGX uses PGQL, not SQL/PGQ"
+---
+
 # PGX vs SQL/PGQ — Decision Guide
 
 ## Overview

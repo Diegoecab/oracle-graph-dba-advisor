@@ -1,3 +1,11 @@
+---
+verified_version: "23ai"
+last_verified: "2026-03-09"
+oracle_doc_urls: []
+next_review: "on_new_oracle_release"
+confidence: "high"
+---
+
 # Fraud Detection — Graph Patterns
 
 Patterns derived from real-world fraud detection workloads on Oracle 23ai/26ai with SQL/PGQ. These patterns cover account linkage, device sharing, money laundering rings, and identity theft detection.

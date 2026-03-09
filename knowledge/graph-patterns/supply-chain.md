@@ -1,3 +1,11 @@
+---
+verified_version: "23ai"
+last_verified: "2026-03-09"
+oracle_doc_urls: []
+next_review: "on_new_oracle_release"
+confidence: "high"
+---
+
 # Supply Chain — Graph Patterns
 
 Patterns for logistics networks, dependency tracking, risk propagation, and bill-of-materials analysis on Oracle SQL/PGQ.

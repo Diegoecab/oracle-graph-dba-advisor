@@ -1,3 +1,17 @@
+---
+verified_version: "23ai"
+last_verified: "2026-03-09"
+oracle_doc_urls:
+  - https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/variable-length-path-patterns.html
+next_review: "on_new_oracle_release"
+confidence: "high"
+version_sensitive_facts:
+  - "max quantifier upper bound = 10"
+  - "ANY/ALL SHORTEST not supported"
+  - "hints in COLUMNS do not propagate"
+  - "no LATERAL/inline subqueries in MATCH"
+---
+
 # SQL/PGQ Query Best Practices — Oracle 23ai / 26ai
 
 ## 1. Limit Variable-Length Path Depth

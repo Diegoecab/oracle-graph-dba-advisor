@@ -1,3 +1,12 @@
+---
+verified_version: "23ai"
+last_verified: "2026-03-09"
+oracle_doc_urls:
+  - https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/tuning-sql-property-graph-queries.html
+next_review: "on_new_oracle_release"
+confidence: "high"
+---
+
 # Oracle CBO Behavior with GRAPH_TABLE (SQL/PGQ)
 
 Documented observations from Oracle 23ai and 26ai regarding how the Cost-Based Optimizer handles SQL/PGQ queries. These findings are based on real-world testing and AWR analysis.

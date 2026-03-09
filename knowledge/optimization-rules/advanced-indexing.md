@@ -1,3 +1,12 @@
+---
+verified_version: "23ai"
+last_verified: "2026-03-09"
+oracle_doc_urls:
+  - https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/
+next_review: "on_new_oracle_release"
+confidence: "high"
+---
+
 # Advanced Indexing Strategies for Property Graphs
 
 Beyond the 5 base strategies in SYSTEM_PROMPT.md, these advanced techniques address specific performance challenges in large-scale SQL/PGQ deployments.

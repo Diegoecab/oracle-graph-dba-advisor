@@ -1,0 +1,179 @@
+{
+  "name": "Oracle Graph Advisor — Knowledge URL Health Check",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * 0"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Weekly Sunday 2 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Read the documentation reference file and extract all Oracle doc URLs\nconst fs = require('fs');\nconst filePath = '/path/to/oracle-graph-dba-advisor/knowledge/oracle-internals/official-documentation-reference.md';\n\ntry {\n  const content = fs.readFileSync(filePath, 'utf8');\n  const urlRegex = /https:\\/\\/docs\\.oracle\\.com[^\\s`\"')>]+/g;\n  const urls = [...new Set(content.match(urlRegex) || [])];\n  \n  return urls.map(url => ({ json: { url } }));\n} catch (err) {\n  return [{ json: { error: `Failed to read file: ${err.message}` } }];\n}"
+      },
+      "id": "parse-urls",
+      "name": "Parse URLs from Reference File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "HEAD",
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 10000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": true,
+              "maxRedirects": 5
+            }
+          }
+        }
+      },
+      "id": "check-url",
+      "name": "HTTP HEAD Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "status-check",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "filter-dead",
+      "name": "Filter Non-200 URLs",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate dead URLs into a single alert message\nconst deadUrls = $input.all().map(item => {\n  return `- ${item.json.statusCode || 'TIMEOUT'}: ${item.json.url}`;\n});\n\nif (deadUrls.length === 0) {\n  return []; // No notification needed\n}\n\nconst message = `*Oracle Graph Advisor — Knowledge URL Health Check*\\n\\n` +\n  `Found ${deadUrls.length} dead/changed URL(s):\\n` +\n  deadUrls.join('\\n') + '\\n\\n' +\n  `These URLs may indicate Oracle documentation has been restructured. ` +\n  `Review the knowledge files for accuracy.\\n` +\n  `See: \\`knowledge/FRESHNESS.md\\` for the review process.`;\n\nreturn [{ json: { message } }];"
+      },
+      "id": "format-alert",
+      "name": "Format Alert Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1080, 200]
+    },
+    {
+      "parameters": {
+        "channel": "#oracle-graph-advisor",
+        "text": "={{ $json.message }}",
+        "otherOptions": {}
+      },
+      "id": "slack-alert",
+      "name": "Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [1300, 200],
+      "credentials": {
+        "slackApi": {
+          "id": "REPLACE_WITH_YOUR_SLACK_CREDENTIAL_ID",
+          "name": "Slack"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Weekly Sunday 2 AM": {
+      "main": [
+        [
+          {
+            "node": "Parse URLs from Reference File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse URLs from Reference File": {
+      "main": [
+        [
+          {
+            "node": "HTTP HEAD Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP HEAD Check": {
+      "main": [
+        [
+          {
+            "node": "Filter Non-200 URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Non-200 URLs": {
+      "main": [
+        [
+          {
+            "node": "Format Alert Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Format Alert Message": {
+      "main": [
+        [
+          {
+            "node": "Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "oracle-graph-advisor"
+    },
+    {
+      "name": "knowledge-freshness"
+    }
+  ]
+}

@@ -1,3 +1,11 @@
+---
+verified_version: "23ai, 26ai"
+last_verified: "2026-03-09"
+oracle_doc_urls: []  # This file IS the URL reference
+next_review: "quarterly"
+confidence: "high"
+---
+
 # Official Oracle Documentation Reference — SQL/PGQ
 
 Synthesized knowledge from official Oracle documentation for the Graph DBA Advisor. This file provides version-specific feature matrices, confirmed internal behavior, performance models, and verified documentation URLs.

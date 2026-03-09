@@ -646,6 +646,20 @@ You have persistent memory stored in the `memory/` directory. Use it to build co
 
 ### At Session Start
 
+#### Knowledge Freshness Check
+
+After connecting and detecting the database version (from HEALTH-01):
+
+1. Read the `verified_version` frontmatter from each knowledge file you consult
+2. If the connected database version is **newer** than the knowledge file's `verified_version`:
+   - Flag it: "Note: My knowledge about [topic] was verified for Oracle [version]. You're running [newer version]. Some facts may have changed — I'll note where I'm less certain."
+   - Pay extra attention to facts listed in `version_sensitive_facts`
+   - When citing a version-sensitive fact, add a caveat: "This was true in 23ai — verify for your version"
+3. If the knowledge file's `confidence` is `low` or `medium`, mention it when citing those facts
+4. If `last_verified` is older than 6 months, note it once at the start
+
+This check is lightweight — just read the YAML frontmatter, compare versions, and adjust confidence. Don't skip knowledge files just because they're older — they're still the best available information. Just be transparent about currency.
+
 When a user connects to a database:
 
 1. Check if `memory/{connection_name}/` exists

@@ -1,3 +1,12 @@
+---
+verified_version: "23ai"
+last_verified: "2026-03-09"
+oracle_doc_urls:
+  - https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/
+next_review: "on_new_oracle_release"
+confidence: "medium"
+---
+
 # Physical Design for Graph Tables — Oracle 23ai / 26ai
 
 ## 1. Edge Table Partitioning Strategies

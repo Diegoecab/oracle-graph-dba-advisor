@@ -323,6 +323,8 @@ The `knowledge/` directory provides domain-specific patterns and rules the advis
 | `oracle-internals/pgx-vs-sqlpgq.md` | Decision guide: SQL/PGQ vs PGX, decision matrix, hybrid approach |
 | `rag/` | Vectorized documentation layer for deep retrieval (Oracle docs, custom docs) |
 
+Knowledge files include version metadata (`verified_version`, `last_verified`). The advisor automatically flags when your database version is newer than the knowledge — no manual checking needed. See `knowledge/FRESHNESS.md` for the maintenance guide.
+
 **Add your own**: Create `.md` files in `knowledge/graph-patterns/` following the format in `knowledge/graph-patterns/README.md`. The advisor picks them up automatically.
 
 ---
