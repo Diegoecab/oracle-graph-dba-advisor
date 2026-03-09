@@ -264,9 +264,13 @@ The `knowledge/` directory provides domain-specific patterns and rules the advis
 | `graph-patterns/fraud-detection.md` | 5 patterns: shared device, 2-hop chains, triangles, temporal change, risk scoring |
 | `graph-patterns/social-network.md` | 5 patterns: mutual friends, influence, communities, recommendations, shortest path |
 | `graph-patterns/supply-chain.md` | 4 patterns: BOM dependencies, risk propagation, routing, commonality |
+| `graph-patterns/use-case-assessment.md` | When/how to recommend new graph use cases from relational data |
+| `graph-design/` | Modeling checklist (8 rules), physical design, query best practices |
 | `optimization-rules/advanced-indexing.md` | 7 strategies: bidirectional FKs, covering indexes, function-based, partial, IOT, bitmap, invisible A/B |
 | `oracle-internals/pgq-optimizer-behavior.md` | CBO behavior with GRAPH_TABLE (6 topics) |
 | `oracle-internals/official-documentation-reference.md` | SQL/PGQ feature matrix by version, `{n,m}` performance model, verified doc URLs |
+| `oracle-internals/pgx-vs-sqlpgq.md` | Decision guide: SQL/PGQ vs PGX, decision matrix, hybrid approach |
+| `rag/` | Vectorized documentation layer for deep retrieval (Oracle docs, custom docs) |
 
 **Add your own**: Create `.md` files in `knowledge/graph-patterns/` following the format in `knowledge/graph-patterns/README.md`. The advisor picks them up automatically.
 
@@ -295,9 +299,11 @@ oracle-graph-dba-advisor/
 │   ├── 04-selectivity-and-simulate.sql
 │   └── 05-utilities.sql
 ├── knowledge/
-│   ├── graph-patterns/                    # Domain-specific patterns
+│   ├── graph-patterns/                    # Domain-specific patterns + use case assessment
+│   ├── graph-design/                      # Modeling rules, physical design, query practices
 │   ├── optimization-rules/                # Advanced indexing strategies
-│   └── oracle-internals/                  # CBO behavior, feature matrix
+│   ├── oracle-internals/                  # CBO behavior, feature matrix, PGX vs SQL/PGQ
+│   └── rag/                               # Vectorized documentation for deep retrieval
 ├── memory/                                # Persistent memory (gitignored)
 │   ├── README.md                          # Memory system docs
 │   ├── _templates/                        # Templates for new environments

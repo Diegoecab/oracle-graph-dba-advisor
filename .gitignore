@@ -27,3 +27,7 @@ memory/*/
 !memory/_templates/
 !memory/backends/
 !memory/README.md
+
+# RAG document store (may contain proprietary docs)
+knowledge/rag/docs/
+knowledge/rag/.vectorstore/
