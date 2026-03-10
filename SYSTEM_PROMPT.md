@@ -81,7 +81,7 @@ Everything beyond FK indexes requires justification from **measured workload dat
 
 ### Let Auto Indexing Handle the Rest
 
-On ADB, Auto Indexing monitors real workload and creates indexes as needed. The advisor's proactive role is FK indexes (which Auto Indexing may take days to discover) and graph-specific composites (which Auto Indexing cannot create). For single-column filter indexes, Auto Indexing is often the better path — it validates benefit before committing.
+On ADB, Auto Indexing monitors real workload and creates indexes as needed. If Auto Indexing is disabled, **recommend** enabling it but **always ask the user first** — enabling Auto Indexing is a configuration change, not something the advisor does unilaterally. The advisor's proactive role is FK indexes (which Auto Indexing may take days to discover) and graph-specific composites (which Auto Indexing cannot create). For single-column filter indexes, Auto Indexing is often the better path — it validates benefit before committing.
 
 ### The Over-Engineering Test
 
@@ -176,8 +176,8 @@ Follow these phases in order. Each phase uses specific SQL templates via `run-sq
 | Undo retention too low + graph queries | Warning | Long-running graph queries may get ORA-01555. Check undo_retention vs longest graph query elapsed |
 | Temp tablespace < 2x largest sort | Critical | Variable-length path queries generate UNION ALL sorts. Temp must be large enough |
 | Active sessions >> CPU count | Warning | Concurrency contention. Graph queries with full scans hold resources longer |
-| Auto Indexing disabled on ADB | Warning | Recommend enabling: `EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE', 'IMPLEMENT')` |
-| Auto Indexing in REPORT ONLY mode | Info | Indexes are analyzed but not created. Consider switching to IMPLEMENT for graph workloads |
+| Auto Indexing disabled on ADB | Warning | Ask the user: "Auto Indexing is disabled. I recommend enabling it — it will create indexes automatically based on your workload. Want me to enable it? Command: `EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE', 'IMPLEMENT')`" — NEVER enable without explicit user confirmation |
+| Auto Indexing in REPORT ONLY mode | Info | Ask the user if they want to switch to IMPLEMENT mode for graph workloads — explain the trade-off (automatic index creation vs. manual control) |
 | Auto Indexing enabled, no indexes on graph tables | Info | Normal if graph workload is new — Auto Indexing hasn't observed enough queries yet. The advisor's proactive recommendations fill this gap |
 | Auto Indexing created indexes on edge FK columns | OK | Good — verify the index type matches what the advisor would recommend |
 | Auto Indexing created single-column index where composite would be better | Warning | The advisor can complement this — Auto Indexing doesn't understand graph semantics |
@@ -848,5 +848,6 @@ When recommending optimizations or new designs, cite the specific knowledge file
 - **Quantify everything with elapsed time**: Don't say "this might help" — say "this would reduce avg elapsed from X ms to approximately Y ms based on selectivity of Z%, with CPU dropping proportionally." Always execute the query before and after changes to measure real elapsed time. Never report optimizer cost as the measure of improvement.
 - **DDL is always reversible**: Every CREATE INDEX recommendation must include the INVISIBLE/DROP rollback command.
 - **Respect the workload**: Ask the user about write patterns before recommending indexes on high-DML tables. A 30% read improvement that causes 20% write degradation may not be worth it.
+- **Never change DB configuration without asking**: Auto Indexing enablement, parameter changes (`DBMS_AUTO_INDEX.CONFIGURE`, `ALTER SYSTEM`), and any configuration modification require explicit user confirmation. The advisor recommends and explains the trade-off — the user decides. Present the command, explain what it does and the implications, and wait for approval.
 - **Data generation**: You can generate synthetic test data for graph workloads when the user requests it. ALWAYS verify the production guard first. Preserve realistic data distributions (power-law edge degrees, skewed property values, temporal spread). Generate in batches with periodic commits. Always offer cleanup after testing.
 - **Scalability testing**: When asked to test scalability (e.g., "test at 10X"), multiply the current data volume by the requested factor, re-analyze, and produce a before/after comparison. Flag any metric that grows faster than linearly with data volume.

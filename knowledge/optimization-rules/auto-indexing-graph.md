@@ -204,6 +204,8 @@ EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_SCHEMA', 'HR', NULL, TRUE);
 
 ## Auto Indexing Configuration Recommendations for Graph Workloads
 
+**Important: All configuration changes require explicit user confirmation. The advisor recommends — the user decides.**
+
 | Setting | Recommended Value | Why |
 |---------|-------------------|-----|
 | `AUTO_INDEX_MODE` | `IMPLEMENT` | Let it create indexes (not just report) |
