@@ -236,3 +236,96 @@ FROM DBA_HIST_ACTIVE_SESS_HISTORY
 WHERE sample_time > SYSDATE - 1/24
 GROUP BY wait_class
 ORDER BY sample_count DESC;
+
+
+-- ============================================================
+-- AUTO INDEXING STATUS (ADB-S / ADB-D only)
+-- If ORA-00942 → not ADB or Auto Indexing not available, skip silently
+-- ============================================================
+
+-- HEALTH-07: Auto Indexing configuration
+SELECT
+    parameter_name,
+    parameter_value
+FROM DBA_AUTO_INDEX_CONFIG;
+
+-- HEALTH-08: Auto Indexing activity summary (last 30 days)
+SELECT
+    index_type,
+    status,
+    COUNT(*) AS index_count,
+    MIN(last_modified) AS earliest,
+    MAX(last_modified) AS latest
+FROM DBA_AUTO_INDEX_IND_ACTIONS
+WHERE last_modified > SYSDATE - 30
+GROUP BY index_type, status
+ORDER BY index_count DESC;
+
+-- HEALTH-09: Auto indexes on graph tables specifically
+-- Cross-references auto-created indexes with property graph edge/vertex tables
+SELECT
+    ai.index_name,
+    ai.table_name,
+    ai.index_columns,
+    ai.status,
+    ai.visibility,
+    ai.last_modified,
+    CASE
+        WHEN e.element_name IS NOT NULL AND e.element_kind = 'EDGE' THEN 'EDGE TABLE'
+        WHEN e.element_name IS NOT NULL AND e.element_kind = 'VERTEX' THEN 'VERTEX TABLE'
+        ELSE 'NON-GRAPH TABLE'
+    END AS graph_role
+FROM DBA_AUTO_INDEX_IND_ACTIONS ai
+LEFT JOIN USER_PG_ELEMENTS e ON ai.table_name = e.object_name
+WHERE ai.status != 'DROPPED'
+ORDER BY ai.table_name, ai.index_columns;
+
+-- HEALTH-10: Auto Index risk assessment for graph tables
+-- Detects: over-indexing, storage waste, low-selectivity indexes, resource usage
+
+-- 10a: Total index count per edge table (auto + manual)
+SELECT
+    t.table_name,
+    COUNT(i.index_name) AS total_indexes,
+    SUM(CASE WHEN i.index_name LIKE 'SYS_AI%' THEN 1 ELSE 0 END) AS auto_indexes,
+    SUM(CASE WHEN i.index_name NOT LIKE 'SYS_AI%' THEN 1 ELSE 0 END) AS manual_indexes,
+    t.num_rows,
+    CASE
+        WHEN COUNT(i.index_name) > 7 THEN 'OVER-INDEXED — DML overhead risk'
+        WHEN COUNT(i.index_name) > 5 THEN 'REVIEW index count'
+        ELSE 'OK'
+    END AS status
+FROM user_tables t
+JOIN user_indexes i ON t.table_name = i.table_name
+WHERE t.table_name IN (
+    SELECT object_name FROM USER_PG_ELEMENTS WHERE element_kind = 'EDGE'
+)
+GROUP BY t.table_name, t.num_rows
+ORDER BY total_indexes DESC;
+
+-- 10b: Invisible auto indexes wasting storage
+SELECT
+    ai.index_name,
+    ai.table_name,
+    ai.index_columns,
+    ROUND(seg.bytes/1024/1024, 1) AS size_mb,
+    ai.last_modified
+FROM DBA_AUTO_INDEX_IND_ACTIONS ai
+JOIN USER_SEGMENTS seg ON ai.index_name = seg.segment_name
+WHERE ai.visibility = 'INVISIBLE'
+  AND ai.status = 'VALID'
+  AND ai.table_name IN (
+      SELECT object_name FROM USER_PG_ELEMENTS
+  )
+ORDER BY seg.bytes DESC;
+
+-- 10c: Auto Indexing resource consumption (last 7 days)
+SELECT
+    task_name,
+    status,
+    ROUND(EXTRACT(MINUTE FROM (end_time - start_time)) +
+          EXTRACT(HOUR FROM (end_time - start_time)) * 60, 1) AS duration_min,
+    start_time, end_time
+FROM DBA_AUTO_INDEX_EXECUTIONS
+WHERE start_time > SYSDATE - 7
+ORDER BY start_time DESC;

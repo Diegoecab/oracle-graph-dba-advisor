@@ -20,7 +20,9 @@ Analyzes Oracle SQL/PGQ property graph workloads and produces actionable recomme
 6. **Recommendation** — Produces DDL with justification, rollback commands, and DML impact assessment
 7. **Scalability Testing** — Generates synthetic data at configurable scale (2X, 5X, 10X), re-runs diagnostics, and reports which metrics scale linearly vs. superlinearly
 
-Additionally reviews graph design decisions (modeling, key choices, edge/vertex granularity) and validates query writing best practices (bind variables, projection, depth limits).
+Additionally integrates with Oracle Auto Indexing on ADB — checks auto-created indexes on graph tables, deduplicates recommendations, and explains how proactive (advisor) and reactive (Auto Indexing) approaches complement each other.
+
+Also reviews graph design decisions (modeling, key choices, edge/vertex granularity) and validates query writing best practices (bind variables, projection, depth limits).
 
 ## Required Tools
 

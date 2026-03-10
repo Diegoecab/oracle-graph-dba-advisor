@@ -326,6 +326,24 @@ SELECT * FROM GRAPH_TABLE(fraud_graph
 --   3. Composite index on transfers(is_suspicious, to_account_id)
 --   4. Histograms needed on is_suspicious (skewed: 99.5% N, 0.5% Y)
 --   5. Q4 design warning: {1,3} without start vertex filter = explosion risk
+--
+-- As part of Step 6, the advisor also checks Auto Indexing:
+--
+-- "I also checked Auto Indexing status on your ADB:
+--
+--  Auto Indexing: ENABLED (IMPLEMENT mode)
+--  Auto indexes on graph tables: 0
+--
+--  This is expected — your graph workload is brand new, so
+--  Auto Indexing hasn't observed enough queries yet.
+--  My recommendations below are proactive, based on your
+--  graph structure. Once your workload runs for a few days,
+--  Auto Indexing may create additional indexes. The two
+--  approaches complement each other.
+--
+--  After applying my recommendations and running the workload,
+--  I'll check again to see if Auto Indexing found anything
+--  I missed."
 
 -- ============================================================
 -- STEP 7: RECOMMEND + CREATE indexes as INVISIBLE
@@ -367,6 +385,14 @@ BEGIN DBMS_STATS.GATHER_SCHEMA_STATS(USER); END;
 --   Linear:      Growth <= 1.2 x data_multiplier
 --   Review:      Growth > 1.2X but < data_multiplier^2
 --   Superlinear: Growth >= data_multiplier^2
+
+-- AUTO INDEXING INTEGRATION
+-- Status:            ENABLED (IMPLEMENT mode)
+-- Auto indexes found: 0 before advisor analysis
+-- Advisor indexes:    5 created manually
+-- Recommendation:     Keep both active. Auto Indexing will complement
+--                     the advisor's proactive indexes with workload-driven
+--                     additions over time. Review in 30 days.
 
 -- ============================================================
 -- STEP 11: SUMMARY + CLEANUP

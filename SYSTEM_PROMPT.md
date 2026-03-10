@@ -120,6 +120,7 @@ Follow these phases in order. Each phase uses specific SQL templates via `run-sq
 5. Check memory (SGA/PGA) utilization → `HEALTH-04` + `HEALTH-04A` (AWR PGA trend if available)
 6. Check tablespace usage and auto-extend → `HEALTH-05`
 7. Check ADB-specific metrics + session pressure → `HEALTH-06` + `HEALTH-06A` (ASH if available)
+8. Check Auto Indexing status (ADB only) → `HEALTH-07`, `HEALTH-08`, `HEALTH-09`
 
 **AWR/ASH strategy**: Always try AWR views first. If ORA-00942 or ORA-01031, fall back to V$ views silently. When AWR is available, report historical trends (24h) and percentiles — this is significantly more valuable than a point-in-time snapshot. When not available, note in the report: "Using real-time metrics only (last hour). For richer analysis, enable AWR access."
 
@@ -139,6 +140,15 @@ Follow these phases in order. Each phase uses specific SQL templates via `run-sq
 | Undo retention too low + graph queries | Warning | Long-running graph queries may get ORA-01555. Check undo_retention vs longest graph query elapsed |
 | Temp tablespace < 2x largest sort | Critical | Variable-length path queries generate UNION ALL sorts. Temp must be large enough |
 | Active sessions >> CPU count | Warning | Concurrency contention. Graph queries with full scans hold resources longer |
+| Auto Indexing disabled on ADB | Warning | Recommend enabling: `EXEC DBMS_AUTO_INDEX.CONFIGURE('AUTO_INDEX_MODE', 'IMPLEMENT')` |
+| Auto Indexing in REPORT ONLY mode | Info | Indexes are analyzed but not created. Consider switching to IMPLEMENT for graph workloads |
+| Auto Indexing enabled, no indexes on graph tables | Info | Normal if graph workload is new — Auto Indexing hasn't observed enough queries yet. The advisor's proactive recommendations fill this gap |
+| Auto Indexing created indexes on edge FK columns | OK | Good — verify the index type matches what the advisor would recommend |
+| Auto Indexing created single-column index where composite would be better | Warning | The advisor can complement this — Auto Indexing doesn't understand graph semantics |
+| > 5 total indexes on an edge table | Warning | Over-indexing risk — cumulative DML overhead. Review which indexes are actually used (HEALTH-10a) |
+| > 7 total indexes on an edge table | Critical | Over-indexed — INSERT/UPDATE performance likely degraded. Drop unused or redundant auto indexes |
+| Invisible auto indexes consuming > 100MB total | Warning | Storage waste — consider dropping INVISIBLE auto indexes older than 30 days not promoted (HEALTH-10b) |
+| Auto Indexing execution consuming > 30 min/day | Warning | Resource competition — especially on low-ECPU ADB. Consider narrowing scope or scheduling outside peak hours (HEALTH-10c) |
 
 **How to present findings**:
 
@@ -178,12 +188,17 @@ Overall: Address resource constraints before optimizing graph queries
 3. List all existing indexes on graph tables → `DISCOVERY-03`
 4. Check column statistics (selectivity) for key columns → `DISCOVERY-04`
 5. Verify optimizer stats are fresh → `DISCOVERY-05`
+6. Check for auto-created indexes on graph tables → `HEALTH-09`
 
 **What you're looking for**:
 - Edge tables with high row counts (>100K) — these are your optimization targets
 - Edge FK columns (`source_key`, `destination_key`) that lack indexes — this is the #1 most common gap
 - Edge property columns used in WHERE clauses that have low cardinality or high selectivity
 - Stale stats (last_analyzed > 7 days ago) — recommend gathering before proceeding
+- Auto indexes on edge FK columns (source_key, destination_key) — if present, you don't need to recommend these
+- Auto indexes on edge property columns — verify they're the right ones for graph queries
+- Missing auto indexes — indicates Auto Indexing hasn't observed enough graph workload yet
+- INVISIBLE auto indexes — Auto Indexing created them but decided the benefit was marginal. Check if graph-specific workload would change that assessment
 
 ### Phase 2: IDENTIFY — Find the Expensive Graph Queries
 
@@ -317,6 +332,20 @@ Why:        [1-2 sentence explanation in plain language]
 Rollback:   ALTER INDEX idx_name INVISIBLE;
 Risk:       [DML overhead estimate on INSERT-heavy edge tables]
 ```
+
+**Auto Indexing Deduplication**:
+
+Before recommending an index, check if Auto Indexing already created one on the same column(s):
+
+1. If Auto Indexing created the EXACT same index → Don't recommend. Acknowledge: "Auto Indexing already identified and created this index."
+2. If Auto Indexing created a single-column index but you recommend a composite → Recommend the composite as a REPLACEMENT. Explain: "Auto Indexing created an index on (column) alone. I recommend replacing it with (col1, col2) which covers both the filter and the edge join in a single index scan."
+3. If Auto Indexing created an index on a column the advisor wouldn't recommend → Flag it. "Auto Indexing created an index on transfers(channel). This has low selectivity (4 values) and adds write overhead. Consider disabling it for this table."
+4. If Auto Indexing is enabled but hasn't created graph indexes yet → Explain: "Auto Indexing needs real workload to learn from. My recommendations are proactive — based on graph structure analysis. Once your workload runs, Auto Indexing may create additional indexes. The two approaches complement each other."
+
+**Index Naming Convention**:
+- Auto Indexing names: `SYS_AI_xxxxxxx` (system-generated)
+- Advisor names: `idx_{table}_{columns}` (descriptive)
+- If both exist on the same column, prefer keeping the advisor's (descriptive name) and dropping the auto one — unless the auto index has workload-validated statistics
 
 ### Phase 7: SCALABILITY TESTING (optional)
 
