@@ -11,30 +11,33 @@ Connects via the **ADB MCP Server** (fully managed, zero install) or **SQLcl MCP
 ```
 You:     "Analyze my graph workload and tell me what's slow and why"
 
-Advisor: 1. Checks database health (CPU, I/O, memory, tablespace)
-         2. Discovers property graphs, tables, volumes, indexes
-         3. Finds the most expensive graph queries by elapsed time
-         4. Reads execution plans, identifies bottlenecks
-         5. Recommends indexes with DDL, measured impact, and rollback
+Advisor: 0. Checks database health (CPU, I/O, memory, tablespace, Auto Indexing)
+         1. Discovers property graphs, tables, volumes, indexes
+         2. Finds the most expensive graph queries by elapsed time
+         3. Reads execution plans, identifies bottlenecks
+         4. Analyzes selectivity to quantify index benefit
+         5. Tests improvements with invisible indexes before committing
+         6. Recommends indexes (DDL + rollback), deduplicates with Auto Indexing
+         7. Generates scaled data and re-tests to validate at 2X/5X/10X volume
 ```
 
 The advisor follows a **simplicity-first philosophy**: a property graph is just node tables and edge tables. Index the FKs, index the filters if needed, and stop. Advanced strategies only with measured evidence.
 
 ---
 
-## Why Use This vs a Plain LLM
+## Key Capabilities
 
-| Capability | Plain LLM | With this skill |
-|---|---|---|
-| **Methodology** | Ad-hoc | 8-phase structured diagnostic (Health Check → Discovery → Identify → Deep Dive → Selectivity → Simulate → Recommend → Scale Test) |
-| **SQL templates** | Generates from scratch — may use wrong views | 40+ pre-built, tested templates for Oracle 23ai/26ai graph diagnostics |
-| **GRAPH_TABLE** | Treats as black box | Knows it expands to relational joins — traces TABLE ACCESS / HASH JOIN back to graph hops |
-| **Index strategy** | Generic "add an index" | Priority hierarchy P0-P4: PK → FK → filter → composite → advanced. Stops at the lowest level that solves the problem |
-| **Auto Indexing** | No awareness | Checks ADB Auto Indexing status, deduplicates with auto-created indexes, recommends composites Auto Indexing can't create |
-| **Anti-patterns** | May miss graph pitfalls | Flags 9 graph-specific anti-patterns: missing stats, cartesian explosions, SYSTIMESTAMP type mismatch, VERTEX_ID overhead, co-view scaling, and more |
-| **Evaluation** | Reports optimizer cost | Always measures **actual elapsed time** — never evaluates by cost |
-| **Safety** | No guardrails | Production guard, read-only by default, never executes DDL/DML or changes configuration without explicit approval |
-| **Memory** | Starts from zero | Remembers schemas, past recommendations, and outcomes across sessions |
+| Capability | Description |
+|---|---|
+| **8-phase methodology** | Health Check → Discovery → Identify → Deep Dive → Selectivity → Simulate → Recommend → Scale Test |
+| **40+ SQL templates** | Pre-built, tested diagnostic queries for Oracle 23ai/26ai graph workloads |
+| **GRAPH_TABLE awareness** | Knows it expands to relational joins — traces TABLE ACCESS / HASH JOIN back to graph hops |
+| **P0-P4 index strategy** | PK → FK → filter → composite → advanced. Stops at the lowest level that solves the problem |
+| **Auto Indexing integration** | Checks ADB Auto Indexing status, deduplicates with auto-created indexes, recommends composites Auto Indexing can't create |
+| **9 anti-patterns** | Missing stats, cartesian explosions, SYSTIMESTAMP type mismatch, VERTEX_ID overhead, co-view scaling, and more |
+| **Elapsed-time evaluation** | Always measures actual elapsed time — never evaluates by optimizer cost |
+| **Production guard** | Read-only by default, never executes DDL/DML or changes configuration without explicit approval |
+| **Persistent memory** | Remembers schemas, past recommendations, and outcomes across sessions |
 
 ---
 
