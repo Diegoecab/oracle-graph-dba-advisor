@@ -186,3 +186,53 @@ DROP INDEX idx_candidate_1;
 **Expected Impact**: Enables data-driven index selection without production disruption.
 
 **Trade-off**: All INVISIBLE indexes still incur DML overhead (they are maintained on every INSERT/UPDATE/DELETE). Don't leave unused invisible indexes permanently — either promote to VISIBLE or DROP.
+
+---
+
+## Edge Case: JSON Properties in Graph Tables
+
+Some graph designs store variable properties as JSON columns on vertex or edge tables. This is a legitimate Oracle 23ai pattern but is an **edge case for indexing**.
+
+### When It Matters
+
+Only when a GRAPH_TABLE query filters on a value INSIDE the JSON column:
+```sql
+-- Query filtering on a JSON property inside the MATCH clause
+SELECT * FROM GRAPH_TABLE(my_graph
+    MATCH (a)-[e]->(b)
+    WHERE JSON_VALUE(e.properties, '$.risk_score' RETURNING NUMBER) > 0.8
+    COLUMNS (...)
+);
+```
+
+### What to Recommend
+
+1. **First ask: should this be a regular column?** If `risk_score` is filtered frequently, it should be a dedicated `NUMBER` column, not buried in JSON. Thinner tables, simpler indexes, better optimizer estimates.
+
+2. **If JSON must stay**: Create a function-based index on the JSON path:
+```sql
+CREATE INDEX idx_edge_risk ON edge_table(
+    JSON_VALUE(properties, '$.risk_score' RETURNING NUMBER)
+);
+```
+
+3. **For multi-path search**: A JSON search index covers all paths but is heavy:
+```sql
+CREATE SEARCH INDEX idx_edge_json ON edge_table(properties) FOR JSON;
+```
+Only recommend this if the user queries multiple different JSON paths unpredictably.
+
+### The Advisor's Default Stance
+
+Do NOT proactively check for JSON indexing opportunities. Only investigate if:
+- A query plan shows TABLE ACCESS FULL on a table with JSON columns AND
+- The filter is on a JSON path expression AND
+- The table has > 100K rows
+
+In most graph workloads, JSON properties are accessed AFTER the traversal (in the COLUMNS projection), not during filtering. Indexing them would be waste.
+
+## Edge Case: Vector Properties
+
+If vertex or edge tables contain `VECTOR` columns (embeddings), these are indexed with vector-specific indexes (`CREATE VECTOR INDEX ... ORGANIZATION NEIGHBOR PARTITIONS`), not B-tree indexes.
+
+This is outside the scope of graph traversal optimization — it belongs to RAG / similarity search workflows. The advisor should note: "I see a VECTOR column on [table]. Vector indexing is a separate domain from graph traversal indexing. If you need similarity search over graph properties, consult the Oracle AI Vector Search documentation."
