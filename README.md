@@ -53,6 +53,7 @@ The advisor follows a **simplicity-first philosophy**: a property graph is just 
 | **9 anti-patterns** | Missing stats, cartesian explosions, SYSTIMESTAMP type mismatch, VERTEX_ID overhead, co-view scaling, and more |
 | **Elapsed-time evaluation** | Always measures actual elapsed time — never evaluates by optimizer cost |
 | **Production guard** | Read-only by default, never executes DDL/DML or changes configuration without explicit approval |
+| **Scale testing** | Generates scaled data (2X/5X/10X) and re-tests to validate that recommendations hold at volume |
 | **Persistent memory** | Remembers schemas, past recommendations, and outcomes across sessions |
 
 ---
