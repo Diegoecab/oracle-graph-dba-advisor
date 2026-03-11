@@ -11,15 +11,15 @@ Connects via the **ADB MCP Server** (fully managed, zero install) or **SQLcl MCP
 ### Design a new graph from scratch
 
 ```
-You:     "I have ORDERS, CUSTOMERS and PRODUCTS tables. Would a graph help
-          me find fraud rings and recommend products?"
+You:     "How do I model my problem as a graph?"
 
-Advisor: 1. Assesses whether a graph model fits your use case
-         2. Identifies vertices and edges from your existing tables
-         3. Proposes CREATE PROPERTY GRAPH DDL
-         4. Writes starter GRAPH_TABLE queries for your business questions
-         5. Proposes initial indexes based on the query patterns
-         6. Flags SQL/PGQ limitations (and whether PGX is needed)
+Advisor: 1. Asks about your domain, entities, relationships, and business questions
+         2. Assesses whether a graph model fits your use case (or if relational is enough)
+         3. Identifies vertices and edges from your existing tables
+         4. Proposes CREATE PROPERTY GRAPH DDL
+         5. Writes starter GRAPH_TABLE queries for your business questions
+         6. Proposes initial indexes based on the query patterns
+         7. Flags SQL/PGQ limitations (and whether PGX is needed)
 ```
 
 ### Optimize an existing graph workload
