@@ -8,19 +8,45 @@ Connects via the **ADB MCP Server** (fully managed, zero install) or **SQLcl MCP
 
 ## What It Does
 
-### Design a new graph from scratch
+### Design a new graph from scratch (Consultive Mode)
 
 ```
-You:     "How do I model my problem as a graph?"
+You:     "I have orders, customers and products. Would a graph help
+          me find customers who buy the same things?"
 
 Advisor: 1. Asks about your domain, entities, relationships, and business questions
-         2. Assesses whether a graph model fits your use case (or if relational is enough)
+         2. Assesses whether a graph model fits (or if relational is enough)
          3. Identifies vertices and edges from your existing tables
-         4. Proposes CREATE PROPERTY GRAPH DDL
-         5. Writes starter GRAPH_TABLE queries for your business questions
-         6. Proposes initial indexes based on the query patterns
-         7. Flags SQL/PGQ limitations (and whether PGX is needed)
+         4. Generates a visual Mermaid diagram of the proposed graph (optional)
+         5. Iterates on the diagram with you until you approve
+         6. Proposes CREATE PROPERTY GRAPH DDL
+         7. Writes starter GRAPH_TABLE queries for your business questions
+         8. Proposes initial indexes based on the query patterns
+         9. Flags SQL/PGQ limitations (and whether PGX is needed)
 ```
+
+#### Visual graph preview
+
+Before generating any DDL, the advisor can produce a **Mermaid diagram** so you see the proposed graph — vertices, edges, and cardinality — and iterate on it conversationally ("add this node", "remove that edge") before committing to code.
+
+Each vertex type gets a distinct color for quick identification:
+
+```mermaid
+graph LR
+    C((CUSTOMER)):::v1
+    P((PRODUCT)):::v2
+    O((ORDER)):::v3
+
+    C -->|PLACED| O
+    O -->|CONTAINS| P
+    C -->|VIEWED| P
+
+    classDef v1 fill:#4A90D9,stroke:#2C5F8A,color:#fff,stroke-width:2px
+    classDef v2 fill:#E8743B,stroke:#A3522A,color:#fff,stroke-width:2px
+    classDef v3 fill:#19A979,stroke:#127956,color:#fff,stroke-width:2px
+```
+
+> **To view diagrams locally**: install the VS Code extension `bierner.markdown-mermaid` (`Ctrl+Shift+X` → search → Install), then open the `.md` file with `Ctrl+K V` (split preview). GitHub also renders Mermaid natively.
 
 ### Optimize an existing graph workload
 
@@ -46,6 +72,7 @@ The advisor follows a **simplicity-first philosophy**: a property graph is just 
 | Capability | Description |
 |---|---|
 | **8-phase methodology** | Health Check → Discovery → Identify → Deep Dive → Selectivity → Simulate → Recommend → Scale Test |
+| **Visual graph modeling** | Generates Mermaid diagrams with color-coded vertices for design review before DDL |
 | **40+ SQL templates** | Pre-built, tested diagnostic queries for Oracle 23ai/26ai graph workloads |
 | **GRAPH_TABLE awareness** | Knows it expands to relational joins — traces TABLE ACCESS / HASH JOIN back to graph hops |
 | **P0-P4 index strategy** | PK → FK → filter → composite → advanced. Stops at the lowest level that solves the problem |
@@ -54,7 +81,7 @@ The advisor follows a **simplicity-first philosophy**: a property graph is just 
 | **Elapsed-time evaluation** | Always measures actual elapsed time — never evaluates by optimizer cost |
 | **Production guard** | Read-only by default, never executes DDL/DML or changes configuration without explicit approval |
 | **Scale testing** | Generates scaled data (2X/5X/10X) and re-tests to validate that recommendations hold at volume |
-| **Persistent memory** | Remembers schemas, past recommendations, and outcomes across sessions |
+| **Persistent memory** | Remembers schemas, past recommendations, and outcomes across sessions *(planned — see Roadmap)* |
 
 ---
 
@@ -151,6 +178,27 @@ Uses AWR/ASH when available for historical trends. Falls back to `V$SQL` + `USER
 
 ---
 
+## Two Operating Modes
+
+### Consultive Mode — Design new graphs
+
+For users asking "would a graph help for X?" or "how should I model Y?". The advisor:
+
+1. **Assesses** if a graph model fits the use case (vs. staying relational)
+2. **Proposes** a visual model (Mermaid diagram) for review
+3. **Iterates** on the diagram based on feedback
+4. **Generates** DDL, starter queries, and index strategy
+
+No database connection required — the advisor works from the user's description alone. If existing tables are available and connected, it can inspect them to identify vertices and edges automatically.
+
+The advisor never creates objects or executes DDL without explicit approval — it produces scripts and recommendations.
+
+### Diagnostic Mode — Optimize existing graphs
+
+For users with a running graph workload that needs tuning. The advisor runs the 8-phase methodology: health check, discovery, identification, deep dive, selectivity analysis, simulation with invisible indexes, recommendations, and scale testing.
+
+---
+
 ## What the Advisor Knows
 
 ### Indexing (simplicity-first)
@@ -197,6 +245,19 @@ Missing DBMS_STATS, over-indexing INSERT-heavy edge tables, unconstrained multi-
 
 ---
 
+## Knowledge Base
+
+| Directory | Content | Status |
+|-----------|---------|--------|
+| `graph-patterns/` | Fraud detection, social network, supply chain, use case assessment | Active |
+| `graph-design/` | Modeling checklist (8 rules), physical design, query best practices | Active |
+| `optimization-rules/` | Advanced indexing, Auto Indexing + graphs | Active |
+| `oracle-internals/` | CBO behavior, SQL/PGQ feature matrix, PGX vs SQL/PGQ | Active |
+
+Knowledge files include version metadata (`verified_version`, `last_verified`). The advisor flags when your DB version is newer than the knowledge. See `knowledge/FRESHNESS.md`.
+
+---
+
 ## Client Support
 
 | Client | MCP Transport | System Prompt |
@@ -212,16 +273,16 @@ Minimum model: 30B+ parameters. Tested with Claude Sonnet/Opus, GPT-4o, Gemini P
 
 ---
 
-## Knowledge Base
+## Sample Workloads
 
-| Directory | Content |
-|-----------|---------|
-| `graph-patterns/` | Fraud detection, social network, supply chain, use case assessment |
-| `graph-design/` | Modeling checklist (8 rules), physical design, query best practices |
-| `optimization-rules/` | Advanced indexing, Auto Indexing + graphs, JSON/vector edge cases |
-| `oracle-internals/` | CBO behavior, SQL/PGQ feature matrix, PGX vs SQL/PGQ |
+| Workload | Description | Scripts |
+|----------|-------------|---------|
+| `workload/fraud/` | Fraud detection — 6 vertex types, 11 edge types, configurable scale | 00-05 |
+| `workload/newfraud/` | Updated fraud detection variant | 00-05 |
+| `workload/catalog_compat/` | Catalog compatibility testing | 00-05 |
+| `workload/demo/` | End-to-end guided demo (~45 min) | Demo script + prompt |
 
-Knowledge files include version metadata (`verified_version`, `last_verified`). The advisor flags when your DB version is newer than the knowledge. See `knowledge/FRESHNESS.md`.
+Each workload includes schema creation, graph definition, data generation, query set, and automated workload runner.
 
 ---
 
@@ -230,19 +291,33 @@ Knowledge files include version metadata (`verified_version`, `last_verified`). 
 ```
 oracle-graph-dba-advisor/
 ├── SYSTEM_PROMPT.md                       # Advisor brain (methodology + knowledge)
-├── SKILL.md                               # Skill manifest
+├── SKILL.md                               # Skill manifest (capabilities + I/O)
 ├── CLAUDE.md                              # Claude Code auto-loader
 ├── .mcp.json                              # Claude Code MCP config
 ├── config/
 │   └── production-guard.yaml              # Production detection rules (customize)
-├── clients/                               # Setup guides per client
-├── sql-templates/                         # 40+ diagnostic SQL templates
+├── clients/                               # Setup guides per MCP client
+│   ├── adb-mcp-setup.md                   # ADB native MCP (zero install)
+│   └── README.md                          # SQLcl MCP + client configs
+├── sql-templates/                         # 40+ diagnostic SQL templates (6 files)
 ├── knowledge/                             # Patterns, rules, Oracle internals
-├── memory/                                # Persistent state (gitignored)
-├── agent/                                 # Optional: n8n workflows for automation
-└── workload/
-    ├── fraud/                             # Sample fraud detection workload
-    └── demo/                              # End-to-end demo (~45 min)
+│   ├── graph-patterns/                    # Domain patterns + use case assessment
+│   ├── graph-design/                      # Modeling, physical design, query practices
+│   ├── optimization-rules/                # Advanced + auto indexing strategies
+│   ├── oracle-internals/                  # CBO, SQL/PGQ features, PGX vs SQL/PGQ
+│   └── rag/                               # [Planned] RAG with vectorized Oracle docs
+├── memory/                                # [Planned] Persistent state across sessions
+│   ├── _templates/                        # Schema snapshot, recommendation log
+│   ├── shared/                            # User preferences, learned patterns
+│   └── backends/                          # [Planned] Oracle ADB centralized memory
+├── docs/                                  # Generated diagrams (Mermaid models)
+├── agent/                                 # [Planned] Autonomous agent workflows
+│   └── n8n/                               # n8n templates (chat, healthcheck, deploy)
+└── workload/                              # Sample graph workloads
+    ├── fraud/                             # Fraud detection (primary)
+    ├── newfraud/                           # Fraud detection (variant)
+    ├── catalog_compat/                    # Catalog compatibility
+    └── demo/                              # End-to-end demo
 ```
 
 ---
@@ -252,6 +327,19 @@ oracle-graph-dba-advisor/
 **New graph patterns** — Add `.md` files to `knowledge/graph-patterns/`. The advisor picks them up automatically.
 
 **Custom SQL templates** — Add `.sql` files to `sql-templates/` and reference in `SYSTEM_PROMPT.md`.
+
+---
+
+## Roadmap
+
+| Feature | Directory | Status | Description |
+|---------|-----------|--------|-------------|
+| **RAG layer** | `knowledge/rag/` | Planned | Vectorized Oracle docs + custom docs for deep retrieval (semantic search via OracleVS or local ChromaDB) |
+| **Persistent memory** | `memory/` | Planned | File-based memory for schema snapshots, recommendation history, learned patterns across sessions |
+| **Centralized memory** | `memory/backends/` | Planned | Oracle ADB as shared memory backend with vector search, multi-tenancy (VPD), and audit trail |
+| **Autonomous agent** | `agent/n8n/` | Planned | n8n workflow templates for automated health checks, post-deploy analysis, and chat interface |
+
+Design docs for each feature are already in their respective directories.
 
 ---
 

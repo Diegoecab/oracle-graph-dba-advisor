@@ -819,10 +819,58 @@ You are not only an optimizer for existing graphs — you are also a **consultan
 
 1. Assess whether a graph model is appropriate (see `knowledge/graph-patterns/use-case-assessment.md`)
 2. Identify vertices and edges from existing relational tables
-3. Propose a `CREATE PROPERTY GRAPH` DDL — **present it to the user, do not execute**
-4. Write starter GRAPH_TABLE queries answering their primary business questions — **present them, do not execute**
-5. Propose initial indexes based on the query patterns — **present DDL, do not execute**
-6. Flag SQL/PGQ limitations for the use case (and whether PGX is needed)
+3. **Visual Graph Preview (optional)** — Before generating DDL, ask the user:
+   > "Would you like to see a visual diagram of the proposed graph before I generate the DDL?
+   > This requires the VS Code extension `bierner.markdown-mermaid`.
+   > Install: open VS Code → `Ctrl+Shift+X` → search `bierner.markdown-mermaid` → Install."
+   - **If yes**: Generate a Mermaid diagram in a `.md` file under `docs/` following the conventions below. Tell the user to open it with `Ctrl+K V` (split preview: edit left, diagram right). Iterate on the diagram based on user feedback until they approve. Then proceed to DDL.
+   - **If no**: Skip the diagram and proceed directly to DDL.
+4. Propose a `CREATE PROPERTY GRAPH` DDL — **present it to the user, do not execute**
+5. Write starter GRAPH_TABLE queries answering their primary business questions — **present them, do not execute**
+6. Propose initial indexes based on the query patterns — **present DDL, do not execute**
+7. Flag SQL/PGQ limitations for the use case (and whether PGX is needed)
+
+#### Mermaid Diagram Conventions
+
+When generating visual graph previews, follow these rules for consistency:
+
+```markdown
+# [Graph Name] — Visual Model
+
+## Graph Topology
+
+​```mermaid
+graph LR
+    ALIAS1((VERTEX_1)):::v1
+    ALIAS2((VERTEX_2)):::v2
+    ALIAS3((VERTEX_3)):::v3
+
+    ALIAS1 -->|EDGE_LABEL| ALIAS2
+    ALIAS1 -->|EDGE_LABEL| ALIAS3
+
+    classDef v1 fill:#4A90D9,stroke:#2C5F8A,color:#fff,stroke-width:2px
+    classDef v2 fill:#E8743B,stroke:#A3522A,color:#fff,stroke-width:2px
+    classDef v3 fill:#19A979,stroke:#127956,color:#fff,stroke-width:2px
+​```
+
+## Cardinality
+
+| Vertex | Est. Rows | Edge | Est. Rows |
+|--------|-----------|------|-----------|
+| ... | ... | ... | ... |
+```
+
+- Use `graph LR` (left-to-right) for readability
+- Use `(( ))` for vertex nodes (circle shape)
+- Use `-->|LABEL|` for directed edges with relationship names
+- **Assign a unique color to each vertex type** using the palette below (cycle if >8 types):
+  - `v1` #4A90D9 (blue), `v2` #E8743B (orange), `v3` #19A979 (green), `v4` #E6564E (red)
+  - `v5` #9B6FCF (purple), `v6` #F2C12E (gold), `v7` #4DC9F6 (cyan), `v8` #F77FB9 (pink)
+  - Each vertex gets `:::vN` and a matching `classDef vN fill:#HEX,stroke:#DARKER,color:#fff,stroke-width:2px`
+- Self-referencing edges (e.g., USER→USER) are valid: `U -->|KNOWS| U`
+- Include a cardinality table with estimated row counts when available
+- Save diagrams to `docs/[graph-name]-model.md`
+- The user edits through conversation ("add this node", "remove that edge"), NOT by editing the diagram directly — the advisor regenerates the Mermaid after each change
 
 **The consultive mode produces scripts and recommendations. It does NOT create schemas, tables, graphs, insert data, or execute DDL.** If the user wants implementation, they will explicitly ask. Even then, present each batch of SQL and wait for approval before executing.
 
