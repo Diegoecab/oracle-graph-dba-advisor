@@ -199,6 +199,114 @@ For users with a running graph workload that needs tuning. The advisor runs the 
 
 ---
 
+## Required Database Privileges
+
+Each mode requires different privilege levels. Grant only what you need.
+
+### Level 0: Consultive Mode — No connection required
+
+No database privileges needed. The advisor works from the user's description to assess, design, and generate scripts.
+
+### Level 1: Read-Only Diagnostic (recommended for production)
+
+Analyzes graph topology, finds expensive queries, reads execution plans. **No writes.**
+
+```sql
+-- Graph metadata
+GRANT SELECT ON USER_PROPERTY_GRAPHS   TO advisor_user;
+GRANT SELECT ON USER_PG_ELEMENTS       TO advisor_user;
+GRANT SELECT ON USER_PG_VERTEX_TABLES  TO advisor_user;  -- 26ai
+GRANT SELECT ON USER_PG_EDGE_TABLES    TO advisor_user;  -- 26ai
+
+-- Schema inspection
+GRANT SELECT ON USER_TABLES            TO advisor_user;
+GRANT SELECT ON USER_INDEXES           TO advisor_user;
+GRANT SELECT ON USER_IND_COLUMNS       TO advisor_user;
+GRANT SELECT ON USER_TAB_COL_STATISTICS TO advisor_user;
+GRANT SELECT ON USER_TAB_MODIFICATIONS TO advisor_user;
+GRANT SELECT ON USER_SEGMENTS          TO advisor_user;
+
+-- Performance views (V$)
+GRANT SELECT ON V_$SQL                 TO advisor_user;
+GRANT SELECT ON V_$SQL_PLAN            TO advisor_user;
+GRANT SELECT ON V_$SQL_PLAN_STATISTICS_ALL TO advisor_user;
+GRANT SELECT ON V_$PARAMETER           TO advisor_user;
+GRANT SELECT ON V_$SESSION             TO advisor_user;
+GRANT SELECT ON V_$SYSMETRIC_HISTORY   TO advisor_user;
+GRANT SELECT ON V_$SYSTEM_EVENT        TO advisor_user;
+GRANT SELECT ON V_$SGASTAT             TO advisor_user;
+GRANT SELECT ON V_$PGASTAT             TO advisor_user;
+GRANT SELECT ON V_$VERSION             TO advisor_user;
+
+-- Execution plan display
+GRANT EXECUTE ON DBMS_XPLAN            TO advisor_user;
+```
+
+> **Note**: `USER_*` views are accessible by default to the schema owner. The grants above are only needed if the advisor connects as a separate user.
+
+### Level 2: Read-Only + AWR (advanced diagnostics on Enterprise Edition)
+
+Adds historical trends and Auto Indexing status. Requires Diagnostics Pack license.
+
+```sql
+-- All Level 1 privileges, plus:
+GRANT SELECT_CATALOG_ROLE              TO advisor_user;
+-- Or grant individual DBA_ views:
+GRANT SELECT ON DBA_HIST_SNAPSHOT      TO advisor_user;
+GRANT SELECT ON DBA_HIST_SYSMETRIC_SUMMARY TO advisor_user;
+GRANT SELECT ON DBA_HIST_SYSTEM_EVENT  TO advisor_user;
+GRANT SELECT ON DBA_HIST_PGASTAT       TO advisor_user;
+GRANT SELECT ON DBA_HIST_ACTIVE_SESS_HISTORY TO advisor_user;
+GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO advisor_user;
+GRANT SELECT ON DBA_AUTO_INDEX_CONFIG  TO advisor_user;
+GRANT SELECT ON DBA_AUTO_INDEX_IND_ACTIONS TO advisor_user;
+GRANT SELECT ON DBA_INDEX_USAGE        TO advisor_user;  -- 23ai+
+```
+
+> **Always Free / ADB**: AWR views are not available. The advisor falls back to V$ views automatically.
+
+### Level 3: Simulate — Test with invisible indexes
+
+Creates invisible indexes to measure impact before committing. Session-scoped, zero risk to existing queries.
+
+```sql
+-- All Level 1 privileges, plus:
+GRANT CREATE INDEX                     TO advisor_user;  -- for CREATE INDEX ... INVISIBLE
+GRANT ALTER SESSION                    TO advisor_user;  -- for optimizer_use_invisible_indexes
+GRANT ALTER INDEX                      TO advisor_user;  -- for VISIBLE/INVISIBLE toggle
+-- Optionally:
+GRANT DROP INDEX                       TO advisor_user;  -- for rollback
+```
+
+### Level 4: Full — Create schema, graph, and workload
+
+For development/test environments where the advisor creates the full use case (tables, graph, data, indexes).
+
+```sql
+-- All Level 1-3 privileges, plus:
+GRANT CREATE SESSION                   TO advisor_user;
+GRANT CREATE TABLE                     TO advisor_user;
+GRANT CREATE PROPERTY GRAPH            TO advisor_user;
+GRANT CREATE VIEW                      TO advisor_user;
+GRANT CREATE SEQUENCE                  TO advisor_user;
+GRANT CREATE PROCEDURE                 TO advisor_user;
+GRANT EXECUTE ON DBMS_STATS            TO advisor_user;
+GRANT EXECUTE ON DBMS_RANDOM           TO advisor_user;
+GRANT UNLIMITED TABLESPACE             TO advisor_user;  -- or specific quota
+```
+
+### Quick reference
+
+| Mode | Connection | Writes | Typical use | Privilege level |
+|------|-----------|--------|-------------|-----------------|
+| **Consultive** | No | None | Design new graph from description | Level 0 |
+| **Diagnostic (read-only)** | Yes | None | Analyze production workload | Level 1 |
+| **Diagnostic + AWR** | Yes | None | Historical trends, Auto Indexing | Level 2 |
+| **Diagnostic + Simulate** | Yes | Invisible indexes only | Test index recommendations | Level 3 |
+| **Full (dev/test)** | Yes | DDL + DML | Build and test complete use case | Level 4 |
+
+---
+
 ## What the Advisor Knows
 
 ### Indexing (simplicity-first)
