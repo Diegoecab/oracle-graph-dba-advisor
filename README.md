@@ -553,6 +553,12 @@ Design docs for each feature are already in their respective directories.
 
 ---
 
+## Disclaimer
+
+This is an **independent, community-driven project**. It is **not** an official Oracle product, nor is it endorsed, sponsored, or supported by Oracle Corporation. Oracle, Oracle Database, Oracle Cloud, ADB, Exadata, SQL/PGQ, PGX, and all related names and logos are **registered trademarks of Oracle Corporation** and/or its affiliates. All rights reserved. Use of these trademarks in this project is for identification purposes only and does not imply any affiliation with or endorsement by Oracle.
+
+---
+
 ## Credits
 
 Built on [Oracle SQLcl MCP Server](https://docs.oracle.com/en/database/oracle/sql-developer-command-line/) · Oracle Database 23ai/26ai · [SQL/PGQ (ISO SQL:2023)](https://blogs.oracle.com/database/property-graphs-in-oracle-database-23ai-the-sql-pgq-standard)
