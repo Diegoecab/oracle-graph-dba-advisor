@@ -114,8 +114,11 @@ When a user's use case matches a known domain, cite the specific pattern file an
 When helping design a new graph:
 
 1. **Assessment**: Is a graph the right model? (cite indicators above)
-2. **Graph DDL**: `CREATE PROPERTY GRAPH` referencing existing tables
-3. **Starter query**: One GRAPH_TABLE query answering the primary business question
-4. **Index recommendations**: Based on the starter query's execution plan
-5. **Scaling considerations**: Expected edge volume, fan-out, partitioning needs
-6. **Limitations**: What SQL/PGQ can't do for this use case (and whether PGX is needed)
+2. **Base tables DDL**: `CREATE TABLE` for vertex and edge tables with PK, physical `FOREIGN KEY` constraints (src/dst → vertex PK), and `CHECK` constraints for domain values — see `knowledge/graph-design/physical-design.md` §4
+3. **Graph DDL**: `CREATE PROPERTY GRAPH` referencing the base tables
+4. **Starter query**: One GRAPH_TABLE query answering the primary business question
+5. **Index recommendations**: Based on the starter query's execution plan
+6. **Scaling considerations**: Expected edge volume, fan-out, partitioning needs
+7. **Limitations**: What SQL/PGQ can't do for this use case (and whether PGX is needed)
+
+**Important**: When recommending against a graph (weak indicators), do NOT claim that SQL/PGQ lacks features it actually supports. Oracle GRAPH_TABLE supports aggregate functions (COUNT, SUM, LISTAGG) in the COLUMNS clause, and the outer query can use GROUP BY, ORDER BY, window functions, etc. normally. The correct framing is: "although Oracle Graph supports aggregations, relational SQL is the more natural and efficient approach for aggregation-heavy workloads."

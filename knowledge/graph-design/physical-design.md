@@ -143,7 +143,43 @@ CREATE TABLE n_account (...) PARTITION BY HASH (id) PARTITIONS 16;
 
 ---
 
-## 4. Vertex Table Considerations
+## 4. FK Constraints and CHECK Constraints on Edge Tables
+
+Edge tables in a property graph are still relational tables. Always declare physical `FOREIGN KEY` constraints and domain `CHECK` constraints — they enforce data integrity independently of the graph layer and enable the CBO to use FK information for join elimination and cardinality estimation.
+
+```sql
+CREATE TABLE e_transfers (
+  id        NUMBER PRIMARY KEY,
+  src       NUMBER NOT NULL,
+  dst       NUMBER NOT NULL,
+  amount    NUMBER(15,2),
+  txn_date  TIMESTAMP,
+  -- FK enforcement: ensures orphan edges cannot exist
+  CONSTRAINT fk_transfers_src FOREIGN KEY (src) REFERENCES n_account(id),
+  CONSTRAINT fk_transfers_dst FOREIGN KEY (dst) REFERENCES n_account(id),
+  -- Domain constraints
+  CONSTRAINT chk_transfers_no_self CHECK (src != dst)
+);
+```
+
+**Why this matters for graphs**:
+- `CREATE PROPERTY GRAPH` declares `SOURCE KEY ... REFERENCES` and `DESTINATION KEY ... REFERENCES`, but these are **metadata only** — they do NOT enforce referential integrity at DML time.
+- Without physical FKs, an `INSERT` into an edge table with a nonexistent vertex key silently creates a dangling edge. The graph will contain edges pointing to nothing, causing wrong query results.
+- `CHECK` constraints prevent invalid domain values (e.g., `is_active IN ('Y','N')`, `access_type IN ('A','D')`) and structural violations (e.g., self-loops in inheritance hierarchies via `src != dst`).
+
+**Post-creation validation**: After `CREATE PROPERTY GRAPH`, run validation to verify that all edge references resolve to existing vertices and that key uniqueness holds. On Oracle 23ai+, use the graph validation utilities if available; otherwise, run manual checks:
+
+```sql
+-- Check for orphan edges (src references nonexistent vertex)
+SELECT COUNT(*) FROM e_transfers t
+WHERE NOT EXISTS (SELECT 1 FROM n_account a WHERE a.id = t.src);
+```
+
+**Performance note**: FK constraints add overhead to INSERT/UPDATE/DELETE on edge tables (the DB must verify the referenced vertex exists). For bulk-load scenarios, consider `ALTER TABLE ... DISABLE CONSTRAINT` during load, then `ENABLE VALIDATE` after.
+
+---
+
+## 5. Vertex Table Considerations
 
 Vertex tables are typically smaller and accessed by PK. Partitioning vertex tables is usually unnecessary unless:
 
@@ -155,7 +191,7 @@ If partitioned, use the same strategy as the edge table's FK column to enable pa
 
 ---
 
-## 5. Index-Organized Tables (IOT) for Edge Tables
+## 6. Index-Organized Tables (IOT) for Edge Tables
 
 An alternative to heap + indexes: make the edge table itself an IOT organized on `(source_key, destination_key)`.
 

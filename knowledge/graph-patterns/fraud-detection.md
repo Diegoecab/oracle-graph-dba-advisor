@@ -83,7 +83,7 @@ SELECT * FROM GRAPH_TABLE(fraud_graph
 - Typical selectivity: FETCH FIRST is essential to cap output
 
 **Index Strategy**:
-- All FK indexes on edge tables (SRC + DST) are **mandatory** — without them, 4 full table scans
+- All FK indexes on edge tables (SRC + DST) are **mandatory** — without them, the CBO is likely to choose full table scans on each hop
 - Composite indexes `(src, end_date, dst)` provide the best single-index coverage per edge access
 - Consider `FETCH FIRST N ROWS ONLY` as part of the recommendation (not just indexing)
 
@@ -123,7 +123,7 @@ SELECT * FROM GRAPH_TABLE(fraud_graph
 - Hops: 3 (circular — closes back to u1)
 - Edge joins: 6
 - Vertex joins: 7
-- Fan-out risk: **EXTREME** — without indexes, this generates 6 full table scans
+- Fan-out risk: **EXTREME** — without indexes, the CBO is likely to choose full scans on the 6 edge joins
 - Typical runtime: 60+ seconds without indexes, <200ms with full FK indexes
 
 **Index Strategy**:

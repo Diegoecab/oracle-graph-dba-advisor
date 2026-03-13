@@ -101,7 +101,9 @@ If the user's workload requires any of these, the advisor should recommend PGX:
 | Integration with SQL/PL/SQL | Native | Requires PGQL ↔ SQL bridge | **SQL/PGQ** |
 
 **Advisor response when PGX is needed**:
-> "This workload is better suited for PGX (Graph Server) than SQL/PGQ. SQL/PGQ excels at focused, filtered traversals from known vertices — for full-graph algorithms like PageRank and community detection, PGX processes the graph in memory and is significantly faster. PGX requires Graph Server infrastructure (ADB-D or on-premises)."
+> "This workload is better suited for PGX (Graph Server) than SQL/PGQ. SQL/PGQ excels at focused, filtered traversals from known vertices — for full-graph algorithms like PageRank and community detection, PGX processes the graph in memory and is significantly faster. PGX requires ADB-D (Dedicated) which includes Graph Server as a fully managed service."
+
+**Note**: Always recommend ADB-D (fully managed) for PGX workloads. Do not recommend on-premises Graph Server installations.
 
 ---
 

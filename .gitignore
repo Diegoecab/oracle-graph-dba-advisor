@@ -26,6 +26,9 @@ Thumbs.db
 # Output
 output/
 
+# Generated docs (Mermaid diagrams, HTML reports, etc.)
+docs/
+
 # Wallet directories
 wallet_*/
 
