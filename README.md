@@ -160,21 +160,123 @@ Uses AWR/ASH when available for historical trends. Falls back to `V$SQL` + `USER
 
 ### Option B: SQLcl local (any Oracle 23ai/26ai)
 
-1. Add SQLcl as MCP server:
-   ```json
-   {
-     "mcpServers": {
-       "sqlcl": {
-         "command": "/path/to/sqlcl/bin/sql",
-         "args": ["-mcp"]
-       }
-     }
-   }
+For ADB Dedicated, Base DB, on-prem, Free tier, or any Oracle 23ai/26ai where the native MCP endpoint is not available.
+
+#### Prerequisites
+
+| Requirement | Version | Download |
+|-------------|---------|----------|
+| **Java (JDK)** | 17 or higher | [Oracle JDK](https://www.oracle.com/java/technologies/downloads/) or OpenJDK |
+| **Oracle SQLcl** | 25.1+ | [SQLcl Downloads](https://www.oracle.com/database/sqldeveloper/technologies/sqlcl/download/) |
+| **Oracle Wallet** (ADB only) | — | Download from OCI Console → ADB → DB Connection → Download Wallet |
+
+#### Step 1: Install Java
+
+Verify Java is installed:
+```bash
+java -version
+# Must show 17 or higher
+```
+
+If not installed, download and install JDK 17+. Ensure `JAVA_HOME` is set and `java` is in your PATH.
+
+#### Step 2: Install SQLcl
+
+1. Download SQLcl from [oracle.com/sqlcl](https://www.oracle.com/database/sqldeveloper/technologies/sqlcl/download/)
+2. Unzip to a directory (e.g., `/opt/sqlcl` or `C:\sqlcl`)
+3. Verify:
+   ```bash
+   /path/to/sqlcl/bin/sql -version
    ```
 
-2. Start a conversation.
+#### Step 3: Create a saved connection
 
-> Full details: `clients/README.md`
+SQLcl MCP requires a **saved connection** with stored password. Open SQLcl and create one:
+
+**For ADB (with wallet):**
+```bash
+/path/to/sqlcl/bin/sql /nolog
+
+SQL> set cloudconfig /path/to/wallet.zip
+SQL> conn -save my_graph_db -savepwd admin/MyPassword123@myadb_low
+```
+
+**For on-prem / Base DB / Free tier:**
+```bash
+/path/to/sqlcl/bin/sql /nolog
+
+SQL> conn -save my_graph_db -savepwd myuser/MyPassword123@hostname:1521/service_name
+```
+
+> The connection name (`my_graph_db`) is case-sensitive. You will use it later to connect via the advisor.
+
+#### Step 4: Test the connection
+
+```bash
+/path/to/sqlcl/bin/sql my_graph_db
+
+SQL> SELECT SYS_CONTEXT('USERENV','DB_NAME') FROM DUAL;
+# Should return your database name
+SQL> exit
+```
+
+#### Step 5: Configure your MCP client
+
+Add SQLcl as an MCP server in your client's configuration:
+
+**Claude Code** — create or edit `.mcp.json` in the project root:
+```json
+{
+  "mcpServers": {
+    "sqlcl": {
+      "command": "/path/to/sqlcl/bin/sql",
+      "args": ["-mcp"]
+    }
+  }
+}
+```
+
+**If connecting to ADB**, add the wallet path:
+```json
+{
+  "mcpServers": {
+    "sqlcl": {
+      "command": "/path/to/sqlcl/bin/sql",
+      "args": ["-mcp"],
+      "env": {
+        "TNS_ADMIN": "/path/to/wallet"
+      }
+    }
+  }
+}
+```
+
+**Claude Desktop** — edit `claude_desktop_config.json` (same format as above).
+
+**VS Code + Copilot** — add to `.vscode/mcp.json`:
+```json
+{
+  "servers": {
+    "sqlcl": {
+      "command": "/path/to/sqlcl/bin/sql",
+      "args": ["-mcp"]
+    }
+  }
+}
+```
+
+#### Step 6: Connect from the advisor
+
+Once the MCP server is running, tell the advisor to connect using your saved connection name:
+
+```
+You:     "Connect to my_graph_db"
+Advisor: Uses the MCP connect tool → confirms connection → ready to analyze
+```
+
+Or use the MCP connect tool directly if your client exposes it.
+
+> Full client-specific details: `clients/README.md`
 
 ---
 
