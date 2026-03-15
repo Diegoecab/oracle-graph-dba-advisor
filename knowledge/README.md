@@ -2,6 +2,8 @@
 
 This directory contains domain-specific graph patterns, optimization rules, and Oracle internals documentation that extend the advisor's base knowledge in `SYSTEM_PROMPT.md`.
 
+A consolidated summary of all recommendations can be found in [`recommendations-guide.md`](recommendations-guide.md).
+
 ## Directory Structure
 
 ```
