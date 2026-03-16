@@ -9,6 +9,14 @@ confidence: "medium"
 
 # Physical Design for Graph Tables — Oracle 23ai / 26ai
 
+## Contents
+- [1. Edge Table Partitioning Strategies](#1-edge-table-partitioning-strategies)
+- [2. Local Indexes on Partitioned Tables](#2-local-indexes-on-partitioned-tables)
+- [3. Partition-Wise Joins](#3-partition-wise-joins)
+- [4. FK Constraints and CHECK Constraints on Edge Tables](#4-fk-constraints-and-check-constraints-on-edge-tables)
+- [5. Vertex Table Considerations](#5-vertex-table-considerations)
+- [6. Index-Organized Tables (IOT) for Edge Tables](#6-index-organized-tables-iot-for-edge-tables)
+
 ## 1. Edge Table Partitioning Strategies
 
 Edge tables are the most critical tables for graph performance — they drive every traversal. Three partitioning strategies with trade-offs:

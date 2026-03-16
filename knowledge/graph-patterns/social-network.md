@@ -10,6 +10,13 @@ confidence: "high"
 
 Patterns for social media, community detection, influence propagation, and recommendation systems on Oracle SQL/PGQ.
 
+## Contents
+- [Pattern 1: Mutual Friends (Common Neighbors)](#pattern-1-mutual-friends-common-neighbors)
+- [Pattern 2: Influence Propagation (N-hop Reach)](#pattern-2-influence-propagation-n-hop-reach)
+- [Pattern 3: Community Detection (Dense Subgraph)](#pattern-3-community-detection-dense-subgraph)
+- [Pattern 4: Content Recommendation (Collaborative Filtering)](#pattern-4-content-recommendation-collaborative-filtering)
+- [Pattern 5: Shortest Path Approximation (BFS-like)](#pattern-5-shortest-path-approximation-bfs-like)
+
 ---
 
 ## Pattern 1: Mutual Friends (Common Neighbors)

@@ -8,6 +8,16 @@ confidence: "high"
 
 # Graph Modeling Checklist — 8 Rules for Oracle SQL/PGQ
 
+## Contents
+- [Rule 1: Query-First Modeling](#rule-1-query-first-modeling)
+- [Rule 2: Supernode/Hub Isolation](#rule-2-supernodehub-isolation)
+- [Rule 3: Specific Relationship Types](#rule-3-specific-relationship-types)
+- [Rule 4: Branching Factor Control](#rule-4-branching-factor-control)
+- [Rule 5: Separate Logical Graphs by Use Case](#rule-5-separate-logical-graphs-by-use-case)
+- [Rule 6: Lightweight Vertex/Edge Tables](#rule-6-lightweight-vertexedge-tables)
+- [Rule 7: Compact, Consistent ID Types](#rule-7-compact-consistent-id-types)
+- [Rule 8: Consistent Edge Directionality](#rule-8-consistent-edge-directionality)
+
 ## Rule 1: Query-First Modeling
 
 Design your graph to answer the questions you'll actually ask. Start from the traversal patterns (which vertex is the start point, what edge types are traversed, what properties are filtered/projected) and work backward to table design.

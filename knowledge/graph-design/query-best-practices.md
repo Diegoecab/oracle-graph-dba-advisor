@@ -14,6 +14,15 @@ version_sensitive_facts:
 
 # SQL/PGQ Query Best Practices — Oracle 23ai / 26ai
 
+## Contents
+- [1. Limit Variable-Length Path Depth](#1-limit-variable-length-path-depth)
+- [2. Filter Before Traversal (Push Predicates Early)](#2-filter-before-traversal-push-predicates-early)
+- [3. Use Bind Variables](#3-use-bind-variables)
+- [4. Minimal Projection in COLUMNS](#4-minimal-projection-in-columns)
+- [5. Avoid Multiple Variable-Length Expansions](#5-avoid-multiple-variable-length-expansions)
+- [6. Predicate Placement: Inside MATCH vs Outside](#6-predicate-placement-inside-match-vs-outside)
+- [7. Hint Placement for GRAPH_TABLE Queries](#7-hint-placement-for-graph_table-queries)
+
 ## 1. Limit Variable-Length Path Depth
 
 Always specify upper bounds on quantified patterns: `{1,3}` not `{1,}` or `*`.

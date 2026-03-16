@@ -10,6 +10,15 @@ confidence: "high"
 
 Synthesized knowledge from official Oracle documentation for the Graph DBA Advisor. This file provides version-specific feature matrices, confirmed internal behavior, performance models, and verified documentation URLs.
 
+## Contents
+- [1. SQL/PGQ Feature Matrix by Version](#1-sqlpgq-feature-matrix-by-version)
+- [2. GRAPH_TABLE Internal Translation Rules](#2-graph_table-internal-translation-rules)
+- [3. Variable Length Path Performance Model](#3-variable-length-path-performance-model)
+- [4. ONE ROW PER Clause Performance Implications](#4-one-row-per-clause-performance-implications)
+- [5. Oracle Documentation URLs](#5-oracle-documentation-urls)
+- [6. JSON Properties in Graphs](#6-json-properties-in-graphs)
+- [7. SCN/Timestamp Queries (AS OF)](#7-scntimestamp-queries-as-of)
+
 ---
 
 ## 1. SQL/PGQ Feature Matrix by Version

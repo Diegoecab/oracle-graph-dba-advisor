@@ -11,6 +11,17 @@ confidence: "high"
 
 Beyond the 5 base strategies in SYSTEM_PROMPT.md, these advanced techniques address specific performance challenges in large-scale SQL/PGQ deployments.
 
+## Contents
+- [Strategy 1: Bidirectional FK Coverage](#strategy-1-bidirectional-fk-coverage)
+- [Strategy 2: Composite FK + Filter Index (The "Graph Covering Index")](#strategy-2-composite-fk--filter-index-the-graph-covering-index)
+- [Strategy 3: Function-Based Indexes for Derived Predicates](#strategy-3-function-based-indexes-for-derived-predicates)
+- [Strategy 4: Partial Indexes via WHERE Clause (Oracle 23ai)](#strategy-4-partial-indexes-via-where-clause-oracle-23ai)
+- [Strategy 5: Index-Organized Edge Tables (IOT)](#strategy-5-index-organized-edge-tables-iot)
+- [Strategy 6: Bitmap Indexes for Low-Cardinality Edge Properties](#strategy-6-bitmap-indexes-for-low-cardinality-edge-properties)
+- [Strategy 7: Invisible Index Rotation for A/B Testing](#strategy-7-invisible-index-rotation-for-ab-testing)
+- [Edge Case: JSON Properties in Graph Tables](#edge-case-json-properties-in-graph-tables)
+- [Edge Case: Vector Properties](#edge-case-vector-properties)
+
 ---
 
 ## Strategy 1: Bidirectional FK Coverage

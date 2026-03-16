@@ -12,6 +12,14 @@ version_sensitive_facts:
 
 # Auto Indexing and Graph Workloads
 
+## Contents
+- [How Auto Indexing Works](#how-auto-indexing-works)
+- [What Auto Indexing Can and Cannot Do for Graphs](#what-auto-indexing-can-and-cannot-do-for-graphs)
+- [Risks and Disadvantages](#risks-and-disadvantages)
+- [Interaction Patterns](#interaction-patterns)
+- [Auto Indexing Configuration Recommendations for Graph Workloads](#auto-indexing-configuration-recommendations-for-graph-workloads)
+- [Monitoring Auto Index Impact on Graph Queries](#monitoring-auto-index-impact-on-graph-queries)
+
 ## How Auto Indexing Works
 
 Oracle Auto Indexing (available on ADB-S and ADB-D) monitors SQL workload via `V$SQL`, identifies candidates, creates indexes as INVISIBLE, validates improvement, and either makes them VISIBLE (benefit confirmed) or drops them (no benefit or regression).

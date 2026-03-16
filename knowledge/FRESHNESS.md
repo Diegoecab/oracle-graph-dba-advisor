@@ -1,5 +1,11 @@
 # Knowledge Freshness — Maintenance Guide
 
+## Contents
+- [How Knowledge Gets Stale](#how-knowledge-gets-stale)
+- [Three Layers of Defense](#three-layers-of-defense)
+- [Version-Sensitive Facts to Watch](#version-sensitive-facts-to-watch)
+- [Cadence](#cadence)
+
 ## How Knowledge Gets Stale
 
 Oracle releases new database versions roughly annually. Each release can:

@@ -8,6 +8,13 @@ confidence: "high"
 
 # Graph Use Case Assessment
 
+## Contents
+- [Purpose](#purpose)
+- [When to Recommend a Graph](#when-to-recommend-a-graph)
+- [How to Design a New Graph](#how-to-design-a-new-graph)
+- [Domain-Specific Starting Points](#domain-specific-starting-points)
+- [What the Advisor Should Produce for a New Use Case](#what-the-advisor-should-produce-for-a-new-use-case)
+
 ## Purpose
 
 This guide helps the advisor evaluate whether a relational workload would benefit from a property graph model, and how to design the graph for a new use case. Use this when the user asks questions like:
@@ -114,11 +121,12 @@ When a user's use case matches a known domain, cite the specific pattern file an
 When helping design a new graph:
 
 1. **Assessment**: Is a graph the right model? (cite indicators above)
-2. **Base tables DDL**: `CREATE TABLE` for vertex and edge tables with PK, physical `FOREIGN KEY` constraints (src/dst → vertex PK), and `CHECK` constraints for domain values — see `knowledge/graph-design/physical-design.md` §4
-3. **Graph DDL**: `CREATE PROPERTY GRAPH` referencing the base tables
-4. **Starter query**: One GRAPH_TABLE query answering the primary business question
-5. **Index recommendations**: Based on the starter query's execution plan
-6. **Scaling considerations**: Expected edge volume, fan-out, partitioning needs
-7. **Limitations**: What SQL/PGQ can't do for this use case (and whether PGX is needed)
+2. **ASCII graph diagram**: Always include an ASCII art diagram in the conversation showing vertices, edges, direction, and cardinality. Mermaid does NOT render in terminal — use ASCII boxes, arrows, and labels. This is mandatory, not optional.
+3. **Base tables DDL**: `CREATE TABLE` for vertex and edge tables with PK, physical `FOREIGN KEY` constraints (src/dst → vertex PK), and `CHECK` constraints for domain values — see `knowledge/graph-design/physical-design.md` §4
+4. **Graph DDL**: `CREATE PROPERTY GRAPH` referencing the base tables
+5. **Starter query**: One GRAPH_TABLE query answering the primary business question
+6. **Index recommendations**: Based on the starter query's execution plan
+7. **Scaling considerations**: Expected edge volume, fan-out, partitioning needs
+8. **Limitations**: What SQL/PGQ can't do for this use case (and whether PGX is needed)
 
 **Important**: When recommending against a graph (weak indicators), do NOT claim that SQL/PGQ lacks features it actually supports. Oracle GRAPH_TABLE supports aggregate functions (COUNT, SUM, LISTAGG) in the COLUMNS clause, and the outer query can use GROUP BY, ORDER BY, window functions, etc. normally. The correct framing is: "although Oracle Graph supports aggregations, relational SQL is the more natural and efficient approach for aggregation-heavy workloads."

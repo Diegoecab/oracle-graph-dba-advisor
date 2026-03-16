@@ -13,6 +13,14 @@ Documented observations from Oracle 23ai and 26ai regarding how the Cost-Based O
 
 See also: `official-documentation-reference.md` in this directory for the feature matrix, variable-length path performance model, and verified documentation URLs.
 
+## Contents
+- [1. GRAPH_TABLE Rewrite Mechanism](#1-graph_table-rewrite-mechanism)
+- [2. Join Order Selection for Multi-Hop Patterns](#2-join-order-selection-for-multi-hop-patterns)
+- [3. Predicate Pushdown in GRAPH_TABLE](#3-predicate-pushdown-in-graph_table)
+- [4. Statistics Impact on GRAPH_TABLE Plans](#4-statistics-impact-on-graph_table-plans)
+- [5. PL/SQL Integration Limitations](#5-plsql-integration-limitations)
+- [6. Execution Plan Caching and Aging](#6-execution-plan-caching-and-aging)
+
 ---
 
 ## 1. GRAPH_TABLE Rewrite Mechanism

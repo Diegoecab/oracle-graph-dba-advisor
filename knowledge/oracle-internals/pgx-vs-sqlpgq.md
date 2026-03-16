@@ -12,6 +12,14 @@ version_sensitive_facts:
 
 # PGX vs SQL/PGQ — Decision Guide
 
+## Contents
+- [Overview](#overview)
+- [1. SQL/PGQ (GRAPH_TABLE) — When to Use](#1-sqlpgq-graph_table--when-to-use)
+- [2. PGX (Graph Server) — When to Use](#2-pgx-graph-server--when-to-use)
+- [3. Decision Matrix: When to Recommend PGX](#3-decision-matrix-when-to-recommend-pgx)
+- [4. PGX Memory Optimization](#4-pgx-memory-optimization)
+- [5. Hybrid Approach: PGX + SQL/PGQ](#5-hybrid-approach-pgx--sqlpgq)
+
 ## Overview
 
 Oracle provides two graph processing engines. This guide helps the advisor determine which engine is appropriate for a given workload.

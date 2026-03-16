@@ -10,6 +10,12 @@ confidence: "high"
 
 Patterns for logistics networks, dependency tracking, risk propagation, and bill-of-materials analysis on Oracle SQL/PGQ.
 
+## Contents
+- [Pattern 1: Supplier Dependency Chain (Multi-hop BOM)](#pattern-1-supplier-dependency-chain-multi-hop-bom)
+- [Pattern 2: Risk Propagation (Cascading Failure)](#pattern-2-risk-propagation-cascading-failure)
+- [Pattern 3: Logistics Route Optimization (Path Through Warehouses)](#pattern-3-logistics-route-optimization-path-through-warehouses)
+- [Pattern 4: Component Commonality Analysis](#pattern-4-component-commonality-analysis)
+
 ---
 
 ## Pattern 1: Supplier Dependency Chain (Multi-hop BOM)

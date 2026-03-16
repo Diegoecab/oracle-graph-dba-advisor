@@ -10,6 +10,13 @@ confidence: "high"
 
 Patterns derived from real-world fraud detection workloads on Oracle 23ai/26ai with SQL/PGQ. These patterns cover account linkage, device sharing, money laundering rings, and identity theft detection.
 
+## Contents
+- [Pattern 1: Shared Device / Shared Card (1-hop)](#pattern-1-shared-device--shared-card-1-hop)
+- [Pattern 2: 2-Hop Device Chain (Friend of Friend)](#pattern-2-2-hop-device-chain-friend-of-friend)
+- [Pattern 3: Triangle Detection (Circular 3-hop)](#pattern-3-triangle-detection-circular-3-hop)
+- [Pattern 4: Temporal Change Detection](#pattern-4-temporal-change-detection)
+- [Pattern 5: High-Risk Neighbor Scoring](#pattern-5-high-risk-neighbor-scoring)
+
 ---
 
 ## Pattern 1: Shared Device / Shared Card (1-hop)
