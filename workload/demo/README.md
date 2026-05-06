@@ -15,7 +15,7 @@ You are a financial institution. You have accounts, merchants, devices, and tran
 | **3. Build** | DDL generation | Creates the property graph DDL, explains each label and property choice |
 | **4. Populate** | Data generation | Generates realistic synthetic data (power-law degrees, skewed properties, temporal spread) |
 | **5. Explore** | Query authoring | Writes GRAPH_TABLE queries that answer the fraud detection questions — shows what the graph can do |
-| **6. Diagnose** | Full 6-phase diagnostic | Finds missing indexes, stale stats, suboptimal plans — WITHOUT being asked. Proactive detection |
+| **6. Diagnose** | Full 8-phase diagnostic | Finds missing indexes, stale stats, suboptimal plans — WITHOUT being asked. Proactive detection |
 | **7. Recommend** | Proactive index recommendations | "Before you go to production, create THESE indexes to avoid performance problems" |
 | **8. Prove** | Index verification | Shows EXPLAIN PLAN before/after for EACH index — TABLE ACCESS FULL to INDEX RANGE SCAN |
 | **9. Scale** | Scalability testing | Grows data to 10X, re-tests — proves recommendations hold under load |

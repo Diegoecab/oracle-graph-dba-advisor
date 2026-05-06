@@ -319,7 +319,7 @@ SELECT * FROM GRAPH_TABLE(fraud_graph
 -- ============================================================
 -- STEP 6: PROACTIVE DIAGNOSTIC — "Before you go to production..."
 -- ============================================================
--- The advisor runs its full 6-phase methodology.
+-- The advisor runs its full 8-phase methodology.
 -- Expected findings:
 --   1. Missing FK indexes on transfers(from_account_id, to_account_id)
 --   2. Missing FK indexes on account_device(account_id, device_id)

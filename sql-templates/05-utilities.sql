@@ -13,9 +13,8 @@
 
 BEGIN
     FOR t IN (
-        SELECT DISTINCT table_name FROM user_pg_vertex_tables
-        UNION
-        SELECT DISTINCT table_name FROM user_pg_edge_tables
+        SELECT DISTINCT object_name AS table_name
+        FROM user_pg_elements
     ) LOOP
         DBMS_STATS.GATHER_TABLE_STATS(
             ownname     => USER,
@@ -90,9 +89,8 @@ END;
 -- if they're actually being used.
 
 WITH graph_tables AS (
-    SELECT DISTINCT table_name FROM user_pg_vertex_tables
-    UNION
-    SELECT DISTINCT table_name FROM user_pg_edge_tables
+    SELECT DISTINCT object_name AS table_name
+    FROM user_pg_elements
 )
 SELECT
     i.index_name,
@@ -121,35 +119,45 @@ ORDER BY NVL(u.total_access_count, 0) ASC;
 -- Summary report of the graph landscape. Useful for the
 -- agent's opening analysis.
 
+WITH graph_elements AS (
+    SELECT DISTINCT
+        object_name AS table_name,
+        UPPER(element_kind) AS table_role
+    FROM user_pg_elements
+)
 SELECT 'PROPERTY GRAPHS' AS section,
        COUNT(*) AS count, NULL AS detail
 FROM user_property_graphs
 UNION ALL
 SELECT 'VERTEX TABLES',
        COUNT(*), LISTAGG(table_name, ', ') WITHIN GROUP (ORDER BY table_name)
-FROM user_pg_vertex_tables
+FROM graph_elements
+WHERE table_role = 'VERTEX'
 UNION ALL
 SELECT 'EDGE TABLES',
        COUNT(*), LISTAGG(table_name, ', ') WITHIN GROUP (ORDER BY table_name)
-FROM user_pg_edge_tables
+FROM graph_elements
+WHERE table_role = 'EDGE'
 UNION ALL
 SELECT 'TOTAL VERTICES',
        SUM(num_rows), NULL
 FROM user_tables t
-WHERE t.table_name IN (SELECT table_name FROM user_pg_vertex_tables)
+WHERE t.table_name IN (
+    SELECT table_name FROM graph_elements WHERE table_role = 'VERTEX'
+)
 UNION ALL
 SELECT 'TOTAL EDGES',
        SUM(num_rows), NULL
 FROM user_tables t
-WHERE t.table_name IN (SELECT table_name FROM user_pg_edge_tables)
+WHERE t.table_name IN (
+    SELECT table_name FROM graph_elements WHERE table_role = 'EDGE'
+)
 UNION ALL
 SELECT 'INDEXES ON GRAPH TABLES',
        COUNT(*), NULL
 FROM user_indexes i
 WHERE i.table_name IN (
-    SELECT table_name FROM user_pg_vertex_tables
-    UNION
-    SELECT table_name FROM user_pg_edge_tables
+    SELECT table_name FROM graph_elements
 );
 
 
@@ -160,14 +168,10 @@ WHERE i.table_name IN (
 -- diagnostic snapshot. Good for periodic health checks.
 
 WITH graph_tables AS (
-    SELECT DISTINCT table_name,
-           CASE WHEN table_name IN (SELECT table_name FROM user_pg_edge_tables)
-                THEN 'EDGE' ELSE 'VERTEX' END AS table_role
-    FROM (
-        SELECT table_name FROM user_pg_vertex_tables
-        UNION
-        SELECT table_name FROM user_pg_edge_tables
-    )
+    SELECT DISTINCT
+        object_name AS table_name,
+        UPPER(element_kind) AS table_role
+    FROM user_pg_elements
 ),
 table_stats AS (
     SELECT t.table_name, gt.table_role, t.num_rows, t.last_analyzed,

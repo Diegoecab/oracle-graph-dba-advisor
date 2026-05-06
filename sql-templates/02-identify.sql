@@ -13,11 +13,8 @@
 -- GRAPH_TABLE syntax. Ranks by total elapsed time.
 
 WITH graph_tables AS (
-    SELECT DISTINCT UPPER(table_name) AS table_name
-    FROM user_pg_vertex_tables
-    UNION
-    SELECT DISTINCT UPPER(table_name)
-    FROM user_pg_edge_tables
+    SELECT DISTINCT UPPER(object_name) AS table_name
+    FROM user_pg_elements
 ),
 graph_sql AS (
     SELECT s.sql_id, s.plan_hash_value, s.sql_text,
@@ -69,11 +66,8 @@ FETCH FIRST 15 ROWS ONLY;
 -- typically means full table scans on edge tables.
 
 WITH graph_tables AS (
-    SELECT DISTINCT UPPER(table_name) AS table_name
-    FROM user_pg_vertex_tables
-    UNION
-    SELECT DISTINCT UPPER(table_name)
-    FROM user_pg_edge_tables
+    SELECT DISTINCT UPPER(object_name) AS table_name
+    FROM user_pg_elements
 ),
 graph_sql AS (
     SELECT s.sql_id, s.plan_hash_value, s.sql_text,
@@ -115,11 +109,8 @@ FETCH FIRST 15 ROWS ONLY;
 -- than one that runs 1×/day at 10s. This weights accordingly.
 
 WITH graph_tables AS (
-    SELECT DISTINCT UPPER(table_name) AS table_name
-    FROM user_pg_vertex_tables
-    UNION
-    SELECT DISTINCT UPPER(table_name)
-    FROM user_pg_edge_tables
+    SELECT DISTINCT UPPER(object_name) AS table_name
+    FROM user_pg_elements
 ),
 graph_sql AS (
     SELECT s.sql_id, s.plan_hash_value, s.sql_text,
@@ -180,13 +171,26 @@ ORDER BY piece;
 -- Counts join operations in execution plans of graph queries
 -- to help classify pattern complexity (1-hop, 2-hop, etc.)
 
-WITH graph_sql_ids AS (
+WITH graph_tables AS (
+    SELECT DISTINCT UPPER(object_name) AS table_name
+    FROM user_pg_elements
+),
+graph_sql_ids AS (
     SELECT DISTINCT s.sql_id
     FROM v$sql s
     WHERE s.parsing_schema_name = SYS_CONTEXT('USERENV','CURRENT_SCHEMA')
       AND s.executions > 0
-      AND (UPPER(s.sql_text) LIKE '%GRAPH_TABLE%'
-           OR UPPER(s.sql_text) LIKE '%MATCH%(%IS%')
+      AND (
+          UPPER(s.sql_text) LIKE '%GRAPH_TABLE%'
+          OR UPPER(s.sql_text) LIKE '%MATCH%(%IS%'
+          OR EXISTS (
+              SELECT 1
+              FROM v$sql_plan p
+              WHERE p.sql_id = s.sql_id
+                AND p.child_number = s.child_number
+                AND UPPER(p.object_name) IN (SELECT table_name FROM graph_tables)
+          )
+      )
       AND s.sql_text NOT LIKE '%v$sql%'
 )
 SELECT

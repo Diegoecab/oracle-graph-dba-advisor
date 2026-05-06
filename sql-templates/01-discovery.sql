@@ -2,8 +2,8 @@
 -- DISCOVERY TEMPLATES — Understand the Graph Topology
 -- ============================================================
 -- Execute via SQLcl MCP: run-sql
--- These are parameterized templates. Replace :owner with the
--- target schema (or use USER for current schema).
+-- These templates assume the current schema owns the property
+-- graph objects. They intentionally use USER_* dictionary views.
 -- ============================================================
 
 
@@ -15,11 +15,15 @@
 
 SELECT
     pg.graph_name,
-    pg.graph_type,
-    (SELECT COUNT(*) FROM user_pg_vertex_tables vt
-     WHERE vt.graph_name = pg.graph_name)    AS vertex_table_count,
-    (SELECT COUNT(*) FROM user_pg_edge_tables et
-     WHERE et.graph_name = pg.graph_name)    AS edge_table_count
+    pg.graph_mode,
+    (SELECT COUNT(DISTINCT e.object_name)
+     FROM user_pg_elements e
+     WHERE e.graph_name = pg.graph_name
+       AND UPPER(e.element_kind) = 'VERTEX') AS vertex_table_count,
+    (SELECT COUNT(DISTINCT e.object_name)
+     FROM user_pg_elements e
+     WHERE e.graph_name = pg.graph_name
+       AND UPPER(e.element_kind) = 'EDGE')   AS edge_table_count
 FROM user_property_graphs pg
 ORDER BY pg.graph_name;
 
@@ -31,34 +35,68 @@ ORDER BY pg.graph_name;
 -- and the source/destination key mappings for edges.
 
 -- 2a: Vertex tables
+WITH vertex_elements AS (
+    SELECT DISTINCT
+        graph_name,
+        element_name,
+        object_name AS table_name
+    FROM user_pg_elements
+    WHERE UPPER(element_kind) = 'VERTEX'
+)
 SELECT
-    vt.graph_name,
+    ve.graph_name,
     'VERTEX' AS element_type,
-    vt.table_name,
-    vt.key_column,
+    ve.element_name AS vertex_name,
+    ve.table_name,
     t.num_rows,
     t.last_analyzed,
     t.avg_row_len
-FROM user_pg_vertex_tables vt
-JOIN user_tables t ON vt.table_name = t.table_name
-ORDER BY vt.graph_name, vt.table_name;
+FROM vertex_elements ve
+JOIN user_tables t ON ve.table_name = t.table_name
+ORDER BY ve.graph_name, ve.table_name;
 
 -- 2b: Edge tables with FK mappings
+WITH edge_elements AS (
+    SELECT DISTINCT
+        graph_name,
+        element_name,
+        object_name AS table_name
+    FROM user_pg_elements
+    WHERE UPPER(element_kind) = 'EDGE'
+),
+edge_relationships AS (
+    SELECT
+        graph_name,
+        edge_tab_name AS table_name,
+        MAX(CASE WHEN UPPER(edge_end) LIKE '%SOURCE%' THEN vertex_tab_name END) AS src_vertex_table,
+        MAX(CASE WHEN UPPER(edge_end) LIKE '%SOURCE%' THEN edge_col_name END)   AS src_fk_column,
+        MAX(CASE WHEN UPPER(edge_end) LIKE '%SOURCE%' THEN vertex_col_name END) AS src_vertex_key,
+        MAX(CASE WHEN UPPER(edge_end) LIKE '%DEST%' THEN vertex_tab_name END)   AS dst_vertex_table,
+        MAX(CASE WHEN UPPER(edge_end) LIKE '%DEST%' THEN edge_col_name END)     AS dst_fk_column,
+        MAX(CASE WHEN UPPER(edge_end) LIKE '%DEST%' THEN vertex_col_name END)   AS dst_vertex_key
+    FROM user_pg_edge_relationships
+    GROUP BY graph_name, edge_tab_name
+)
 SELECT
-    et.graph_name,
+    ee.graph_name,
     'EDGE' AS element_type,
-    et.table_name,
-    et.key_column                     AS edge_pk,
-    et.source_vertex_table            AS src_vertex_table,
-    et.source_key_column              AS src_fk_column,
-    et.destination_vertex_table       AS dst_vertex_table,
-    et.destination_key_column         AS dst_fk_column,
+    ee.element_name                   AS edge_name,
+    ee.table_name,
+    er.src_vertex_table,
+    er.src_fk_column,
+    er.src_vertex_key,
+    er.dst_vertex_table,
+    er.dst_fk_column,
+    er.dst_vertex_key,
     t.num_rows,
     t.last_analyzed,
     t.avg_row_len
-FROM user_pg_edge_tables et
-JOIN user_tables t ON et.table_name = t.table_name
-ORDER BY et.graph_name, t.num_rows DESC;
+FROM edge_elements ee
+JOIN user_tables t ON ee.table_name = t.table_name
+LEFT JOIN edge_relationships er
+    ON  ee.graph_name = er.graph_name
+    AND ee.table_name = er.table_name
+ORDER BY ee.graph_name, t.num_rows DESC;
 
 
 -- ┌──────────────────────────────────────────────────────────┐
@@ -68,9 +106,8 @@ ORDER BY et.graph_name, t.num_rows DESC;
 -- CRITICAL: Check if edge FK columns have indexes.
 
 WITH graph_tables AS (
-    SELECT DISTINCT table_name FROM user_pg_vertex_tables
-    UNION
-    SELECT DISTINCT table_name FROM user_pg_edge_tables
+    SELECT DISTINCT object_name AS table_name
+    FROM user_pg_elements
 )
 SELECT
     i.table_name,
@@ -100,9 +137,8 @@ ORDER BY i.table_name, i.index_name;
 -- traversal predicates (edge properties, vertex filters).
 
 WITH graph_tables AS (
-    SELECT DISTINCT table_name FROM user_pg_vertex_tables
-    UNION
-    SELECT DISTINCT table_name FROM user_pg_edge_tables
+    SELECT DISTINCT object_name AS table_name
+    FROM user_pg_elements
 )
 SELECT
     cs.table_name,
@@ -136,9 +172,8 @@ ORDER BY t.num_rows DESC, cs.table_name, approx_selectivity_pct ASC;
 -- Flags tables where stats are missing or older than 7 days.
 
 WITH graph_tables AS (
-    SELECT DISTINCT table_name FROM user_pg_vertex_tables
-    UNION
-    SELECT DISTINCT table_name FROM user_pg_edge_tables
+    SELECT DISTINCT object_name AS table_name
+    FROM user_pg_elements
 )
 SELECT
     t.table_name,
@@ -150,8 +185,11 @@ SELECT
         WHEN SYSDATE - t.last_analyzed > 7 THEN '⚠ STALE (>7 days)'
         ELSE '✓ Fresh'
     END AS stats_status,
-    t.stale_stats
+    ts.stale_stats
 FROM user_tables t
+LEFT JOIN user_tab_statistics ts
+    ON  t.table_name = ts.table_name
+    AND ts.partition_name IS NULL
 WHERE t.table_name IN (SELECT table_name FROM graph_tables)
 ORDER BY
     CASE WHEN t.last_analyzed IS NULL THEN 0
@@ -166,23 +204,18 @@ ORDER BY
 -- These are almost always the #1 optimization opportunity.
 
 WITH edge_fk_cols AS (
-    -- Source FK columns
-    SELECT
-        et.graph_name,
-        et.table_name,
-        et.source_key_column AS fk_column,
-        'SOURCE_FK' AS fk_type,
-        et.source_vertex_table AS references_table
-    FROM user_pg_edge_tables et
-    UNION ALL
-    -- Destination FK columns
-    SELECT
-        et.graph_name,
-        et.table_name,
-        et.destination_key_column AS fk_column,
-        'DESTINATION_FK' AS fk_type,
-        et.destination_vertex_table AS references_table
-    FROM user_pg_edge_tables et
+    SELECT DISTINCT
+        r.graph_name,
+        r.edge_tab_name  AS table_name,
+        r.edge_col_name  AS fk_column,
+        CASE
+            WHEN UPPER(r.edge_end) LIKE '%SOURCE%' THEN 'SOURCE_FK'
+            WHEN UPPER(r.edge_end) LIKE '%DEST%'   THEN 'DESTINATION_FK'
+            ELSE r.edge_end
+        END AS fk_type,
+        r.vertex_tab_name AS references_table,
+        r.vertex_col_name AS references_column
+    FROM user_pg_edge_relationships r
 ),
 indexed_cols AS (
     SELECT DISTINCT
@@ -197,6 +230,7 @@ SELECT
     efk.fk_column,
     efk.fk_type,
     efk.references_table,
+    efk.references_column,
     t.num_rows AS edge_table_rows,
     CASE
         WHEN ix.column_name IS NOT NULL THEN '✓ Indexed'

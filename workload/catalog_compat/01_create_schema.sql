@@ -168,9 +168,10 @@ PARTITION BY LIST (site_id) (
 -- These replicate the real indexes seen in the AWR segment statistics
 --------------------------------------------------------------------------------
 
--- CWI: unique on (ITEM_ID, MAIN_PRODUCT_ID) — maps to IDX_CWI_ITEM_PROD_U
+-- CWI: local unique index must include the partition key (SITE_ID)
+-- on ADB/Oracle partitioned tables.
 CREATE UNIQUE INDEX idx_cwi_item_prod_u
-  ON compatible_with_item (item_id, main_product_id) LOCAL;
+  ON compatible_with_item (item_id, main_product_id, site_id) LOCAL;
 
 -- CWUP: unique on (USER_PRODUCT_ID, MAIN_PRODUCT_ID, SITE_ID, MAIN_DOMAIN_CODE)
 -- Maps to CWUP_USER_MAINP_SITE_MAINDC_U — #1 hottest index (30.9% logical reads)

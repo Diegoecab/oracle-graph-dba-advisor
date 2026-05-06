@@ -4,24 +4,32 @@
 
 Oracle Autonomous AI Database (Serverless) includes a **built-in, fully managed MCP server**. Instead of installing SQLcl locally and running it as an MCP server, the MCP endpoint runs directly inside your ADB instance. No client-side installation required — just a URL.
 
+This is an **optional backend adaptation**. The repository itself ships with SQLcl MCP as the canonical tool contract and documentation baseline.
+
 ## When to Use This
 
-This is the **recommended path** for ADB Serverless users. Use SQLcl MCP (local) only for non-ADB environments.
+Use this when you want a zero-install ADB Serverless deployment and are willing to mirror the repo's expected `run-sql` behavior inside ADB. Otherwise, stay with SQLcl MCP.
 
 | Scenario | Recommended path |
 |---|---|
-| ADB Serverless (23ai or 26ai) | **This guide (ADB native MCP)** |
+| ADB Serverless (23ai or 26ai) | This guide if you want a zero-install backend |
 | ADB Dedicated | SQLcl MCP (local) |
 | Base DB / On-prem / Free tier | SQLcl MCP (local) |
-| Want zero client-side installation | **This guide** |
+| Want the repo's default supported path | SQLcl MCP (local) |
 | Need custom SQLcl commands (Data Pump, etc.) | SQLcl MCP (local) |
 
 ## Prerequisites
 
-1. **Oracle Autonomous AI Database** (Serverless) — 19c or 26ai
+1. **Oracle Autonomous AI Database** (Serverless) — 23ai or 26ai
 2. OCI user with permission to update the database (free-form tags)
 3. Any MCP client (Claude Desktop, Cursor, Cline, VS Code + Copilot)
 4. `npx` (comes with Node.js) — only client-side dependency
+5. One dedicated technical database user for the skill in each target database
+6. Minimum diagnostic grants on that technical user
+
+> Short operational baseline for this repo: `../docs/diagnostic-mode-minimum-prereqs.md`
+> Baseline setup script: `adb-diagnostic-user-minimal.sql`
+> Full advisor grants on an existing schema: `adb-diagnostic-grants-advisor.sql`
 
 ## Setup
 
@@ -46,9 +54,11 @@ For Private Endpoint databases:
 https://<hostname_prefix>.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>
 ```
 
-### Step 2: Register the Advisor's SQL Tools
+### Step 2: Register a Compatible SQL Tool Contract
 
 > **Note:** We use `DBMS_CLOUD_AI_AGENT.CREATE_TOOL` only as the **tool registration mechanism** for the ADB MCP server. The advisor does NOT use Select AI's NL2SQL capability — the LLM generates SQL directly using the sql-templates and SYSTEM_PROMPT knowledge. The `CREATE_TOOL` API simply exposes PL/SQL functions as MCP-callable tools.
+
+> **Important:** The repository's prompt and templates assume a read-only `run-sql` capability. SQLcl-only tools such as `connect` and `run-sqlcl` do not exist automatically in ADB Native MCP.
 
 Connect to your ADB as an admin user and register the `run-sql` tool:
 
@@ -120,42 +130,87 @@ END;
 
 ### Step 3: Configure the MCP Client
 
-**Claude Desktop** — edit `claude_desktop_config.json`:
+For this project, the practical default is:
+
+- **Bearer token** for headless use or automation
+- **One MCP server entry per target database**
+- **Same tool contract in every database** (`RUN_SQL`, optional `LIST_SCHEMAS`)
+
+This keeps the skill reusable across many ADBs. The skill stays the same; only the MCP server name, database OCID, and token change per target.
+
+#### 3a. Generate a bearer token
+
+```bash
+curl --location 'https://dataaccess.adb.<region>.oraclecloudapps.com/adb/auth/v1/databases/<database-ocid>/token' \
+  --header 'Content-Type: application/json' \
+  --header 'Accept: application/json' \
+  --data '{
+    "grant_type":"password",
+    "username":"<db-username>",
+    "password":"<db-password>"
+  }'
+```
+
+Use the returned `access_token` as `Bearer <your-token>`.
+
+Practical note:
+
+- the bearer token is temporary and must be refreshed periodically
+- generate it with the dedicated technical database user for that target database
+
+#### 3b. Cline / VS Code MCP settings
+
+Use one named MCP server per database alias and repeat as needed:
 
 ```json
 {
   "mcpServers": {
-    "oracle-adb-advisor": {
-      "command": "npx",
-      "args": [
-        "-y", "mcp-remote",
-        "https://dataaccess.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>",
-        "--allow-http"
-      ],
-      "transport": "streamable-http"
+    "graph-advisor-<db-alias>": {
+      "timeout": 300,
+      "type": "streamableHttp",
+      "url": "https://dataaccess.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>",
+      "headers": {
+        "Authorization": "Bearer <your-token>"
+      }
     }
   }
 }
 ```
 
-**VS Code (Copilot / Cline)** — add to `.vscode/mcp.json` or MCP settings:
+Example file: `cline-adb-bearer-multidb.json`
+
+#### 3c. Claude Desktop
+
+Use one named MCP server per database alias and repeat as needed:
 
 ```json
 {
-  "servers": {
-    "oracle-adb-advisor": {
-      "command": "npx",
+  "mcpServers": {
+    "graph-advisor-<db-alias>": {
+      "description": "Oracle Graph Advisor on ADB Native MCP for <db-alias>.",
+      "command": "/opt/homebrew/bin/npx",
       "args": [
-        "-y", "mcp-remote",
-        "https://dataaccess.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>"
+        "-y",
+        "mcp-remote",
+        "https://dataaccess.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>",
+        "--allow-http"
       ],
-      "transport": "streamable-http"
+      "transport": "streamable-http",
+      "headers": {
+        "Authorization": "Bearer <your-token>"
+      }
     }
   }
 }
 ```
 
-Replace `<region>` and `<database-ocid>` with your actual values from the OCI Console.
+Example file: `claude-desktop-adb-bearer-multidb.json`
+
+#### 3d. Interactive option: OAuth
+
+If your client supports OAuth and you prefer interactive login, configure the MCP server without the `Authorization` header and let the client show the login screen.
+
+In that case, the operator signs in interactively with the target database credentials.
 
 ### Step 4: Load the Advisor Skill
 

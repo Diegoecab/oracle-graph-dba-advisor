@@ -26,6 +26,9 @@ Thumbs.db
 # Output
 output/
 
+# Generated decks (.pptx and their YAML specs — internal, customer-facing)
+decks/
+
 # Generated docs (Mermaid diagrams, HTML reports, etc.)
 docs/
 

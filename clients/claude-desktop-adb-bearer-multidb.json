@@ -1,0 +1,33 @@
+{
+  "_comment": "Claude Desktop example for Oracle ADB Native MCP with bearer token. Duplicate one server block per target database. Keep the same tool contract (RUN_SQL, optional LIST_SCHEMAS) in every database.",
+  "mcpServers": {
+    "graph-advisor-<db-alias-1>": {
+      "description": "Oracle Graph Advisor on ADB Native MCP for <db-alias-1>.",
+      "command": "/opt/homebrew/bin/npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://dataaccess.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid-1>",
+        "--allow-http"
+      ],
+      "transport": "streamable-http",
+      "headers": {
+        "Authorization": "Bearer <token-for-db-1>"
+      }
+    },
+    "graph-advisor-<db-alias-2>": {
+      "description": "Oracle Graph Advisor on ADB Native MCP for <db-alias-2>.",
+      "command": "/opt/homebrew/bin/npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://dataaccess.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid-2>",
+        "--allow-http"
+      ],
+      "transport": "streamable-http",
+      "headers": {
+        "Authorization": "Bearer <token-for-db-2>"
+      }
+    }
+  }
+}

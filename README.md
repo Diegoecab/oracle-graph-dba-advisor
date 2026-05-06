@@ -2,7 +2,7 @@
 
 A **system prompt + SQL templates + knowledge base** that turns any MCP-compatible LLM into an Oracle Property Graph (SQL/PGQ) performance advisor for Oracle Database 23ai and 26ai.
 
-Connects via the **ADB MCP Server** (fully managed, zero install) or **SQLcl MCP Server** (local, any Oracle 23ai/26ai).
+The repository ships with **SQLcl MCP Server** as the canonical backend (local, any Oracle 23ai/26ai). An **ADB Native MCP** adaptation is documented separately for ADB Serverless teams willing to register a compatible `run-sql` tool contract.
 
 ---
 
@@ -54,7 +54,7 @@ graph LR
 You:     "Analyze my graph workload and tell me what's slow and why"
 
 Advisor: 0. Checks database health (CPU, I/O, memory, tablespace, Auto Indexing)
-         1. Discovers property graphs, tables, volumes, indexes
+         1. Builds a technical catalog of property graphs, owners, tables, indexes, and stats
          2. Finds the most expensive graph queries by elapsed time
          3. Reads execution plans, identifies bottlenecks
          4. Analyzes selectivity to quantify index benefit
@@ -65,6 +65,8 @@ Advisor: 0. Checks database health (CPU, I/O, memory, tablespace, Auto Indexing)
 
 The advisor follows a **simplicity-first philosophy**: a property graph is just node tables and edge tables. Index the FKs, index the filters if needed, and stop. Advanced strategies only with measured evidence.
 
+In **Graph DBA mode**, the skill does not need deep business context to start. Its first job is to inventory the property graphs in the database and then diagnose workload behavior from a DBA perspective: waits, plans, hotspots, stale stats, and missing indexes.
+
 ---
 
 ## Key Capabilities
@@ -73,7 +75,7 @@ The advisor follows a **simplicity-first philosophy**: a property graph is just 
 |---|---|
 | **8-phase methodology** | Health Check → Discovery → Identify → Deep Dive → Selectivity → Simulate → Recommend → Scale Test |
 | **Visual graph modeling** | Generates Mermaid diagrams with color-coded vertices for design review before DDL |
-| **40+ SQL templates** | Pre-built, tested diagnostic queries for Oracle 23ai/26ai graph workloads |
+| **50+ SQL templates** | Pre-built, tested diagnostic queries for Oracle 23ai/26ai graph workloads |
 | **GRAPH_TABLE awareness** | Knows it expands to relational joins — traces TABLE ACCESS / HASH JOIN back to graph hops |
 | **P0-P4 index strategy** | PK → FK → filter → composite → advanced. Stops at the lowest level that solves the problem |
 | **Auto Indexing integration** | Checks ADB Auto Indexing status, deduplicates with auto-created indexes, recommends composites Auto Indexing can't create |
@@ -98,10 +100,10 @@ The advisor follows a **simplicity-first philosophy**: a property graph is just 
 └────────────────┬─────────────────────────┘
                  │ MCP Protocol
                  ▼
-    ┌──── Primary ────┐  ┌── Alternative ──┐
-    │  ADB MCP Server │  │  SQLcl MCP      │
-    │  (fully managed,│  │  (local,        │
-    │   in-database)  │  │   any Oracle)   │
+    ┌── Default Path ─┐  ┌── Compatible ───┐
+    │   SQLcl MCP     │  │ ADB Native MCP  │
+    │   (local, any   │  │ (ADB Serverless │
+    │    Oracle)      │  │  + run-sql)     │
     └────────┬────────┘  └───────┬─────────┘
              │                   │
              ▼                   ▼
@@ -116,7 +118,27 @@ Uses AWR/ASH when available for historical trends. Falls back to `V$SQL` + `USER
 
 ## Quick Start
 
-### Option A: ADB Serverless (recommended — zero install)
+The supported default path in this repo is **SQLcl MCP**. If you are on ADB Serverless and want a zero-install variant, use the ADB Native guide only after mirroring the same `run-sql` contract expected by the templates and prompt.
+
+For the client-facing **Graph DBA workload-analysis** requirements, use:
+
+- `docs/graph-dba-workload-mode-requirements.md`
+
+### Option A: ADB Serverless (optional zero-install variant)
+
+Minimum operational baseline for the diagnostic mode:
+
+- one dedicated technical schema per target database
+- minimum diagnostic grants on that schema
+- MCP enabled on the ADB
+- MCP authentication via OAuth or bearer token
+
+Reference docs:
+
+- `docs/diagnostic-mode-minimum-prereqs.md`
+- `docs/graph-dba-workload-mode-requirements.md`
+- `clients/adb-mcp-setup.md`
+- `docs/native-mcp-packaged-playbooks.md`
 
 1. Enable MCP on your ADB (OCI Console → free-form tag):
    ```
@@ -157,8 +179,9 @@ Uses AWR/ASH when available for historical trends. Falls back to `V$SQL` + `USER
 4. Start a conversation — the system prompt loads automatically.
 
 > Full details: `clients/adb-mcp-setup.md`
+> Practical minimum prerequisites: `docs/diagnostic-mode-minimum-prereqs.md`
 
-### Option B: SQLcl local (any Oracle 23ai/26ai)
+### Option B: SQLcl local (recommended default)
 
 For ADB Dedicated, Base DB, on-prem, Free tier, or any Oracle 23ai/26ai where the native MCP endpoint is not available.
 
@@ -305,6 +328,10 @@ For users with a running graph workload that needs tuning. The advisor runs the 
 
 Each mode requires different privilege levels. Grant only what you need.
 
+**Recommended connection model**: connect as the **target graph-owning schema** (or via a proxy/session that resolves `CURRENT_SCHEMA` to that schema). The shipped SQL templates intentionally use `USER_*` graph dictionary views and `USER_*` object statistics views.
+
+**Not the default path**: a separate `advisor_user` account that inspects another schema. That model requires a fork of the templates to `ALL_*` / `DBA_*` views and is not what this repository ships today.
+
 ### Level 0: Consultive Mode — No connection required
 
 No database privileges needed. The advisor works from the user's description to assess, design, and generate scripts.
@@ -314,37 +341,27 @@ No database privileges needed. The advisor works from the user's description to 
 Analyzes graph topology, finds expensive queries, reads execution plans. **No writes.**
 
 ```sql
--- Graph metadata
-GRANT SELECT ON USER_PROPERTY_GRAPHS   TO advisor_user;
-GRANT SELECT ON USER_PG_ELEMENTS       TO advisor_user;
-GRANT SELECT ON USER_PG_VERTEX_TABLES  TO advisor_user;  -- 26ai
-GRANT SELECT ON USER_PG_EDGE_TABLES    TO advisor_user;  -- 26ai
-
--- Schema inspection
-GRANT SELECT ON USER_TABLES            TO advisor_user;
-GRANT SELECT ON USER_INDEXES           TO advisor_user;
-GRANT SELECT ON USER_IND_COLUMNS       TO advisor_user;
-GRANT SELECT ON USER_TAB_COL_STATISTICS TO advisor_user;
-GRANT SELECT ON USER_TAB_MODIFICATIONS TO advisor_user;
-GRANT SELECT ON USER_SEGMENTS          TO advisor_user;
+-- Connect as the target graph-owning schema (recommended).
+-- USER_* graph dictionary views are available there by default.
 
 -- Performance views (V$)
-GRANT SELECT ON V_$SQL                 TO advisor_user;
-GRANT SELECT ON V_$SQL_PLAN            TO advisor_user;
-GRANT SELECT ON V_$SQL_PLAN_STATISTICS_ALL TO advisor_user;
-GRANT SELECT ON V_$PARAMETER           TO advisor_user;
-GRANT SELECT ON V_$SESSION             TO advisor_user;
-GRANT SELECT ON V_$SYSMETRIC_HISTORY   TO advisor_user;
-GRANT SELECT ON V_$SYSTEM_EVENT        TO advisor_user;
-GRANT SELECT ON V_$SGASTAT             TO advisor_user;
-GRANT SELECT ON V_$PGASTAT             TO advisor_user;
-GRANT SELECT ON V_$VERSION             TO advisor_user;
+GRANT SELECT ON V_$SQL                 TO graph_owner;
+GRANT SELECT ON V_$SQL_PLAN            TO graph_owner;
+GRANT SELECT ON V_$SQL_PLAN_STATISTICS_ALL TO graph_owner;
+GRANT SELECT ON V_$PARAMETER           TO graph_owner;
+GRANT SELECT ON V_$SESSION             TO graph_owner;
+GRANT SELECT ON V_$SYSMETRIC_HISTORY   TO graph_owner;
+GRANT SELECT ON V_$SYSTEM_EVENT        TO graph_owner;
+GRANT SELECT ON V_$SGASTAT             TO graph_owner;
+GRANT SELECT ON V_$PGASTAT             TO graph_owner;
+GRANT SELECT ON V_$VERSION             TO graph_owner;
 
 -- Execution plan display
-GRANT EXECUTE ON DBMS_XPLAN            TO advisor_user;
+GRANT EXECUTE ON DBMS_XPLAN            TO graph_owner;
 ```
 
-> **Note**: `USER_*` views are accessible by default to the schema owner. The grants above are only needed if the advisor connects as a separate user.
+> **Note**: `USER_*` views are accessible by default to the schema owner. `GRANT SELECT ON USER_* ...` is not the intended onboarding model for this repo; connect as the owning schema instead.
+> **ADB note**: on Autonomous, the V$ grants are typically issued as `GRANT SELECT ON SYS.V_$...`.
 
 ### Level 2: Read-Only + AWR (advanced diagnostics on Enterprise Edition)
 
@@ -352,20 +369,21 @@ Adds historical trends and Auto Indexing status. Requires Diagnostics Pack licen
 
 ```sql
 -- All Level 1 privileges, plus:
-GRANT SELECT_CATALOG_ROLE              TO advisor_user;
+GRANT SELECT_CATALOG_ROLE              TO graph_owner;
 -- Or grant individual DBA_ views:
-GRANT SELECT ON DBA_HIST_SNAPSHOT      TO advisor_user;
-GRANT SELECT ON DBA_HIST_SYSMETRIC_SUMMARY TO advisor_user;
-GRANT SELECT ON DBA_HIST_SYSTEM_EVENT  TO advisor_user;
-GRANT SELECT ON DBA_HIST_PGASTAT       TO advisor_user;
-GRANT SELECT ON DBA_HIST_ACTIVE_SESS_HISTORY TO advisor_user;
-GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO advisor_user;
-GRANT SELECT ON DBA_AUTO_INDEX_CONFIG  TO advisor_user;
-GRANT SELECT ON DBA_AUTO_INDEX_IND_ACTIONS TO advisor_user;
-GRANT SELECT ON DBA_INDEX_USAGE        TO advisor_user;  -- 23ai+
+GRANT SELECT ON DBA_HIST_SNAPSHOT      TO graph_owner;
+GRANT SELECT ON DBA_HIST_SYSMETRIC_SUMMARY TO graph_owner;
+GRANT SELECT ON DBA_HIST_SYSTEM_EVENT  TO graph_owner;
+GRANT SELECT ON DBA_HIST_PGASTAT       TO graph_owner;
+GRANT SELECT ON DBA_HIST_ACTIVE_SESS_HISTORY TO graph_owner;
+GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO graph_owner;
+GRANT SELECT ON DBA_AUTO_INDEX_CONFIG  TO graph_owner;
+GRANT SELECT ON DBA_AUTO_INDEX_IND_ACTIONS TO graph_owner;
+GRANT SELECT ON DBA_INDEX_USAGE        TO graph_owner;  -- 23ai+
 ```
 
 > **Always Free / ADB**: AWR views are not available. The advisor falls back to V$ views automatically.
+> **ADB role shortcut**: for session-based SQL access, `SELECT_CATALOG_ROLE` is the practical broad read role. For packaged Native MCP tools implemented as stored PL/SQL, prefer direct grants because roles are disabled in definer-rights PL/SQL.
 
 ### Level 3: Simulate — Test with invisible indexes
 
@@ -373,11 +391,11 @@ Creates invisible indexes to measure impact before committing. Session-scoped, z
 
 ```sql
 -- All Level 1 privileges, plus:
-GRANT CREATE INDEX                     TO advisor_user;  -- for CREATE INDEX ... INVISIBLE
-GRANT ALTER SESSION                    TO advisor_user;  -- for optimizer_use_invisible_indexes
-GRANT ALTER INDEX                      TO advisor_user;  -- for VISIBLE/INVISIBLE toggle
+GRANT CREATE INDEX                     TO graph_owner;  -- for CREATE INDEX ... INVISIBLE
+GRANT ALTER SESSION                    TO graph_owner;  -- for optimizer_use_invisible_indexes
+GRANT ALTER INDEX                      TO graph_owner;  -- for VISIBLE/INVISIBLE toggle
 -- Optionally:
-GRANT DROP INDEX                       TO advisor_user;  -- for rollback
+GRANT DROP INDEX                       TO graph_owner;  -- for rollback
 ```
 
 ### Level 4: Full — Create schema, graph, and workload
@@ -386,15 +404,15 @@ For development/test environments where the advisor creates the full use case (t
 
 ```sql
 -- All Level 1-3 privileges, plus:
-GRANT CREATE SESSION                   TO advisor_user;
-GRANT CREATE TABLE                     TO advisor_user;
-GRANT CREATE PROPERTY GRAPH            TO advisor_user;
-GRANT CREATE VIEW                      TO advisor_user;
-GRANT CREATE SEQUENCE                  TO advisor_user;
-GRANT CREATE PROCEDURE                 TO advisor_user;
-GRANT EXECUTE ON DBMS_STATS            TO advisor_user;
-GRANT EXECUTE ON DBMS_RANDOM           TO advisor_user;
-GRANT UNLIMITED TABLESPACE             TO advisor_user;  -- or specific quota
+GRANT CREATE SESSION                   TO graph_owner;
+GRANT CREATE TABLE                     TO graph_owner;
+GRANT CREATE PROPERTY GRAPH            TO graph_owner;
+GRANT CREATE VIEW                      TO graph_owner;
+GRANT CREATE SEQUENCE                  TO graph_owner;
+GRANT CREATE PROCEDURE                 TO graph_owner;
+GRANT EXECUTE ON DBMS_STATS            TO graph_owner;
+GRANT EXECUTE ON DBMS_RANDOM           TO graph_owner;
+GRANT UNLIMITED TABLESPACE             TO graph_owner;  -- or specific quota
 ```
 
 ### Quick reference
@@ -442,7 +460,7 @@ Missing DBMS_STATS, over-indexing INSERT-heavy edge tables, unconstrained multi-
 
 ## SQL Templates
 
-40+ templates in `sql-templates/`, selected and parameterized automatically:
+50+ templates in `sql-templates/`, selected and parameterized automatically:
 
 | File | Phase | Templates |
 |------|-------|-----------|
@@ -509,7 +527,7 @@ oracle-graph-dba-advisor/
 ├── clients/                               # Setup guides per MCP client
 │   ├── adb-mcp-setup.md                   # ADB native MCP (zero install)
 │   └── README.md                          # SQLcl MCP + client configs
-├── sql-templates/                         # 40+ diagnostic SQL templates (6 files)
+├── sql-templates/                         # 50+ diagnostic SQL templates (6 files)
 ├── knowledge/                             # Patterns, rules, Oracle internals
 │   ├── graph-patterns/                    # Domain patterns + use case assessment
 │   ├── graph-design/                      # Modeling, physical design, query practices

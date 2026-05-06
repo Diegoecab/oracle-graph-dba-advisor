@@ -1,16 +1,8 @@
 # Client Setup Guide
 
-## Recommended: ADB Native MCP Server (zero install)
+## Recommended: SQLcl MCP Server (default repo setup)
 
-If your database is **Oracle Autonomous AI Database (Serverless)**, use the built-in MCP server. No SQLcl, Java, or local tools needed — just enable the MCP endpoint and point your client to the URL.
-
-**[Complete setup guide: adb-mcp-setup.md](adb-mcp-setup.md)**
-
----
-
-## Alternative: SQLcl MCP Server (local)
-
-For ADB Dedicated, Base DB, on-prem, or Free tier where ADB native MCP isn't available.
+This repository ships with SQLcl MCP as its canonical tool contract. Use it for Oracle Database 23ai/26ai across ADB Dedicated, Base DB, on-prem, or Free tier.
 
 ### Claude Code / Claude Desktop
 
@@ -61,6 +53,19 @@ See `continue-config-example.json` in this directory for `.continue/config.json`
 
 ---
 
+## Optional: ADB Native MCP Server (ADB Serverless only)
+
+Use this only if you are on **Oracle Autonomous AI Database (Serverless)** and are willing to register a compatible `run-sql` tool contract in ADB. The rest of the repo still assumes the same prompt/template behavior as the SQLcl path.
+
+**[Complete ADB Native guide: adb-mcp-setup.md](adb-mcp-setup.md)**
+
+For multi-database use, keep the skill constant and add one MCP server entry per target ADB alias. Recommended examples:
+
+- `cline-adb-bearer-multidb.json`
+- `claude-desktop-adb-bearer-multidb.json`
+
+---
+
 ## Wallet Configuration
 
 If connecting to Oracle Autonomous Database (ADB) via SQLcl, set the `TNS_ADMIN` environment variable to your wallet directory:
@@ -75,7 +80,7 @@ If connecting to Oracle Autonomous Database (ADB) via SQLcl, set the `TNS_ADMIN`
 
 ## Creating a Saved Connection (SQLcl only)
 
-Before using SQLcl MCP, create a saved connection:
+Before using SQLcl MCP, create a saved connection to the target graph-owning schema:
 
 ```bash
 sql /nolog

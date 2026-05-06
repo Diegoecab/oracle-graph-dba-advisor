@@ -1,0 +1,21 @@
+{
+  "_comment": "Cline / VS Code MCP example for Oracle ADB Native MCP with bearer token. Duplicate one server block per target database. Keep the same tool contract (RUN_SQL, optional LIST_SCHEMAS) in every database.",
+  "mcpServers": {
+    "graph-advisor-<db-alias-1>": {
+      "timeout": 300,
+      "type": "streamableHttp",
+      "url": "https://dataaccess.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid-1>",
+      "headers": {
+        "Authorization": "Bearer <token-for-db-1>"
+      }
+    },
+    "graph-advisor-<db-alias-2>": {
+      "timeout": 300,
+      "type": "streamableHttp",
+      "url": "https://dataaccess.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid-2>",
+      "headers": {
+        "Authorization": "Bearer <token-for-db-2>"
+      }
+    }
+  }
+}

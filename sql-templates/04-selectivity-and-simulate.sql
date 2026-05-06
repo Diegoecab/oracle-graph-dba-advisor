@@ -231,7 +231,9 @@ ORDER BY 1;
 -- INSERT workload, estimate the write overhead.
 
 WITH edge_tables AS (
-    SELECT DISTINCT table_name FROM user_pg_edge_tables
+    SELECT DISTINCT object_name AS table_name
+    FROM user_pg_elements
+    WHERE UPPER(element_kind) = 'EDGE'
 )
 SELECT
     s.table_name,

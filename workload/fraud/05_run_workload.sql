@@ -266,5 +266,6 @@ BEGIN
 END;
 /
 
--- Execute with default 200 iterations
-EXEC run_fraud_workload(p_iterations => 200, p_verbose => FALSE);
+PROMPT Workload procedure RUN_FRAUD_WORKLOAD created.
+PROMPT Run manually with:
+PROMPT   EXEC run_fraud_workload(p_iterations => 200, p_verbose => FALSE);

@@ -76,19 +76,25 @@ ORDER BY (ps.last_cr_buffer_gets + ps.last_cu_buffer_gets) DESC NULLS LAST;
 -- Each one is a potential index recommendation.
 
 WITH graph_tables AS (
-    SELECT DISTINCT UPPER(table_name) AS table_name
-    FROM user_pg_vertex_tables
-    UNION
-    SELECT DISTINCT UPPER(table_name)
-    FROM user_pg_edge_tables
+    SELECT DISTINCT UPPER(object_name) AS table_name
+    FROM user_pg_elements
 ),
 graph_sql_ids AS (
     SELECT DISTINCT s.sql_id
     FROM v$sql s
     WHERE s.parsing_schema_name = SYS_CONTEXT('USERENV','CURRENT_SCHEMA')
       AND s.executions > 0
-      AND (UPPER(s.sql_text) LIKE '%GRAPH_TABLE%'
-           OR UPPER(s.sql_text) LIKE '%MATCH%(%IS%')
+      AND (
+          UPPER(s.sql_text) LIKE '%GRAPH_TABLE%'
+          OR UPPER(s.sql_text) LIKE '%MATCH%(%IS%'
+          OR EXISTS (
+              SELECT 1
+              FROM v$sql_plan p2
+              WHERE p2.sql_id = s.sql_id
+                AND p2.child_number = s.child_number
+                AND UPPER(p2.object_name) IN (SELECT table_name FROM graph_tables)
+          )
+      )
       AND s.sql_text NOT LIKE '%v$sql%'
 )
 SELECT
@@ -120,13 +126,26 @@ ORDER BY t.num_rows DESC, p.sql_id;
 -- HASH JOIN on large sets = expected. NESTED LOOPS on large
 -- sets without index = problem.
 
-WITH graph_sql_ids AS (
+WITH graph_tables AS (
+    SELECT DISTINCT UPPER(object_name) AS table_name
+    FROM user_pg_elements
+),
+graph_sql_ids AS (
     SELECT DISTINCT s.sql_id
     FROM v$sql s
     WHERE s.parsing_schema_name = SYS_CONTEXT('USERENV','CURRENT_SCHEMA')
       AND s.executions > 0
-      AND (UPPER(s.sql_text) LIKE '%GRAPH_TABLE%'
-           OR UPPER(s.sql_text) LIKE '%MATCH%(%IS%')
+      AND (
+          UPPER(s.sql_text) LIKE '%GRAPH_TABLE%'
+          OR UPPER(s.sql_text) LIKE '%MATCH%(%IS%'
+          OR EXISTS (
+              SELECT 1
+              FROM v$sql_plan p2
+              WHERE p2.sql_id = s.sql_id
+                AND p2.child_number = s.child_number
+                AND UPPER(p2.object_name) IN (SELECT table_name FROM graph_tables)
+          )
+      )
       AND s.sql_text NOT LIKE '%v$sql%'
 )
 SELECT
