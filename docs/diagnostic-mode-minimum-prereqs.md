@@ -89,35 +89,35 @@ need grant/admin privileges at runtime.
 
 ```mermaid
 flowchart TD
-    start["Implement Diagnostic Mode"] --> runtime["Create dedicated diagnostic user<br/>not personal, not ADMIN"]
-    runtime --> baseline["Apply baseline read-only grants<br/>session, DBMS_XPLAN, V$ performance views"]
-    baseline --> graph{"Need Graph DBA catalog<br/>across schemas?"}
-    graph -- Yes --> graphGrants["Grant DBA_PROPERTY_GRAPHS,<br/>DBA_PG_*, DBA_TABLES,<br/>DBA_INDEXES, stats views"]
-    graph -- No --> ownerPath["Use owner-scoped USER_* path<br/>only if connected as graph owner"]
+    start[Implement Diagnostic Mode] --> runtime[Create dedicated diagnostic user]
+    runtime --> baseline[Apply baseline read-only grants]
+    baseline --> graph{Need graph catalog across schemas}
+    graph -- Yes --> graphGrants[Grant graph catalog and object metadata views]
+    graph -- No --> ownerPath[Use owner scoped path if connected as graph owner]
 
-    graphGrants --> health{"Need health, AWR/ASH,<br/>Auto Indexing evidence?"}
+    graphGrants --> health{Need health AWR ASH Auto Indexing}
     ownerPath --> health
-    health -- Yes --> healthGrants["Grant DBA_HIST_*,<br/>V$ACTIVE_SESSION_HISTORY,<br/>tablespace/temp,<br/>Auto Indexing views"]
-    health -- No --> mcp
+    health -- Yes --> healthGrants[Grant health AWR ASH and Auto Indexing views]
+    health -- No --> plan
 
-    healthGrants --> plan{"Need SQL plan baseline<br/>visibility?"}
-    plan -- Yes --> planGrant["Grant SELECT ON<br/>DBA_SQL_PLAN_BASELINES"]
+    healthGrants --> plan{Need SQL plan baseline visibility}
+    plan -- Yes --> planGrant[Grant SELECT on DBA_SQL_PLAN_BASELINES]
     plan -- No --> mcp
     planGrant --> mcp
 
-    mcp{"Using ADB Native MCP?"}
-    mcp -- Yes --> runSql["Expose RUN_SQL only<br/>read-only SELECT/WITH guardrails"]
-    mcp -- No --> sqlcl["Use SQLcl/session fallback<br/>outside ADB Native MCP runtime"]
+    mcp{Using ADB Native MCP}
+    mcp -- Yes --> runSql[Expose RUN_SQL with read-only guardrails]
+    mcp -- No --> sqlcl[Use SQLcl or session fallback]
 
-    runSql --> installer{"Will diagnostic user<br/>install/update RUN_SQL?"}
-    installer -- No --> dbaInstall["Preferred: DBA/installer creates<br/>RUN_SQL in diagnostic schema"]
-    installer -- Yes --> tempPrivs["Temporarily grant CREATE PROCEDURE<br/>and DBMS_CLOUD_AI_AGENT execute"]
-    tempPrivs --> revoke["Validate tool, then revoke<br/>installation-only privileges"]
+    runSql --> installer{Will diagnostic user install RUN_SQL}
+    installer -- No --> dbaInstall[DBA or installer creates RUN_SQL]
+    installer -- Yes --> tempPrivs[Temporarily grant install privileges]
+    tempPrivs --> revoke[Validate and revoke installation-only privileges]
     dbaInstall --> validate
     revoke --> validate
     sqlcl --> validate
 
-    validate["Validate before use<br/>tools/list, read smoke test,<br/>write rejection, catalog/AWR access"]
+    validate[Validate tools list, read smoke test, write rejection, catalog and AWR access]
 
     classDef required fill:#ecfdf5,stroke:#059669,color:#064e3b;
     classDef decision fill:#eff6ff,stroke:#2563eb,color:#1e3a8a;
