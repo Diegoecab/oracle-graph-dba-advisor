@@ -43,27 +43,58 @@ the LLM write access to the database.
 
 ## Architecture
 
-```text
-MCP-compatible LLM
-  |
-  | loads
-  v
-Advisor skill
-  - SYSTEM_PROMPT.md
-  - sql-templates/
-  - knowledge/
-  |
-  | calls MCP tool
-  v
-ADB Native MCP endpoint
-  |
-  | exposes approved tool only
-  v
-RUN_SQL read-only function
-  |
-  | SELECT/WITH diagnostic queries
-  v
-Oracle Database 23ai / 26ai
+```mermaid
+flowchart TB
+    user["DBA / Admin<br/>diagnostic request"]
+    llm["MCP-compatible LLM<br/>advisor runtime"]
+
+    subgraph skill["Graph DBA Advisor skill"]
+        prompt["SYSTEM_PROMPT.md<br/>methodology and safety rules"]
+        templates["sql-templates/<br/>diagnostic SQL"]
+        knowledge["knowledge/<br/>graph and optimizer rules"]
+    end
+
+    subgraph runtime["Primary runtime: ADB Native MCP"]
+        endpoint["ADB Native MCP endpoint<br/>one endpoint per target database"]
+        auth["OAuth or bearer token<br/>dedicated technical user"]
+        tool["RUN_SQL<br/>read-only SELECT/WITH only"]
+        guardrails["Database-side guardrails<br/>block DDL, DML, PL/SQL, comments, semicolons"]
+    end
+
+    subgraph database["Oracle Database 23ai / 26ai"]
+        perf["Performance evidence<br/>V$SQL, plans, waits, AWR, ASH"]
+        catalog["Graph catalog<br/>DBA_PROPERTY_GRAPHS, DBA_PG_*"]
+        output["Advisor output<br/>root cause, recommendations, rollback SQL"]
+    end
+
+    fallback["SQLcl MCP fallback<br/>local or non-ADB Native cases"]
+
+    user --> llm
+    llm --> skill
+    skill --> endpoint
+    endpoint --> auth
+    auth --> tool
+    tool --> guardrails
+    guardrails --> perf
+    guardrails --> catalog
+    perf --> output
+    catalog --> output
+    output --> llm
+
+    skill -. secondary compatibility path .-> fallback
+    fallback -.-> database
+
+    classDef actor fill:#f8fafc,stroke:#64748b,color:#0f172a;
+    classDef skillNode fill:#eef2ff,stroke:#4f46e5,color:#111827;
+    classDef runtimeNode fill:#ecfdf5,stroke:#059669,color:#064e3b;
+    classDef dbNode fill:#fff7ed,stroke:#ea580c,color:#7c2d12;
+    classDef fallbackNode fill:#f3f4f6,stroke:#9ca3af,color:#374151,stroke-dasharray: 5 5;
+
+    class user,llm actor;
+    class prompt,templates,knowledge skillNode;
+    class endpoint,auth,tool,guardrails runtimeNode;
+    class perf,catalog,output dbNode;
+    class fallback fallbackNode;
 ```
 
 For ADB Serverless Diagnostic Mode, the runtime should expose a minimal MCP tool
