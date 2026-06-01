@@ -215,8 +215,11 @@ Detailed docs:
 
 3. Apply the read grants.
 
-   Use [clients/adb-diagnostic-grants-advisor.sql](clients/adb-diagnostic-grants-advisor.sql)
-   as the direct-grant baseline, or use the explicit grant list above.
+   Recommended: a DBA/ADMIN runs
+   [clients/adb-diagnostic-grants-advisor.sql](clients/adb-diagnostic-grants-advisor.sql)
+   as the baseline grant script. Alternative: the client DBA copies the grant
+   list from this README and applies it manually through their change-management
+   process. The skill does not grant privileges to itself.
 
 4. Register the read-only MCP tool.
 

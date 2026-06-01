@@ -73,8 +73,73 @@ PL/SQL tools.
 
 ## Required grants
 
-Use [clients/adb-diagnostic-grants-advisor.sql](../clients/adb-diagnostic-grants-advisor.sql)
-or apply the grants in this section manually.
+A DBA/ADMIN must grant these privileges to the dedicated diagnostic user.
+
+Recommended path: run
+[clients/adb-diagnostic-grants-advisor.sql](../clients/adb-diagnostic-grants-advisor.sql)
+as the grant script for the baseline Diagnostic Mode setup.
+
+Alternative path: copy the grants in this section and apply them manually through
+the client's standard change-management process.
+
+The skill does not grant privileges to itself, and the diagnostic user does not
+need grant/admin privileges at runtime.
+
+## Grant decision flow
+
+```mermaid
+flowchart TD
+    start["Implement Diagnostic Mode"] --> runtime["Create dedicated diagnostic user<br/>not personal, not ADMIN"]
+    runtime --> baseline["Apply baseline read-only grants<br/>session, DBMS_XPLAN, V$ performance views"]
+    baseline --> graph{"Need Graph DBA catalog<br/>across schemas?"}
+    graph -- Yes --> graphGrants["Grant DBA_PROPERTY_GRAPHS,<br/>DBA_PG_*, DBA_TABLES,<br/>DBA_INDEXES, stats views"]
+    graph -- No --> ownerPath["Use owner-scoped USER_* path<br/>only if connected as graph owner"]
+
+    graphGrants --> health{"Need health, AWR/ASH,<br/>Auto Indexing evidence?"}
+    ownerPath --> health
+    health -- Yes --> healthGrants["Grant DBA_HIST_*,<br/>V$ACTIVE_SESSION_HISTORY,<br/>tablespace/temp,<br/>Auto Indexing views"]
+    health -- No --> mcp
+
+    healthGrants --> plan{"Need SQL plan baseline<br/>visibility?"}
+    plan -- Yes --> planGrant["Grant SELECT ON<br/>DBA_SQL_PLAN_BASELINES"]
+    plan -- No --> mcp
+    planGrant --> mcp
+
+    mcp{"Using ADB Native MCP?"}
+    mcp -- Yes --> runSql["Expose RUN_SQL only<br/>read-only SELECT/WITH guardrails"]
+    mcp -- No --> sqlcl["Use SQLcl/session fallback<br/>outside ADB Native MCP runtime"]
+
+    runSql --> installer{"Will diagnostic user<br/>install/update RUN_SQL?"}
+    installer -- No --> dbaInstall["Preferred: DBA/installer creates<br/>RUN_SQL in diagnostic schema"]
+    installer -- Yes --> tempPrivs["Temporarily grant CREATE PROCEDURE<br/>and DBMS_CLOUD_AI_AGENT execute"]
+    tempPrivs --> revoke["Validate tool, then revoke<br/>installation-only privileges"]
+    dbaInstall --> validate
+    revoke --> validate
+    sqlcl --> validate
+
+    validate["Validate before use<br/>tools/list, read smoke test,<br/>write rejection, catalog/AWR access"]
+
+    classDef required fill:#ecfdf5,stroke:#059669,color:#064e3b;
+    classDef decision fill:#eff6ff,stroke:#2563eb,color:#1e3a8a;
+    classDef optional fill:#fff7ed,stroke:#ea580c,color:#7c2d12;
+    classDef fallback fill:#f3f4f6,stroke:#9ca3af,color:#374151,stroke-dasharray: 5 5;
+
+    class start,runtime,baseline,runSql,validate required;
+    class graph,health,plan,mcp,installer decision;
+    class graphGrants,healthGrants,planGrant,tempPrivs,revoke,dbaInstall optional;
+    class ownerPath,sqlcl fallback;
+```
+
+Grant sets used in the flow:
+
+| Condition | Apply |
+|---|---|
+| Always | Session, `DBMS_XPLAN`, and dynamic performance views. |
+| Graph DBA catalog across schemas | Property graph catalog and object metadata grants. |
+| Health, AWR/ASH, Auto Indexing analysis | Health, AWR/ASH, tablespace/temp, and Auto Indexing grants. |
+| SQL plan baseline visibility | `SELECT ON DBA_SQL_PLAN_BASELINES`. |
+| ADB Native MCP runtime | Expose `RUN_SQL` with read-only guardrails. |
+| Diagnostic user self-installs `RUN_SQL` | Temporary `CREATE PROCEDURE` and `DBMS_CLOUD_AI_AGENT` execute; revoke after validation. |
 
 ### Session and execution plan access
 
