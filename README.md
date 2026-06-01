@@ -195,7 +195,7 @@ GRANT SELECT ON DBA_AUTO_INDEX_EXECUTIONS TO graph_diag_user;
 Detailed docs:
 
 - [docs/diagnostic-mode-minimum-prereqs.md](docs/diagnostic-mode-minimum-prereqs.md)
-- [docs/diagnostic-requirements-selector.html](docs/diagnostic-requirements-selector.html) - interactive selector; open locally or through GitHub Pages.
+- [Diagnostic requirements selector](https://diegoecab.github.io/oracle-graph-dba-advisor/diagnostic-requirements-selector.html) - interactive selector for the recommended Diagnostic Mode requirements.
 - [docs/graph-dba-workload-mode-requirements.md](docs/graph-dba-workload-mode-requirements.md)
 - [clients/adb-mcp-setup.md](clients/adb-mcp-setup.md)
 - [docs/native-mcp-packaged-playbooks.md](docs/native-mcp-packaged-playbooks.md)
