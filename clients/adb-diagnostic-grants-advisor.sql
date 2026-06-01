@@ -73,13 +73,14 @@ GRANT SELECT ON DBA_HIST_SYSTEM_EVENT TO &&diag_user;
 GRANT SELECT ON DBA_HIST_PGASTAT TO &&diag_user;
 
 --------------------------------------------------------------------------------
--- Native MCP onboarding
+-- Native MCP tool lifecycle.
+-- Prefer a DBA/installer account to create RUN_SQL in the diagnostic schema.
+-- This runtime grants script does not grant tool installation privileges.
 --------------------------------------------------------------------------------
-GRANT CREATE PROCEDURE TO &&diag_user;
-GRANT EXECUTE ON C##CLOUD$SERVICE.DBMS_CLOUD_AI_AGENT TO &&diag_user;
 
 PROMPT
 PROMPT Advisor-mode direct grants completed for &&diag_user.
+PROMPT ADB Native MCP tool creation is DBA/installer-managed by default.
 PROMPT Optional demo/build-only extras are NOT included here:
 PROMPT   CREATE TABLE, CREATE VIEW, CREATE SEQUENCE,
 PROMPT   CREATE PROPERTY GRAPH, ALTER SESSION,

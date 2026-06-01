@@ -4,18 +4,21 @@
 
 Oracle Autonomous AI Database (Serverless) includes a **built-in, fully managed MCP server**. Instead of installing SQLcl locally and running it as an MCP server, the MCP endpoint runs directly inside your ADB instance. No client-side installation required — just a URL.
 
-This is an **optional backend adaptation**. The repository itself ships with SQLcl MCP as the canonical tool contract and documentation baseline.
+This is the preferred backend for **Diagnostic Mode on ADB Serverless** because
+it avoids a runtime SQLcl dependency and exposes only the database-side tools
+you register.
 
 ## When to Use This
 
-Use this when you want a zero-install ADB Serverless deployment and are willing to mirror the repo's expected `run-sql` behavior inside ADB. Otherwise, stay with SQLcl MCP.
+Use this when you want a zero-install ADB Serverless deployment and are willing
+to mirror the repo's expected read-only SQL behavior inside ADB.
 
 | Scenario | Recommended path |
 |---|---|
-| ADB Serverless (23ai or 26ai) | This guide if you want a zero-install backend |
+| ADB Serverless (23ai or 26ai) | This guide for Diagnostic Mode |
 | ADB Dedicated | SQLcl MCP (local) |
 | Base DB / On-prem / Free tier | SQLcl MCP (local) |
-| Want the repo's default supported path | SQLcl MCP (local) |
+| Need local-only fallback | SQLcl MCP (local) |
 | Need custom SQLcl commands (Data Pump, etc.) | SQLcl MCP (local) |
 
 ## Prerequisites
@@ -60,7 +63,22 @@ https://<hostname_prefix>.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/
 
 > **Important:** The repository's prompt and templates assume a read-only `run-sql` capability. SQLcl-only tools such as `connect` and `run-sqlcl` do not exist automatically in ADB Native MCP.
 
-Connect to your ADB as an admin user and register the `run-sql` tool:
+Register the read-only `RUN_SQL` tool in the dedicated diagnostic schema. For
+this repo, prefer the hardened setup script:
+
+```sql
+@clients/adb-native-run-sql-readonly.sql
+```
+
+The function rejects non-`SELECT`/`WITH` statements, comments, semicolons, DDL,
+DML, PL/SQL, SQLcl commands, `SELECT FOR UPDATE`, and known side-effect
+packages. The simplified example below illustrates the contract only; do not use
+it unchanged for a customer-facing demo.
+
+`CREATE PROCEDURE` is not a runtime privilege. Prefer a DBA/installer-managed
+lifecycle to create or replace the backing PL/SQL function in the diagnostic
+schema. Grant `CREATE PROCEDURE` to the diagnostic user only when that user must
+self-install or self-update the tool, and revoke it after validation.
 
 ```sql
 BEGIN

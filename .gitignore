@@ -23,6 +23,12 @@ Thumbs.db
 *.key
 .demo-config.env
 
+# Local customer/demo MCP configs and delivery notes
+clients/codex-adb-native-mcp-*.toml
+workload/demo/CLIENT_DIAGNOSTIC_REQUIREMENTS.md
+workload/demo/DEMO_DELIVERY_PLAN.md
+workload/demo/validate-adb-native-mcp.mjs
+
 # Output
 output/
 

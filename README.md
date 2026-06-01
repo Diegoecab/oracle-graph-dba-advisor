@@ -2,13 +2,35 @@
 
 A **system prompt + SQL templates + knowledge base** that turns any MCP-compatible LLM into an Oracle Property Graph (SQL/PGQ) performance advisor for Oracle Database 23ai and 26ai.
 
-The repository ships with **SQLcl MCP Server** as the canonical backend (local, any Oracle 23ai/26ai). An **ADB Native MCP** adaptation is documented separately for ADB Serverless teams willing to register a compatible `run-sql` tool contract.
+The current productive path is **Diagnostic Mode** for existing graph workloads,
+using **ADB Native MCP** and a controlled read-only SQL tool. Consultive graph
+design remains available, but is secondary while Diagnostic Mode is hardened for
+customer use.
 
 ---
 
 ## What It Does
 
-### Design a new graph from scratch (Consultive Mode)
+### Diagnostic Mode - production workload analysis
+
+```
+You:     "Analyze my graph workload and tell me what's slow and why"
+
+Advisor: 0. Checks safety posture and stays read-only by default
+         1. Builds a health baseline from database performance views
+         2. Discovers graph objects, owners, tables, indexes, and stats
+         3. Finds expensive SQL/PGQ workload from V$SQL and AWR/ASH
+         4. Reads execution plans and identifies graph-specific bottlenecks
+         5. Explains root cause with SQL_ID, plan, wait, and object evidence
+         6. Produces DBA-ready recommendations with DDL and rollback text
+```
+
+Diagnostic Mode is the primary customer-facing skill path. It is designed for
+admins and DBAs who already have an Oracle property graph workload and need a
+repeatable, evidence-backed performance review without letting the LLM mutate
+the database.
+
+### Secondary: design a new graph from scratch (Consultive Mode)
 
 ```
 You:     "I have orders, customers and products. Would a graph help
@@ -48,7 +70,7 @@ graph LR
 
 > **To view diagrams locally**: install the VS Code extension `bierner.markdown-mermaid` (`Ctrl+Shift+X` → search → Install), then open the `.md` file with `Ctrl+K V` (split preview). GitHub also renders Mermaid natively.
 
-### Optimize an existing graph workload
+### Diagnostic methodology details
 
 ```
 You:     "Analyze my graph workload and tell me what's slow and why"
@@ -89,6 +111,11 @@ In **Graph DBA mode**, the skill does not need deep business context to start. I
 
 ## Architecture
 
+For the current Diagnostic Mode implementation on ADB Serverless, the productive
+path is ADB Native MCP plus a read-only SQL tool. The local SQLcl path remains a
+secondary compatibility option for environments where ADB Native MCP is not the
+target.
+
 ```
 ┌──────────────────────────────────────────┐
 │           MCP-compatible LLM             │
@@ -112,19 +139,92 @@ In **Graph DBA mode**, the skill does not need deep business context to start. I
     └────────────────────────────────┘
 ```
 
-Uses AWR/ASH when available for historical trends. Falls back to `V$SQL` + `USER_*` views automatically on Always Free tier.
+Diagnostic Mode uses AWR/ASH for historical trends and `V$SQL` for current
+workload evidence.
+
+---
+
+## Diagnostic Mode Client Requirements
+
+Use this checklist when implementing the productive Diagnostic Mode skill for a
+customer environment.
+
+### Environment
+
+- Autonomous Database Serverless 23ai or 26ai.
+- ADB Native MCP enabled on the target database.
+- OAuth or bearer-token authentication for the MCP client.
+- A dedicated technical database user for the skill, not a personal user and not `ADMIN`.
+- Target schema, graph name, workload window, and environment classification.
+- AWR/ASH available for historical diagnosis.
+
+### Runtime MCP Tool
+
+The skill needs one read-only SQL execution tool exposed through ADB Native MCP.
+The recommended contract is `RUN_SQL`.
+
+If the client already has an approved read-only SQL MCP tool in a low-risk test
+or production-clone environment, the skill can be mapped to that tool after
+validating that it cannot perform writes. For production-style use, prefer the
+hardened `RUN_SQL` implementation in `clients/adb-native-run-sql-readonly.sql`.
+
+Recommended tool lifecycle:
+
+1. A DBA/installer creates or replaces `RUN_SQL` in the diagnostic user's schema.
+2. The MCP tool is registered for the runtime identity that will authenticate to ADB Native MCP.
+3. `tools/list` is validated to expose only the intended read-only SQL tool.
+4. A write rejection test is executed before using the skill.
+
+Grant `CREATE PROCEDURE` to the diagnostic user only if that same user must
+self-install or self-update the MCP tool. It is not a runtime privilege for the
+skill.
+
+### Runtime Grants
+
+```sql
+GRANT CREATE SESSION TO graph_diag_user;
+GRANT EXECUTE ON DBMS_XPLAN TO graph_diag_user;
+
+GRANT SELECT ON SYS.V_$SQL TO graph_diag_user;
+GRANT SELECT ON SYS.V_$SQLSTATS TO graph_diag_user;
+GRANT SELECT ON SYS.V_$SQLAREA_PLAN_HASH TO graph_diag_user;
+GRANT SELECT ON SYS.V_$SQL_PLAN TO graph_diag_user;
+GRANT SELECT ON SYS.V_$SQL_PLAN_STATISTICS_ALL TO graph_diag_user;
+GRANT SELECT ON SYS.V_$SQL_SHARED_CURSOR TO graph_diag_user;
+GRANT SELECT ON SYS.V_$SQLTEXT TO graph_diag_user;
+GRANT SELECT ON SYS.V_$PARAMETER TO graph_diag_user;
+GRANT SELECT ON SYS.V_$SESSION TO graph_diag_user;
+GRANT SELECT ON SYS.V_$ACTIVE_SESSION_HISTORY TO graph_diag_user;
+GRANT SELECT ON SYS.V_$SYSMETRIC_HISTORY TO graph_diag_user;
+GRANT SELECT ON SYS.V_$SYSTEM_EVENT TO graph_diag_user;
+GRANT SELECT ON SYS.V_$SGASTAT TO graph_diag_user;
+GRANT SELECT ON SYS.V_$PGASTAT TO graph_diag_user;
+
+GRANT SELECT ON DBA_HIST_SNAPSHOT TO graph_diag_user;
+GRANT SELECT ON DBA_HIST_SYSMETRIC_SUMMARY TO graph_diag_user;
+GRANT SELECT ON DBA_HIST_SYSTEM_EVENT TO graph_diag_user;
+GRANT SELECT ON DBA_HIST_PGASTAT TO graph_diag_user;
+GRANT SELECT ON DBA_HIST_ACTIVE_SESS_HISTORY TO graph_diag_user;
+
+GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO graph_diag_user;
+GRANT SELECT ON DBA_TEMP_FREE_SPACE TO graph_diag_user;
+GRANT SELECT ON DBA_AUTO_INDEX_CONFIG TO graph_diag_user;
+GRANT SELECT ON DBA_AUTO_INDEX_IND_ACTIONS TO graph_diag_user;
+GRANT SELECT ON DBA_AUTO_INDEX_EXECUTIONS TO graph_diag_user;
+```
 
 ---
 
 ## Quick Start
 
-The supported default path in this repo is **SQLcl MCP**. If you are on ADB Serverless and want a zero-install variant, use the ADB Native guide only after mirroring the same `run-sql` contract expected by the templates and prompt.
+For the productive Diagnostic Mode path, use **ADB Native MCP** with the read-only
+SQL tool contract described above.
 
 For the client-facing **Graph DBA workload-analysis** requirements, use:
 
 - `docs/graph-dba-workload-mode-requirements.md`
 
-### Option A: ADB Serverless (optional zero-install variant)
+### ADB Serverless Diagnostic Mode
 
 Minimum operational baseline for the diagnostic mode:
 
@@ -132,6 +232,7 @@ Minimum operational baseline for the diagnostic mode:
 - minimum diagnostic grants on that schema
 - MCP enabled on the ADB
 - MCP authentication via OAuth or bearer token
+- one read-only SQL MCP tool, recommended contract `RUN_SQL`
 
 Reference docs:
 
@@ -145,22 +246,11 @@ Reference docs:
    Tag: adb$feature → {"name":"mcp_server","enable":true}
    ```
 
-2. Register the SQL tool — connect to ADB and run:
-   ```sql
-   BEGIN
-     DBMS_CLOUD_AI_AGENT.CREATE_TOOL(
-       tool_name  => 'RUN_SQL',
-       attributes => '{"instruction": "Execute a read-only SQL query.",
-          "function": "RUN_SQL",
-          "tool_inputs": [
-            {"name":"QUERY","description":"SELECT SQL statement without trailing semicolon."},
-            {"name":"OFFSET","description":"Pagination offset (default 0)."},
-            {"name":"LIMIT","description":"Max rows to return (default 100)."}
-          ]}'
-     );
-   END;
-   /
-   ```
+2. Register the read-only SQL tool:
+   Prefer `clients/adb-native-run-sql-readonly.sql` when database-side
+   guardrails are required. A DBA/installer can create the backing function in
+   the diagnostic user's schema; the diagnostic user does not need
+   `CREATE PROCEDURE` at runtime.
 
 3. Configure your MCP client:
    ```json
@@ -181,7 +271,7 @@ Reference docs:
 > Full details: `clients/adb-mcp-setup.md`
 > Practical minimum prerequisites: `docs/diagnostic-mode-minimum-prereqs.md`
 
-### Option B: SQLcl local (recommended default)
+### Secondary local compatibility path: SQLcl MCP
 
 For ADB Dedicated, Base DB, on-prem, Free tier, or any Oracle 23ai/26ai where the native MCP endpoint is not available.
 
@@ -305,7 +395,14 @@ Or use the MCP connect tool directly if your client exposes it.
 
 ## Two Operating Modes
 
-### Consultive Mode — Design new graphs
+### Diagnostic Mode - Optimize existing graphs
+
+This is the productive path. It is for teams with a running graph workload that
+needs diagnosis or tuning. The advisor runs read-only by default: safety gate,
+health check, discovery, workload identification, plan evidence, selectivity
+analysis, recommendations, and optional simulation only after approval.
+
+### Secondary: Consultive Mode - Design new graphs
 
 For users asking "would a graph help for X?" or "how should I model Y?". The advisor:
 
@@ -318,9 +415,10 @@ No database connection required — the advisor works from the user's descriptio
 
 The advisor never creates objects or executes DDL without explicit approval — it produces scripts and recommendations.
 
-### Diagnostic Mode — Optimize existing graphs
+### Diagnostic Mode reference
 
-For users with a running graph workload that needs tuning. The advisor runs the 8-phase methodology: health check, discovery, identification, deep dive, selectivity analysis, simulation with invisible indexes, recommendations, and scale testing.
+For users with a running graph workload that needs tuning. See the productive
+Diagnostic Mode section above.
 
 ---
 
@@ -328,9 +426,14 @@ For users with a running graph workload that needs tuning. The advisor runs the 
 
 Each mode requires different privilege levels. Grant only what you need.
 
-**Recommended connection model**: connect as the **target graph-owning schema** (or via a proxy/session that resolves `CURRENT_SCHEMA` to that schema). The shipped SQL templates intentionally use `USER_*` graph dictionary views and `USER_*` object statistics views.
+**Template note**: the shipped `USER_*` templates assume the session resolves
+`CURRENT_SCHEMA` to the target graph-owning schema. A separate diagnostic user
+can still be used, but it should use the owner-aware / DBA catalog path for graph
+metadata.
 
-**Not the default path**: a separate `advisor_user` account that inspects another schema. That model requires a fork of the templates to `ALL_*` / `DBA_*` views and is not what this repository ships today.
+For the ADB Native MCP production-style path, prefer one dedicated technical
+user per target database plus direct read grants and a controlled read-only SQL
+tool.
 
 ### Level 0: Consultive Mode — No connection required
 
@@ -363,9 +466,11 @@ GRANT EXECUTE ON DBMS_XPLAN            TO graph_owner;
 > **Note**: `USER_*` views are accessible by default to the schema owner. `GRANT SELECT ON USER_* ...` is not the intended onboarding model for this repo; connect as the owning schema instead.
 > **ADB note**: on Autonomous, the V$ grants are typically issued as `GRANT SELECT ON SYS.V_$...`.
 
-### Level 2: Read-Only + AWR (advanced diagnostics on Enterprise Edition)
+### Level 2: Read-Only + AWR/ASH
 
-Adds historical trends and Auto Indexing status. Requires Diagnostics Pack license.
+Adds historical trends, ASH evidence, and Auto Indexing status. For the current
+client diagnostic implementation, AWR/ASH access is assumed available and
+approved.
 
 ```sql
 -- All Level 1 privileges, plus:
@@ -382,8 +487,9 @@ GRANT SELECT ON DBA_AUTO_INDEX_IND_ACTIONS TO graph_owner;
 GRANT SELECT ON DBA_INDEX_USAGE        TO graph_owner;  -- 23ai+
 ```
 
-> **Always Free / ADB**: AWR views are not available. The advisor falls back to V$ views automatically.
-> **ADB role shortcut**: for session-based SQL access, `SELECT_CATALOG_ROLE` is the practical broad read role. For packaged Native MCP tools implemented as stored PL/SQL, prefer direct grants because roles are disabled in definer-rights PL/SQL.
+> **ADB Native MCP note**: for stored PL/SQL tools, prefer direct grants instead
+> of relying on roles because definer-rights PL/SQL does not inherit role
+> privileges reliably.
 
 ### Level 3: Simulate — Test with invisible indexes
 
@@ -566,6 +672,7 @@ oracle-graph-dba-advisor/
 | **Persistent memory** | `memory/` | Planned | File-based memory for schema snapshots, recommendation history, learned patterns across sessions |
 | **Centralized memory** | `memory/backends/` | Planned | Oracle ADB as shared memory backend with vector search, multi-tenancy (VPD), and audit trail |
 | **Autonomous agent** | `agent/n8n/` | Planned | n8n workflow templates for automated health checks, post-deploy analysis, and chat interface |
+| **Agent Factory governance spike** | `agent/` | Pending | Evaluate Private Agent Factory only for governance controls: RBAC, prompt guardrails, read-only tool allowlisting, audit trails, evaluation, and controlled endpoint exposure |
 
 Design docs for each feature are already in their respective directories.
 
