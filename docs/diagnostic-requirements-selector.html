@@ -72,6 +72,30 @@
       align-items: start;
     }
 
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .language {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    select {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--panel);
+      color: var(--text);
+      padding: 7px 9px;
+      font: inherit;
+    }
+
     .panel {
       background: var(--panel);
       border: 1px solid var(--border);
@@ -171,6 +195,14 @@
     }
 
     @media (max-width: 860px) {
+      .topbar {
+        display: block;
+      }
+
+      .language {
+        margin-top: 12px;
+      }
+
       .layout {
         grid-template-columns: 1fr;
       }
@@ -179,80 +211,91 @@
 </head>
 <body>
   <main>
-    <h1>Diagnostic Mode Requirements Selector</h1>
-    <p>Select the target operating model. The output lists the required implementation steps, grants, and validations for the Graph DBA Advisor skill.</p>
+    <div class="topbar">
+      <div>
+        <h1 data-i18n="title">Diagnostic Mode Requirements Selector</h1>
+        <p data-i18n="intro">Select the target operating model. The output lists the required implementation steps, grants, and validations for the Graph DBA Advisor skill.</p>
+      </div>
+      <label class="language">
+        <span data-i18n="languageLabel">Language</span>
+        <select id="language">
+          <option value="en">English</option>
+          <option value="es">Español</option>
+        </select>
+      </label>
+    </div>
 
     <div class="layout">
       <section class="panel" aria-labelledby="inputs-title">
-        <h2 id="inputs-title">Scenario</h2>
+        <h2 id="inputs-title" data-i18n="scenarioTitle">Scenario</h2>
 
         <label class="option">
           <input id="otherSchemas" type="checkbox" checked>
           <span>
-            <strong>Inspect graphs owned by other schemas</strong>
-            <span>Use this when the diagnostic user is different from the graph owner.</span>
+            <strong data-i18n="otherSchemasTitle">Inspect graphs owned by other schemas</strong>
+            <span data-i18n="otherSchemasHelp">Use this when the diagnostic user is different from the graph owner.</span>
           </span>
         </label>
 
         <label class="option">
           <input id="health" type="checkbox" checked>
           <span>
-            <strong>Include health, AWR/ASH, and Auto Indexing evidence</strong>
-            <span>Recommended for production-style workload diagnosis.</span>
+            <strong data-i18n="healthTitle">Include health, AWR/ASH, and Auto Indexing evidence</strong>
+            <span data-i18n="healthHelp">Recommended for production-style workload diagnosis.</span>
           </span>
         </label>
 
         <label class="option">
           <input id="planBaseline" type="checkbox">
           <span>
-            <strong>Include SQL plan baseline visibility</strong>
-            <span>Only when plan management or baseline state is in scope.</span>
+            <strong data-i18n="planBaselineTitle">Include SQL plan baseline visibility</strong>
+            <span data-i18n="planBaselineHelp">Only when plan management or baseline state is in scope.</span>
           </span>
         </label>
 
         <label class="option">
           <input id="nativeMcp" type="checkbox" checked>
           <span>
-            <strong>Use ADB Native MCP</strong>
-            <span>Preferred runtime for ADB Serverless Diagnostic Mode.</span>
+            <strong data-i18n="nativeMcpTitle">Use ADB Native MCP</strong>
+            <span data-i18n="nativeMcpHelp">Preferred runtime for ADB Serverless Diagnostic Mode.</span>
           </span>
         </label>
 
         <label class="option">
           <input id="selfInstall" type="checkbox">
           <span>
-            <strong>Diagnostic user installs or updates RUN_SQL</strong>
-            <span>Leave off when a DBA or installer owns the tool lifecycle.</span>
+            <strong data-i18n="selfInstallTitle">Diagnostic user installs or updates RUN_SQL</strong>
+            <span data-i18n="selfInstallHelp">Leave off when a DBA or installer owns the tool lifecycle.</span>
           </span>
         </label>
 
         <label class="option">
           <input id="executeChanges" type="checkbox">
           <span>
-            <strong>Skill executes test changes in non-production</strong>
-            <span>Optional elevated mode, not required for analyze/propose.</span>
+            <strong data-i18n="executeChangesTitle">Skill executes test changes in non-production</strong>
+            <span data-i18n="executeChangesHelp">Optional elevated mode, not required for analyze/propose.</span>
           </span>
         </label>
 
         <div class="actions">
-          <button id="copy" type="button">Copy output</button>
-          <button class="secondary" id="reset" type="button">Reset recommended</button>
+          <button id="copy" type="button" data-i18n="copyButton">Copy output</button>
+          <button class="secondary" id="reset" type="button" data-i18n="resetButton">Reset recommended</button>
         </div>
       </section>
 
       <section class="panel summary" aria-labelledby="output-title">
-        <h2 id="output-title">Required implementation</h2>
+        <h2 id="output-title" data-i18n="outputTitle">Required implementation</h2>
         <div id="badges"></div>
         <div>
-          <h2>Actions</h2>
+          <h2 data-i18n="actionsTitle">Actions</h2>
           <ul id="actions"></ul>
         </div>
         <div>
-          <h2>SQL grants</h2>
+          <h2 data-i18n="sqlTitle">SQL grants</h2>
           <pre id="sql"></pre>
         </div>
         <div>
-          <h2>Validation checklist</h2>
+          <h2 data-i18n="validationTitle">Validation checklist</h2>
           <ul id="validation"></ul>
         </div>
       </section>
@@ -260,6 +303,117 @@
   </main>
 
   <script>
+    const translations = {
+      en: {
+        documentTitle: "Diagnostic Mode Requirements Selector",
+        title: "Diagnostic Mode Requirements Selector",
+        intro: "Select the target operating model. The output lists the required implementation steps, grants, and validations for the Graph DBA Advisor skill.",
+        languageLabel: "Language",
+        scenarioTitle: "Scenario",
+        otherSchemasTitle: "Inspect graphs owned by other schemas",
+        otherSchemasHelp: "Use this when the diagnostic user is different from the graph owner.",
+        healthTitle: "Include health, AWR/ASH, and Auto Indexing evidence",
+        healthHelp: "Recommended for production-style workload diagnosis.",
+        planBaselineTitle: "Include SQL plan baseline visibility",
+        planBaselineHelp: "Only when plan management or baseline state is in scope.",
+        nativeMcpTitle: "Use ADB Native MCP",
+        nativeMcpHelp: "Preferred runtime for ADB Serverless Diagnostic Mode.",
+        selfInstallTitle: "Diagnostic user installs or updates RUN_SQL",
+        selfInstallHelp: "Leave off when a DBA or installer owns the tool lifecycle.",
+        executeChangesTitle: "Skill executes test changes in non-production",
+        executeChangesHelp: "Optional elevated mode, not required for analyze/propose.",
+        copyButton: "Copy output",
+        copiedButton: "Copied",
+        resetButton: "Reset recommended",
+        outputTitle: "Required implementation",
+        actionsTitle: "Actions",
+        sqlTitle: "SQL grants",
+        validationTitle: "Validation checklist",
+        badgeNative: "Primary runtime: ADB Native MCP",
+        badgeFallback: "Fallback runtime: SQLcl/session",
+        outputHeading: "Diagnostic Mode requirements",
+        outputActions: "Actions",
+        outputSql: "SQL grants",
+        outputValidation: "Validation",
+        actions: {
+          dedicatedUser: "Create one dedicated technical database user per target database. Do not use personal users or ADMIN.",
+          baseline: "Apply baseline read-only grants for session, DBMS_XPLAN, and dynamic performance views.",
+          catalogYes: "Grant graph catalog and object metadata views because the diagnostic user must inspect graphs owned by other schemas.",
+          catalogNo: "Use owner-scoped USER_* views only if the diagnostic user connects as the graph owner.",
+          health: "Grant health, AWR/ASH, tablespace/temp, and Auto Indexing views.",
+          planBaseline: "Grant SQL plan baseline visibility.",
+          nativeMcp: "Enable ADB Native MCP and expose only RUN_SQL with read-only guardrails.",
+          selfInstall: "Temporarily grant installation privileges to the diagnostic user, validate RUN_SQL, then revoke installation-only privileges.",
+          dbaInstall: "Preferred: have a DBA or installer create RUN_SQL in the diagnostic schema. Do not grant CREATE PROCEDURE at runtime.",
+          fallback: "Use SQLcl/session fallback. This is outside the preferred ADB Serverless Diagnostic Mode runtime.",
+          executeChanges: "Allow elevated test-change grants only in non-production and only with explicit approval."
+        },
+        validation: {
+          mcp: "Confirm MCP endpoint connectivity.",
+          tools: "Confirm tools/list exposes only the approved diagnostic tool for the baseline deployment.",
+          smoke: "Run a SELECT smoke test through the tool.",
+          reject: "Confirm CREATE TABLE, DELETE, and PL/SQL blocks are rejected by RUN_SQL.",
+          sql: "Confirm access to SYS.V_$SQL.",
+          catalog: "Confirm access to DBA_PROPERTY_GRAPHS.",
+          history: "Confirm access to DBA_HIST_SNAPSHOT and SYS.V_$ACTIVE_SESSION_HISTORY."
+        }
+      },
+      es: {
+        documentTitle: "Selector de Requerimientos - Modo Diagnóstico",
+        title: "Selector de Requerimientos - Modo Diagnóstico",
+        intro: "Selecciona el modelo operativo objetivo. El resultado lista los pasos de implementación, grants y validaciones requeridas para el skill Graph DBA Advisor.",
+        languageLabel: "Idioma",
+        scenarioTitle: "Escenario",
+        otherSchemasTitle: "Inspeccionar graphs de otros schemas",
+        otherSchemasHelp: "Usar cuando el usuario diagnóstico es distinto del owner del graph.",
+        healthTitle: "Incluir evidencia de health, AWR/ASH y Auto Indexing",
+        healthHelp: "Recomendado para diagnóstico de workload con enfoque productivo.",
+        planBaselineTitle: "Incluir visibilidad de SQL plan baselines",
+        planBaselineHelp: "Solo cuando plan management o baseline state está dentro del alcance.",
+        nativeMcpTitle: "Usar ADB Native MCP",
+        nativeMcpHelp: "Runtime preferido para Diagnostic Mode en ADB Serverless.",
+        selfInstallTitle: "El usuario diagnóstico instala o actualiza RUN_SQL",
+        selfInstallHelp: "Dejar apagado cuando un DBA o installer administra el ciclo de vida del tool.",
+        executeChangesTitle: "El skill ejecuta cambios de prueba en non-production",
+        executeChangesHelp: "Modo elevado opcional; no requerido para analizar/proponer.",
+        copyButton: "Copiar resultado",
+        copiedButton: "Copiado",
+        resetButton: "Reset recomendado",
+        outputTitle: "Implementación requerida",
+        actionsTitle: "Acciones",
+        sqlTitle: "Grants SQL",
+        validationTitle: "Checklist de validación",
+        badgeNative: "Runtime primario: ADB Native MCP",
+        badgeFallback: "Runtime fallback: SQLcl/session",
+        outputHeading: "Requerimientos de Diagnostic Mode",
+        outputActions: "Acciones",
+        outputSql: "Grants SQL",
+        outputValidation: "Validación",
+        actions: {
+          dedicatedUser: "Crear un usuario técnico dedicado por cada base objetivo. No usar usuarios personales ni ADMIN.",
+          baseline: "Aplicar grants read-only base para sesión, DBMS_XPLAN y vistas dinámicas de performance.",
+          catalogYes: "Otorgar grants sobre catálogo de graphs y metadata de objetos porque el usuario diagnóstico debe inspeccionar graphs owned por otros schemas.",
+          catalogNo: "Usar vistas USER_* solo si el usuario diagnóstico se conecta como el owner del graph.",
+          health: "Otorgar grants para health, AWR/ASH, tablespace/temp y Auto Indexing.",
+          planBaseline: "Otorgar visibilidad sobre SQL plan baselines.",
+          nativeMcp: "Habilitar ADB Native MCP y exponer solo RUN_SQL con guardrails read-only.",
+          selfInstall: "Otorgar temporalmente privilegios de instalación al usuario diagnóstico, validar RUN_SQL y luego revocar privilegios de instalación.",
+          dbaInstall: "Preferido: que un DBA o installer cree RUN_SQL en el schema diagnóstico. No otorgar CREATE PROCEDURE en runtime.",
+          fallback: "Usar fallback SQLcl/session. Esto queda fuera del runtime preferido para Diagnostic Mode en ADB Serverless.",
+          executeChanges: "Permitir grants elevados de cambios de prueba solo en non-production y con aprobación explícita."
+        },
+        validation: {
+          mcp: "Confirmar conectividad con el endpoint MCP.",
+          tools: "Confirmar que tools/list expone solo el tool diagnóstico aprobado para el baseline.",
+          smoke: "Ejecutar un smoke test SELECT a través del tool.",
+          reject: "Confirmar que CREATE TABLE, DELETE y bloques PL/SQL son rechazados por RUN_SQL.",
+          sql: "Confirmar acceso a SYS.V_$SQL.",
+          catalog: "Confirmar acceso a DBA_PROPERTY_GRAPHS.",
+          history: "Confirmar acceso a DBA_HIST_SNAPSHOT y SYS.V_$ACTIVE_SESSION_HISTORY."
+        }
+      }
+    };
+
     const grantSets = {
       baseline: [
         "GRANT CREATE SESSION TO graph_diag_user;",
@@ -336,6 +490,21 @@
       reset: document.getElementById("reset")
     };
 
+    const language = document.getElementById("language");
+
+    function t() {
+      return translations[language.value] || translations.en;
+    }
+
+    function applyLanguage() {
+      const strings = t();
+      document.documentElement.lang = language.value;
+      document.title = strings.documentTitle;
+      document.querySelectorAll("[data-i18n]").forEach((node) => {
+        node.textContent = strings[node.dataset.i18n];
+      });
+    }
+
     function addList(target, text) {
       const li = document.createElement("li");
       li.textContent = text;
@@ -359,48 +528,48 @@
 
       const badge = document.createElement("span");
       badge.className = "badge";
-      badge.textContent = els.nativeMcp.checked ? "Primary runtime: ADB Native MCP" : "Fallback runtime: SQLcl/session";
+      badge.textContent = els.nativeMcp.checked ? t().badgeNative : t().badgeFallback;
       els.badges.appendChild(badge);
 
-      addList(els.actions, "Create one dedicated technical database user per target database. Do not use personal users or ADMIN.");
-      addList(els.actions, "Apply baseline read-only grants for session, DBMS_XPLAN, and dynamic performance views.");
+      addList(els.actions, t().actions.dedicatedUser);
+      addList(els.actions, t().actions.baseline);
 
       if (els.otherSchemas.checked) {
-        addList(els.actions, "Grant graph catalog and object metadata views because the diagnostic user must inspect graphs owned by other schemas.");
+        addList(els.actions, t().actions.catalogYes);
       } else {
-        addList(els.actions, "Use owner-scoped USER_* views only if the diagnostic user connects as the graph owner.");
+        addList(els.actions, t().actions.catalogNo);
       }
 
       if (els.health.checked) {
-        addList(els.actions, "Grant health, AWR/ASH, tablespace/temp, and Auto Indexing views.");
+        addList(els.actions, t().actions.health);
       }
 
       if (els.planBaseline.checked) {
-        addList(els.actions, "Grant SQL plan baseline visibility.");
+        addList(els.actions, t().actions.planBaseline);
       }
 
       if (els.nativeMcp.checked) {
-        addList(els.actions, "Enable ADB Native MCP and expose only RUN_SQL with read-only guardrails.");
+        addList(els.actions, t().actions.nativeMcp);
         if (els.selfInstall.checked) {
-          addList(els.actions, "Temporarily grant installation privileges to the diagnostic user, validate RUN_SQL, then revoke installation-only privileges.");
+          addList(els.actions, t().actions.selfInstall);
         } else {
-          addList(els.actions, "Preferred: have a DBA or installer create RUN_SQL in the diagnostic schema. Do not grant CREATE PROCEDURE at runtime.");
+          addList(els.actions, t().actions.dbaInstall);
         }
       } else {
-        addList(els.actions, "Use SQLcl/session fallback. This is outside the preferred ADB Serverless Diagnostic Mode runtime.");
+        addList(els.actions, t().actions.fallback);
       }
 
       if (els.executeChanges.checked) {
-        addList(els.actions, "Allow elevated test-change grants only in non-production and only with explicit approval.");
+        addList(els.actions, t().actions.executeChanges);
       }
 
-      addList(els.validation, "Confirm MCP endpoint connectivity.");
-      addList(els.validation, "Confirm tools/list exposes only the approved diagnostic tool for the baseline deployment.");
-      addList(els.validation, "Run a SELECT smoke test through the tool.");
-      addList(els.validation, "Confirm CREATE TABLE, DELETE, and PL/SQL blocks are rejected by RUN_SQL.");
-      addList(els.validation, "Confirm access to SYS.V_$SQL.");
-      if (els.otherSchemas.checked) addList(els.validation, "Confirm access to DBA_PROPERTY_GRAPHS.");
-      if (els.health.checked) addList(els.validation, "Confirm access to DBA_HIST_SNAPSHOT and SYS.V_$ACTIVE_SESSION_HISTORY.");
+      addList(els.validation, t().validation.mcp);
+      addList(els.validation, t().validation.tools);
+      addList(els.validation, t().validation.smoke);
+      addList(els.validation, t().validation.reject);
+      addList(els.validation, t().validation.sql);
+      if (els.otherSchemas.checked) addList(els.validation, t().validation.catalog);
+      if (els.health.checked) addList(els.validation, t().validation.history);
 
       els.sql.textContent = selectedGrants();
     }
@@ -408,7 +577,7 @@
     function outputText() {
       const actions = [...els.actions.querySelectorAll("li")].map((li) => `- ${li.textContent}`).join("\n");
       const validation = [...els.validation.querySelectorAll("li")].map((li) => `- ${li.textContent}`).join("\n");
-      return `Diagnostic Mode requirements\n\nActions\n${actions}\n\nSQL grants\n${els.sql.textContent}\n\nValidation\n${validation}\n`;
+      return `${t().outputHeading}\n\n${t().outputActions}\n${actions}\n\n${t().outputSql}\n${els.sql.textContent}\n\n${t().outputValidation}\n${validation}\n`;
     }
 
     document.querySelectorAll("input[type='checkbox']").forEach((input) => {
@@ -430,8 +599,8 @@
         document.execCommand("copy");
         textarea.remove();
       }
-      els.copy.textContent = "Copied";
-      setTimeout(() => { els.copy.textContent = "Copy output"; }, 1200);
+      els.copy.textContent = t().copiedButton;
+      setTimeout(() => { els.copy.textContent = t().copyButton; }, 1200);
     });
 
     els.reset.addEventListener("click", () => {
@@ -444,6 +613,12 @@
       render();
     });
 
+    language.addEventListener("change", () => {
+      applyLanguage();
+      render();
+    });
+
+    applyLanguage();
     render();
   </script>
 </body>
