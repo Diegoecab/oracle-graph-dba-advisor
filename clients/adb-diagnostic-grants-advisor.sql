@@ -4,7 +4,7 @@
 -- Grants the direct privileges needed for the repo's current diagnostic/advisor
 -- mode on Oracle Autonomous Database.
 --
--- Run as ADMIN against an EXISTING graph-owning schema.
+-- Run as ADMIN against an EXISTING dedicated diagnostic schema.
 --
 -- Why direct grants:
 --   The Native MCP flow uses a stored RUN_SQL PL/SQL function. For definer-rights
@@ -19,7 +19,7 @@
 -- current packaged Native MCP tools are stored PL/SQL functions.
 --
 -- Usage:
---   DEFINE diag_user = NEWFRAUD
+--   DEFINE diag_user = GRAPH_DIAG_USER
 --   @clients/adb-diagnostic-grants-advisor.sql
 --------------------------------------------------------------------------------
 
@@ -60,6 +60,18 @@ GRANT SELECT ON SYS.V_$SGASTAT TO &&diag_user;
 GRANT SELECT ON SYS.V_$PGASTAT TO &&diag_user;
 
 --------------------------------------------------------------------------------
+-- Graph DBA catalog and object metadata
+--------------------------------------------------------------------------------
+GRANT SELECT ON DBA_PROPERTY_GRAPHS TO &&diag_user;
+GRANT SELECT ON DBA_PG_ELEMENTS TO &&diag_user;
+GRANT SELECT ON DBA_PG_EDGE_RELATIONSHIPS TO &&diag_user;
+GRANT SELECT ON DBA_TABLES TO &&diag_user;
+GRANT SELECT ON DBA_INDEXES TO &&diag_user;
+GRANT SELECT ON DBA_IND_COLUMNS TO &&diag_user;
+GRANT SELECT ON DBA_TAB_STATISTICS TO &&diag_user;
+GRANT SELECT ON DBA_TAB_COL_STATISTICS TO &&diag_user;
+
+--------------------------------------------------------------------------------
 -- Health-check views used by current templates
 --------------------------------------------------------------------------------
 GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO &&diag_user;
@@ -71,6 +83,7 @@ GRANT SELECT ON DBA_HIST_SNAPSHOT TO &&diag_user;
 GRANT SELECT ON DBA_HIST_SYSMETRIC_SUMMARY TO &&diag_user;
 GRANT SELECT ON DBA_HIST_SYSTEM_EVENT TO &&diag_user;
 GRANT SELECT ON DBA_HIST_PGASTAT TO &&diag_user;
+GRANT SELECT ON DBA_HIST_ACTIVE_SESS_HISTORY TO &&diag_user;
 
 --------------------------------------------------------------------------------
 -- Native MCP tool lifecycle.

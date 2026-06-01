@@ -1,6 +1,6 @@
 # Graph DBA Workload Mode — Client Requirements
 
-Clear client-facing version of what is needed to run the skill in:
+Clear implementation requirements for running the skill in:
 
 1. analyze workload
 2. detect issues
@@ -9,7 +9,7 @@ Clear client-facing version of what is needed to run the skill in:
 
 Short shareable version:
 
-- `docs/client-ready-diagnostic-access-summary.md`
+- [docs/client-ready-diagnostic-access-summary.md](client-ready-diagnostic-access-summary.md)
 
 ## DB privileges only
 
@@ -44,8 +44,8 @@ Those functions run as named definer-rights PL/SQL by default, and roles are dis
 
 Validation assets in this repo:
 
-- `workload/newfraud/11_validate_select_catalog_role.sh`
-- `clients/validate-select-catalog-role-coverage.sql`
+- [workload/newfraud/11_validate_select_catalog_role.sh](../workload/newfraud/11_validate_select_catalog_role.sh)
+- [clients/validate-select-catalog-role-coverage.sql](../clients/validate-select-catalog-role-coverage.sql)
 
 ### Mandatory for analyze + propose mode
 
@@ -102,12 +102,19 @@ GRANT SELECT ON DBA_HIST_PGASTAT TO graph_diag_user;
 GRANT SELECT ON DBA_HIST_ACTIVE_SESS_HISTORY TO graph_diag_user;
 ```
 
-### Required only for ADB Native MCP packaged tools
+### Installation-only for self-managed ADB Native MCP tools
+
+Prefer a DBA/installer account to create or update `RUN_SQL` in the diagnostic
+schema. Grant these to `graph_diag_user` only if that same user must self-install
+or self-update the MCP tool:
 
 ```sql
 GRANT CREATE PROCEDURE TO graph_diag_user;
 GRANT EXECUTE ON C##CLOUD$SERVICE.DBMS_CLOUD_AI_AGENT TO graph_diag_user;
 ```
+
+After installation and validation, revoke installation-only privileges that are
+not needed at runtime.
 
 ### Optional for baseline / plan management visibility
 
@@ -139,15 +146,18 @@ Its first job is technical:
 - detect hotspots, waits, plan changes, cursor instability, stale stats, and missing indexes
 - propose technical changes with evidence
 
-## What is not required
+## Minimal context for the client
 
-The client does **not** need to provide:
+The client should provide only the operational context needed to scope the
+diagnosis:
 
-- business taxonomy
-- use-case narratives
-- detailed product context
+- target database and environment classification
+- target graph schema or graph name if known
+- workload window to analyze
+- confirmation that AWR/ASH access is approved
 
-That may help later, but it is not required for the base Graph DBA workflow.
+Business taxonomy or detailed product context can help later, but it is not
+required for the base Graph DBA workflow.
 
 ## Minimum operating model
 
@@ -240,7 +250,7 @@ This enables the first DBA step:
 
 Reference asset:
 
-- `sql-templates/01b-graph-dba-catalog.sql`
+- [sql-templates/01b-graph-dba-catalog.sql](../sql-templates/01b-graph-dba-catalog.sql)
 
 ### 5. Full advisor / health-check visibility
 
@@ -266,7 +276,9 @@ GRANT SELECT ON DBA_HIST_ACTIVE_SESS_HISTORY TO graph_diag_user;
 
 ## Native MCP requirements
 
-If the client uses **ADB Native MCP**, also grant:
+If the client uses **ADB Native MCP**, prefer a DBA/installer-managed lifecycle
+for the MCP tool. Grant these to `graph_diag_user` only if that same user must
+self-install or self-update the tool:
 
 ```sql
 GRANT CREATE PROCEDURE TO graph_diag_user;
@@ -277,7 +289,8 @@ And operationally:
 
 - enable the ADB MCP endpoint
 - expose a read-only `RUN_SQL` tool
-- preferably register packaged diagnostic tools
+- validate that the MCP tool list exposes only the approved diagnostic tool
+- revoke installation-only privileges after validation when they are not needed
 
 ## What the skill can do with only the read-only model
 
@@ -298,7 +311,7 @@ This is already mapped in the skill.
 
 Reference asset:
 
-- `sql-templates/04-selectivity-and-simulate.sql`
+- [sql-templates/04-selectivity-and-simulate.sql](../sql-templates/04-selectivity-and-simulate.sql)
 
 Typical flow:
 
@@ -355,7 +368,7 @@ The cleanest way to explain it to the client is:
 
 ## Repo references
 
-- Minimum prereqs: `docs/diagnostic-mode-minimum-prereqs.md`
-- Packaged playbooks: `docs/native-mcp-packaged-playbooks.md`
-- Graph DBA catalog SQL: `sql-templates/01b-graph-dba-catalog.sql`
-- Simulation / diff path: `sql-templates/04-selectivity-and-simulate.sql`
+- Minimum prereqs: [docs/diagnostic-mode-minimum-prereqs.md](diagnostic-mode-minimum-prereqs.md)
+- Packaged playbooks: [docs/native-mcp-packaged-playbooks.md](native-mcp-packaged-playbooks.md)
+- Graph DBA catalog SQL: [sql-templates/01b-graph-dba-catalog.sql](../sql-templates/01b-graph-dba-catalog.sql)
+- Simulation / diff path: [sql-templates/04-selectivity-and-simulate.sql](../sql-templates/04-selectivity-and-simulate.sql)

@@ -1,12 +1,53 @@
 # Client Setup Guide
 
-## Recommended: SQLcl MCP Server (default repo setup)
+The advisor can run through more than one MCP transport. For the current
+Diagnostic Mode work, use this order:
 
-This repository ships with SQLcl MCP as its canonical tool contract. Use it for Oracle Database 23ai/26ai across ADB Dedicated, Base DB, on-prem, or Free tier.
+1. **ADB Native MCP** for ADB Serverless diagnostic deployments.
+2. **SQLcl MCP** as a local or non-ADB-Native fallback.
+
+Keep the skill, prompt, and SQL templates the same. Only the MCP server entry,
+database endpoint or alias, and authentication method should change per target
+database.
+
+## Recommended for ADB Serverless: ADB Native MCP
+
+Use ADB Native MCP when the target is Autonomous Database Serverless and the
+client wants a production-style diagnostic skill without a SQLcl runtime
+dependency.
+
+Requirements:
+
+- ADB Native MCP enabled on the target database.
+- One dedicated technical database user per target database.
+- OAuth or bearer token authentication.
+- One approved read-only SQL tool, recommended as `RUN_SQL`.
+- No broad write-capable tools exposed to the LLM.
+
+Primary setup guide:
+
+- [ADB Native MCP setup](adb-mcp-setup.md)
+
+Recommended multi-database examples:
+
+- `cline-adb-bearer-multidb.json`
+- `claude-desktop-adb-bearer-multidb.json`
+
+## Fallback: SQLcl MCP
+
+Use SQLcl MCP when ADB Native MCP is not available or not the desired runtime.
+Typical cases:
+
+- ADB Dedicated
+- Base DB
+- On-premises Oracle Database
+- Local test databases
+- Workflows that need SQLcl-specific commands
 
 ### Claude Code / Claude Desktop
 
-Use the `.mcp.json` in the project root, or add to `claude_desktop_config.json`:
+Use the `.mcp.json` in the project root, or add this shape to
+`claude_desktop_config.json`:
 
 ```json
 {
@@ -19,17 +60,17 @@ Use the `.mcp.json` in the project root, or add to `claude_desktop_config.json`:
 }
 ```
 
-Load `SYSTEM_PROMPT.md` as Project Instructions.
+Load `SYSTEM_PROMPT.md` as project instructions.
 
 ### VS Code + GitHub Copilot
 
-The `.vscode/mcp.json` is already configured in this repo. Also uses `.github/copilot-instructions.md` for agent behavior.
-
-If using the Oracle SQL Developer Extension for VS Code, MCP is registered automatically.
+The `.vscode/mcp.json` file can be used for SQLcl MCP fallback. Copilot
+instructions live in `.github/copilot-instructions.md` when configured.
 
 ### Cline
 
-The `.clinerules` file in the repo root is automatically loaded. Configure MCP in Cline settings:
+The `.clinerules` file is automatically loaded by Cline. Configure MCP in Cline
+settings:
 
 ```json
 {
@@ -45,30 +86,16 @@ The `.clinerules` file in the repo root is automatically loaded. Configure MCP i
 
 ### Cursor
 
-The `.cursor/rules/oracle-graph-dba.mdc` file is automatically loaded for matching files.
+The `.cursor/rules/oracle-graph-dba.mdc` file is loaded for matching files.
 
 ### Continue
 
-See `continue-config-example.json` in this directory for `.continue/config.json` integration.
+See `continue-config-example.json` for `.continue/config.json` integration.
 
----
+## Wallet configuration for SQLcl
 
-## Optional: ADB Native MCP Server (ADB Serverless only)
-
-Use this only if you are on **Oracle Autonomous AI Database (Serverless)** and are willing to register a compatible `run-sql` tool contract in ADB. The rest of the repo still assumes the same prompt/template behavior as the SQLcl path.
-
-**[Complete ADB Native guide: adb-mcp-setup.md](adb-mcp-setup.md)**
-
-For multi-database use, keep the skill constant and add one MCP server entry per target ADB alias. Recommended examples:
-
-- `cline-adb-bearer-multidb.json`
-- `claude-desktop-adb-bearer-multidb.json`
-
----
-
-## Wallet Configuration
-
-If connecting to Oracle Autonomous Database (ADB) via SQLcl, set the `TNS_ADMIN` environment variable to your wallet directory:
+If connecting to Autonomous Database through SQLcl, set `TNS_ADMIN` to the wallet
+directory:
 
 ```json
 {
@@ -78,13 +105,15 @@ If connecting to Oracle Autonomous Database (ADB) via SQLcl, set the `TNS_ADMIN`
 }
 ```
 
-## Creating a Saved Connection (SQLcl only)
+## SQLcl saved connection
 
-Before using SQLcl MCP, create a saved connection to the target graph-owning schema:
+Before using SQLcl MCP, create a saved connection to the target graph-owning
+schema:
 
 ```bash
 sql /nolog
 SQL> conn -save MyConnection -savepwd admin/password@host:1522/service_low
 ```
 
-The connection name is case-sensitive and will be used with the `connect` MCP tool.
+The connection name is case-sensitive and is used with the SQLcl MCP `connect`
+tool.

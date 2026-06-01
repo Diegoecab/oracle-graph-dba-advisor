@@ -30,9 +30,9 @@ to mirror the repo's expected read-only SQL behavior inside ADB.
 5. One dedicated technical database user for the skill in each target database
 6. Minimum diagnostic grants on that technical user
 
-> Short operational baseline for this repo: `../docs/diagnostic-mode-minimum-prereqs.md`
-> Baseline setup script: `adb-diagnostic-user-minimal.sql`
-> Full advisor grants on an existing schema: `adb-diagnostic-grants-advisor.sql`
+> Short operational baseline for this repo: [Diagnostic Mode minimum prereqs](../docs/diagnostic-mode-minimum-prereqs.md)
+> Baseline setup script: [adb-diagnostic-user-minimal.sql](adb-diagnostic-user-minimal.sql)
+> Full advisor grants on an existing schema: [adb-diagnostic-grants-advisor.sql](adb-diagnostic-grants-advisor.sql)
 
 ## Setup
 
@@ -57,7 +57,7 @@ For Private Endpoint databases:
 https://<hostname_prefix>.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>
 ```
 
-### Step 2: Register a Compatible SQL Tool Contract
+### Step 2: Register the Read-Only SQL Tool Contract
 
 > **Note:** We use `DBMS_CLOUD_AI_AGENT.CREATE_TOOL` only as the **tool registration mechanism** for the ADB MCP server. The advisor does NOT use Select AI's NL2SQL capability — the LLM generates SQL directly using the sql-templates and SYSTEM_PROMPT knowledge. The `CREATE_TOOL` API simply exposes PL/SQL functions as MCP-callable tools.
 
@@ -73,7 +73,7 @@ this repo, prefer the hardened setup script:
 The function rejects non-`SELECT`/`WITH` statements, comments, semicolons, DDL,
 DML, PL/SQL, SQLcl commands, `SELECT FOR UPDATE`, and known side-effect
 packages. The simplified example below illustrates the contract only; do not use
-it unchanged for a customer-facing demo.
+it unchanged for a customer-facing deployment.
 
 `CREATE PROCEDURE` is not a runtime privilege. Prefer a DBA/installer-managed
 lifecycle to create or replace the backing PL/SQL function in the diagnostic
@@ -118,7 +118,10 @@ END;
 /
 ```
 
-Optionally register additional tools for schema discovery:
+For the production-style diagnostic baseline, expose only `RUN_SQL`. Additional
+tools increase the LLM tool surface and should be added only after explicit
+approval. If a lower-risk lab requires schema discovery as a separate MCP tool,
+use the same review and write-rejection process before enabling it.
 
 ```sql
 -- List schemas accessible to this user
@@ -152,7 +155,7 @@ For this project, the practical default is:
 
 - **Bearer token** for headless use or automation
 - **One MCP server entry per target database**
-- **Same tool contract in every database** (`RUN_SQL`, optional `LIST_SCHEMAS`)
+- **Same tool contract in every database** (`RUN_SQL`)
 
 This keeps the skill reusable across many ADBs. The skill stays the same; only the MCP server name, database OCID, and token change per target.
 

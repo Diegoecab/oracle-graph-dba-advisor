@@ -1,37 +1,91 @@
-# Diagnostic Mode — Minimum Prereqs
+# Diagnostic Mode - Minimum Prerequisites
 
-Short operational version for the client-facing diagnostic/advisor flow.
+Purpose: define the minimum database, MCP, privilege, and validation
+requirements to run the Graph DBA Advisor in **Diagnostic Mode**.
 
-For the **Graph DBA workload-analysis** case, use this together with:
+Scope: read-only analyze/propose mode on Oracle Autonomous Database Serverless
+23ai/26ai using ADB Native MCP.
 
-- `docs/graph-dba-workload-mode-requirements.md`
+Out of scope: automated remediation, schema creation, data generation,
+Consultive Mode, and SQLcl runtime setup.
 
-## Recommended client model
+## Required profile
 
-- Create **one dedicated technical schema per target database**.
-- The **admin team** uses that technical user; do not use `ADMIN`.
-- Keep the same skill and the same `RUN_SQL` tool contract in every database.
-- For multiple databases, only the MCP alias, database OCID, and token change.
-- If the client wants a **Graph DBA** workflow, the first step should be a technical graph catalog, not business-domain classification.
+| Area | Requirement | Required |
+|---|---|---|
+| Database | Autonomous Database Serverless 23ai or 26ai | Yes |
+| MCP | ADB Native MCP endpoint enabled | Yes |
+| Runtime user | One dedicated technical database user per target database | Yes |
+| Runtime tool | One read-only MCP SQL tool named `RUN_SQL` | Yes |
+| Authentication | OAuth or bearer token for the MCP client | Yes |
+| Diagnostic access | Direct read grants on performance, graph catalog, health, AWR, and ASH views | Yes |
+| Runtime writes | No DDL, DML, PL/SQL, or admin tool exposure | Yes |
+| AWR/ASH | Access approved for historical diagnosis | Yes |
 
-In this repo, **dedicated technical schema** means:
+Primary requirement detail:
 
-- one database user created specifically for the skill in one target database
-- not a personal user
-- not `ADMIN`
-- least-privilege direct grants only
-- reusable by the admin team with normal credential rotation and auditing
+- [docs/graph-dba-workload-mode-requirements.md](graph-dba-workload-mode-requirements.md)
 
-For the packaged admin playbooks, this user **does not need to own the application tables or graph objects**. The core performance packs operate on database performance views and optionally narrow to the target workload by `sql_text_filter`.
+Preferred setup assets:
 
-## Baseline diagnostic access
+- [clients/adb-diagnostic-user-minimal.sql](../clients/adb-diagnostic-user-minimal.sql)
+- [clients/adb-diagnostic-grants-advisor.sql](../clients/adb-diagnostic-grants-advisor.sql)
+- [clients/adb-native-run-sql-readonly.sql](../clients/adb-native-run-sql-readonly.sql)
+- [clients/adb-mcp-setup.md](../clients/adb-mcp-setup.md)
 
-For the current repo behavior, the technical schema should have:
+## Runtime identity
+
+Create one database user for the skill in each target database.
+
+| Property | Requirement |
+|---|---|
+| Example placeholder | `graph_diag_user` |
+| User type | Technical, non-personal |
+| Admin account | Do not use `ADMIN` |
+| Scope | One target database |
+| Ownership | Does not need to own application graph objects |
+| Grants | Least-privilege direct grants |
+| Operations | Rotatable, auditable, owned by the DBA/admin team |
+
+The same skill can point to multiple databases. Keep the same `RUN_SQL` contract
+and change only the MCP alias, endpoint, and token per database.
+
+## Access model
+
+| Scenario | Access model |
+|---|---|
+| ADB Native MCP with stored PL/SQL tool | Use direct grants listed in this document. |
+| Session-based SQL only | `SELECT_CATALOG_ROLE` can be used as a compact read model. |
+| Packaged Native MCP tools | Do not rely on roles only; definer-rights PL/SQL does not inherit role privileges reliably. |
+| Self-installing `RUN_SQL` | Temporarily grant installation privileges, validate, then revoke. |
+| Executing remediation | Separate non-production approval and separate elevated grants. |
+
+Compact session-only alternative:
+
+```sql
+GRANT CREATE SESSION TO graph_diag_user;
+GRANT SELECT_CATALOG_ROLE TO graph_diag_user;
+GRANT EXECUTE ON DBMS_XPLAN TO graph_diag_user;
+```
+
+Do not use the compact role-only model as the default for ADB Native MCP stored
+PL/SQL tools.
+
+## Required grants
+
+Use [clients/adb-diagnostic-grants-advisor.sql](../clients/adb-diagnostic-grants-advisor.sql)
+or apply the grants in this section manually.
+
+### Session and execution plan access
 
 ```sql
 GRANT CREATE SESSION TO graph_diag_user;
 GRANT EXECUTE ON DBMS_XPLAN TO graph_diag_user;
+```
 
+### Dynamic performance views
+
+```sql
 GRANT SELECT ON SYS.V_$SQL TO graph_diag_user;
 GRANT SELECT ON SYS.V_$SQLSTATS TO graph_diag_user;
 GRANT SELECT ON SYS.V_$SQLAREA_PLAN_HASH TO graph_diag_user;
@@ -48,28 +102,20 @@ GRANT SELECT ON SYS.V_$SGASTAT TO graph_diag_user;
 GRANT SELECT ON SYS.V_$PGASTAT TO graph_diag_user;
 ```
 
-Notes:
-
-- If the client wants a broader built-in read role instead of many per-view grants, `SELECT_CATALOG_ROLE` is the right ADB shortcut, not `DBA`.
-- For session-based SQL access, this compact model is valid:
+### Graph catalog and object metadata
 
 ```sql
-GRANT CREATE SESSION TO graph_diag_user;
-GRANT SELECT_CATALOG_ROLE TO graph_diag_user;
-GRANT EXECUTE ON DBMS_XPLAN TO graph_diag_user;
+GRANT SELECT ON DBA_PROPERTY_GRAPHS TO graph_diag_user;
+GRANT SELECT ON DBA_PG_ELEMENTS TO graph_diag_user;
+GRANT SELECT ON DBA_PG_EDGE_RELATIONSHIPS TO graph_diag_user;
+GRANT SELECT ON DBA_TABLES TO graph_diag_user;
+GRANT SELECT ON DBA_INDEXES TO graph_diag_user;
+GRANT SELECT ON DBA_IND_COLUMNS TO graph_diag_user;
+GRANT SELECT ON DBA_TAB_STATISTICS TO graph_diag_user;
+GRANT SELECT ON DBA_TAB_COL_STATISTICS TO graph_diag_user;
 ```
 
-- In our validated ADB test, `SELECT_CATALOG_ROLE` covered the repo's current `SYS.V_$...`, graph catalog `DBA_*`, historical `DBA_HIST_*`, and `DBA_SQL_PLAN_BASELINES` reads.
-- On ADB, grant dynamic performance views as `SYS.V_$...`.
-- The packaged admin playbooks (`top SQL`, `ASH`, `plan change`, `wait events`) are **DB-wide** and do not require the technical user to be the graph owner.
-- For packaged Native MCP tools implemented as stored PL/SQL functions, keep **direct grants**. Role-only access is not the safe runtime model there.
-- Some legacy discovery templates still use `USER_*` graph/object views, so that older path remains tied to the graph-owning schema unless you adapt those templates to `ALL_*` / `DBA_*`.
-- A central observer schema across other application schemas is possible, but that is a different model and would require `ALL_*` / `DBA_*` templates plus owner filters.
-- For the packaged recent-activity playbooks, `V$ACTIVE_SESSION_HISTORY` is the practical default. It is much faster than `DBA_HIST_ACTIVE_SESS_HISTORY` over Native MCP for the baseline troubleshooting flow.
-
-## Extra grants for full advisor mode
-
-If the client wants the fuller health-check/advisor path, add:
+### Health, AWR, ASH, and Auto Indexing
 
 ```sql
 GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO graph_diag_user;
@@ -81,91 +127,142 @@ GRANT SELECT ON DBA_HIST_SNAPSHOT TO graph_diag_user;
 GRANT SELECT ON DBA_HIST_SYSMETRIC_SUMMARY TO graph_diag_user;
 GRANT SELECT ON DBA_HIST_SYSTEM_EVENT TO graph_diag_user;
 GRANT SELECT ON DBA_HIST_PGASTAT TO graph_diag_user;
-```
-
-Reference script for this layer: `clients/adb-diagnostic-grants-advisor.sql`
-
-If the client also wants heavier historical AWR/ASH extensions beyond the core Native MCP playbooks, add:
-
-```sql
 GRANT SELECT ON DBA_HIST_ACTIVE_SESS_HISTORY TO graph_diag_user;
 ```
 
-## Optional extras for plan instability / baseline cases
+### Optional plan management visibility
 
-If the client wants the skill to diagnose cursor instability and baseline state more explicitly, add:
+Grant this only when the diagnostic scope includes SQL plan baselines:
 
 ```sql
 GRANT SELECT ON DBA_SQL_PLAN_BASELINES TO graph_diag_user;
 ```
 
-If they want the DBA team to use the database user itself for baseline actions such as loading/fixing plans with `DBMS_SPM`, that becomes a separate elevated capability and should be granted only if explicitly approved:
+## ADB Native MCP requirements
 
-```sql
-GRANT ADMINISTER SQL MANAGEMENT OBJECT TO graph_diag_user;
+Enable the ADB Native MCP endpoint on the target Autonomous Database:
+
+```text
+Tag name:  adb$feature
+Tag value: {"name":"mcp_server","enable":true}
 ```
 
-## If you use ADB Native MCP
+Expose one read-only MCP tool:
 
-In addition to the grants above:
+| Tool | Requirement |
+|---|---|
+| Name | `RUN_SQL` |
+| Input | SQL text plus pagination parameters |
+| Allowed SQL | `SELECT` and `WITH` only |
+| Blocked SQL | DDL, DML, PL/SQL, transaction control, SQLcl commands |
+| Blocked syntax | Semicolons, comments, `SELECT FOR UPDATE` |
+| Blocked packages | Side-effect packages such as `DBMS_CLOUD`, `DBMS_STATS`, `UTL_HTTP`, `UTL_FILE` |
+| Output | JSON |
 
-- Enable the ADB MCP endpoint with the `adb$feature` free-form tag.
-- Expose a read-only `RUN_SQL` function as an MCP tool.
-- Grant `CREATE PROCEDURE` to the technical schema.
-- If that same schema will register its own tools, also grant:
+Recommended implementation:
+
+- [clients/adb-native-run-sql-readonly.sql](../clients/adb-native-run-sql-readonly.sql)
+
+Runtime rule: expose only `RUN_SQL` unless another tool has a documented
+approval, threat model, and validation test.
+
+## Installation-only privileges
+
+`CREATE PROCEDURE` is not a runtime privilege for Diagnostic Mode.
+
+Preferred lifecycle:
+
+1. A DBA or installer creates or replaces `RUN_SQL` in the diagnostic schema.
+2. The runtime user receives only read grants.
+3. The MCP tool list is validated before use.
+
+If the diagnostic user must self-install or self-update `RUN_SQL`, grant these
+temporarily:
 
 ```sql
+GRANT CREATE PROCEDURE TO graph_diag_user;
 GRANT EXECUTE ON C##CLOUD$SERVICE.DBMS_CLOUD_AI_AGENT TO graph_diag_user;
 ```
 
-Reference scripts:
+After installation and validation:
 
-- `clients/adb-diagnostic-user-minimal.sql`
-- `clients/adb-diagnostic-grants-advisor.sql`
+```sql
+REVOKE CREATE PROCEDURE FROM graph_diag_user;
+```
 
-## Native MCP runtime behavior we validated
-
-In our ADB Native MCP lab:
-
-- `SESSION_USER` and `USER` appeared as `C##CLOUD$SERVICE`
-- `CURRENT_USER` and `CURRENT_SCHEMA` resolved to the tool-owning schema (`NEWFRAUD`)
-- the current `USER_*` graph/object views still worked through `RUN_SQL`
-
-This means the current templates were usable over Native MCP in our test, even though the session is brokered by Oracle's cloud service user.
+Revoke any other installation-only privileges that are not needed at runtime.
 
 ## Authentication
 
-- Use **OAuth** for interactive login.
-- Use **bearer token** for headless or automated flows.
+| Mode | Use when | Notes |
+|---|---|---|
+| OAuth | Interactive operator login is acceptable | Configure the MCP server URL without an `Authorization` header. |
+| Bearer token | Headless, automation, or repeatable demo execution | Generate the token with the dedicated technical database user. |
 
-For this project, bearer token remains the practical default for Native MCP.
+For multi-database use, create one MCP server entry per target database. Keep
+the skill and tool contract unchanged.
 
-Concretely:
+## Validation checklist
 
-- `OAuth`:
-  configure the MCP server URL without an `Authorization` header and let the client show the Oracle login screen
-- `Bearer token`:
-  call the ADB token endpoint with the technical schema username and password, then send `Authorization: Bearer <token>` in the MCP client configuration
+Complete these checks before running the skill.
 
-Operationally:
+| Check | Expected result |
+|---|---|
+| MCP endpoint reachable | MCP client can connect to the ADB endpoint. |
+| Tool allowlist | `tools/list` exposes `RUN_SQL` only for the baseline deployment. |
+| Runtime identity | `CURRENT_SCHEMA` resolves to the diagnostic tool schema. |
+| Read smoke test | `SELECT 1 AS ok FROM dual` returns JSON. |
+| Write rejection | `CREATE TABLE`, `DELETE`, or `BEGIN ... END` is rejected by `RUN_SQL`. |
+| Performance views | Query against `SYS.V_$SQL` succeeds. |
+| Graph catalog | Query against `DBA_PROPERTY_GRAPHS` succeeds. |
+| AWR/ASH | Query against `DBA_HIST_SNAPSHOT` and `SYS.V_$ACTIVE_SESSION_HISTORY` succeeds. |
 
-- use one MCP server entry per target database
-- keep the same skill and tool contract for every database
-- only the MCP URL, database OCID, and bearer token change per database
+Suggested smoke-test SQL through `RUN_SQL`:
 
-## Best practices
+```sql
+SELECT SYS_CONTEXT('USERENV','CURRENT_SCHEMA') AS current_schema FROM dual
+```
 
-- For packaged MCP tools, prefer **direct grants on the technical schema** for predictable runtime behavior.
-- For session-based SQL access, `SELECT_CATALOG_ROLE` is acceptable and much simpler than enumerating many read-only views.
-- Keep the schema least-privileged.
-- Prefer one technical schema per database over broad shared admin access.
-- For sensitive environments, add Private Endpoint, ACL/VPD, and auditing.
+```sql
+SELECT COUNT(*) AS sql_count FROM SYS.V_$SQL
+```
 
-## Validation assets
+```sql
+SELECT COUNT(*) AS graph_count FROM DBA_PROPERTY_GRAPHS
+```
 
-- Baseline setup: `clients/adb-diagnostic-user-minimal.sql`
-- Full advisor grants: `clients/adb-diagnostic-grants-advisor.sql`
-- Graph DBA workload mode summary: `docs/graph-dba-workload-mode-requirements.md`
-- Demo-only lab extras: `workload/newfraud/08_grant_plan_instability_lab_extras.sql`
-- Native MCP lab run: `workload/newfraud/07_native_mcp_advisor_demo.sh`
-- Plan instability lab run: `workload/newfraud/08_plan_instability_demo.sh`
+Expected rejection test:
+
+```sql
+CREATE TABLE run_sql_should_reject(id NUMBER)
+```
+
+## Required inputs before diagnosis
+
+Collect these values before starting the diagnostic prompt:
+
+| Input | Example |
+|---|---|
+| Target database alias | `prod-graph-east` |
+| Environment classification | `production`, `pre-prod`, `clone`, `test` |
+| Target schema or graph name | `APP_SCHEMA`, `TX_FRAUD_GRAPH` |
+| Workload window | Last 1 hour, last 24 hours, incident timestamp |
+| AWR/ASH approval | Approved or not approved |
+| MCP server alias | Client-specific alias |
+
+## Operational constraints
+
+- Do not expose broad SQL execution tools without database-side guardrails.
+- Do not use `ADMIN` as the runtime identity.
+- Do not grant write privileges for analyze/propose mode.
+- Do not mix multiple customer databases behind a single shared technical user.
+- Do not let the LLM execute remediation in production.
+
+## References
+
+- [docs/graph-dba-workload-mode-requirements.md](graph-dba-workload-mode-requirements.md)
+- [clients/adb-mcp-setup.md](../clients/adb-mcp-setup.md)
+- [clients/adb-diagnostic-user-minimal.sql](../clients/adb-diagnostic-user-minimal.sql)
+- [clients/adb-diagnostic-grants-advisor.sql](../clients/adb-diagnostic-grants-advisor.sql)
+- [clients/adb-native-run-sql-readonly.sql](../clients/adb-native-run-sql-readonly.sql)
+- [docs/native-mcp-packaged-playbooks.md](native-mcp-packaged-playbooks.md)
