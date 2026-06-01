@@ -95,34 +95,27 @@ need grant/admin privileges at runtime.
 ## Grant decision flow
 
 ```mermaid
-flowchart TD
-    A["Implement Diagnostic Mode"] --> B["Create dedicated diagnostic user"]
-    B --> C["Apply baseline read-only grants"]
-    C --> D{"Need to inspect graphs owned by other schemas?"}
-    D -->|Yes| E["Grant graph catalog and object metadata views"]
-    D -->|No| F["Use owner-scoped path if connected as graph owner"]
-
-    E --> G{"Need health or historical evidence?"}
-    F --> G
-    G -->|Yes| H["Grant health, AWR ASH, and Auto Indexing views"]
-    G -->|No| J{"Need SQL plan baseline visibility?"}
-
-    H --> J
-    J -->|Yes| K["Grant SELECT on DBA_SQL_PLAN_BASELINES"]
-    J -->|No| L{"Using ADB Native MCP?"}
-    K --> L
-
-    L -->|Yes| M["Expose RUN_SQL with read-only guardrails"]
-    L -->|No| N["Use SQLcl or session fallback"]
-
-    M --> O{"Will diagnostic user install RUN_SQL?"}
-    O -->|No| P["DBA or installer creates RUN_SQL"]
-    O -->|Yes| Q["Temporarily grant install privileges"]
-    Q --> R["Validate and revoke installation-only privileges"]
-
-    P --> S["Validate tools/list, read smoke test, write rejection, catalog and AWR access"]
-    R --> S
-    N --> S
+flowchart LR
+    A["Diagnostic user"] --> B["Baseline read-only grants"]
+    B --> C{"Other graph owners?"}
+    C -->|Yes| D["Catalog grants"]
+    C -->|No| E["Owner-scoped path"]
+    D --> F{"Health or history?"}
+    E --> F
+    F -->|Yes| G["AWR/ASH health grants"]
+    F -->|No| H{"Plan baselines?"}
+    G --> H
+    H -->|Yes| I["SPM visibility"]
+    H -->|No| J{"ADB Native MCP?"}
+    I --> J
+    J -->|Yes| K["RUN_SQL guardrails"]
+    J -->|No| L["SQLcl/session fallback"]
+    K --> M{"Self-install tool?"}
+    M -->|Yes| N["Temporary install grants"]
+    M -->|No| O["DBA installs RUN_SQL"]
+    N --> P["Validate and revoke"]
+    O --> P
+    L --> P
 ```
 
 Grant sets used in the flow:
