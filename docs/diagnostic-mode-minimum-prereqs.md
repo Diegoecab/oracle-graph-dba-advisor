@@ -26,6 +26,13 @@ Primary requirement detail:
 
 - [docs/graph-dba-workload-mode-requirements.md](graph-dba-workload-mode-requirements.md)
 
+Interactive selector:
+
+- [docs/diagnostic-requirements-selector.html](diagnostic-requirements-selector.html)
+
+GitHub repository preview shows HTML source. For interactive use, open the file
+locally or publish `docs/` through GitHub Pages.
+
 Preferred setup assets:
 
 - [clients/adb-diagnostic-user-minimal.sql](../clients/adb-diagnostic-user-minimal.sql)
@@ -91,7 +98,7 @@ need grant/admin privileges at runtime.
 flowchart TD
     A["Implement Diagnostic Mode"] --> B["Create dedicated diagnostic user"]
     B --> C["Apply baseline read-only grants"]
-    C --> D{"Need catalog across schemas?"}
+    C --> D{"Need to inspect graphs owned by other schemas?"}
     D -->|Yes| E["Grant graph catalog and object metadata views"]
     D -->|No| F["Use owner-scoped path if connected as graph owner"]
 

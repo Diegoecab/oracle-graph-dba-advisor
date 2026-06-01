@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Diagnostic Mode Requirements Selector</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: #cbd5e1;
+      --accent: #0f766e;
+      --accent-soft: #ccfbf1;
+      --code: #111827;
+      --code-text: #e5e7eb;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1120;
+        --panel: #111827;
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --border: #334155;
+        --accent: #2dd4bf;
+        --accent-soft: #134e4a;
+        --code: #020617;
+        --code-text: #e5e7eb;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.15;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 0 0 16px;
+      color: var(--muted);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 0.8fr) minmax(420px, 1.2fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .option {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 10px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .option:first-of-type {
+      border-top: 0;
+    }
+
+    .option strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .option span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      accent-color: var(--accent);
+    }
+
+    .summary {
+      display: grid;
+      gap: 14px;
+    }
+
+    .badge {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    ul {
+      margin: 8px 0 0;
+      padding-left: 20px;
+    }
+
+    li {
+      margin: 4px 0;
+    }
+
+    pre {
+      overflow: auto;
+      white-space: pre-wrap;
+      background: var(--code);
+      color: var(--code-text);
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      background: var(--accent);
+      color: #042f2e;
+      font-weight: 700;
+      padding: 9px 12px;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: transparent;
+      color: var(--accent);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 860px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Diagnostic Mode Requirements Selector</h1>
+    <p>Select the target operating model. The output lists the required implementation steps, grants, and validations for the Graph DBA Advisor skill.</p>
+
+    <div class="layout">
+      <section class="panel" aria-labelledby="inputs-title">
+        <h2 id="inputs-title">Scenario</h2>
+
+        <label class="option">
+          <input id="otherSchemas" type="checkbox" checked>
+          <span>
+            <strong>Inspect graphs owned by other schemas</strong>
+            <span>Use this when the diagnostic user is different from the graph owner.</span>
+          </span>
+        </label>
+
+        <label class="option">
+          <input id="health" type="checkbox" checked>
+          <span>
+            <strong>Include health, AWR/ASH, and Auto Indexing evidence</strong>
+            <span>Recommended for production-style workload diagnosis.</span>
+          </span>
+        </label>
+
+        <label class="option">
+          <input id="planBaseline" type="checkbox">
+          <span>
+            <strong>Include SQL plan baseline visibility</strong>
+            <span>Only when plan management or baseline state is in scope.</span>
+          </span>
+        </label>
+
+        <label class="option">
+          <input id="nativeMcp" type="checkbox" checked>
+          <span>
+            <strong>Use ADB Native MCP</strong>
+            <span>Preferred runtime for ADB Serverless Diagnostic Mode.</span>
+          </span>
+        </label>
+
+        <label class="option">
+          <input id="selfInstall" type="checkbox">
+          <span>
+            <strong>Diagnostic user installs or updates RUN_SQL</strong>
+            <span>Leave off when a DBA or installer owns the tool lifecycle.</span>
+          </span>
+        </label>
+
+        <label class="option">
+          <input id="executeChanges" type="checkbox">
+          <span>
+            <strong>Skill executes test changes in non-production</strong>
+            <span>Optional elevated mode, not required for analyze/propose.</span>
+          </span>
+        </label>
+
+        <div class="actions">
+          <button id="copy" type="button">Copy output</button>
+          <button class="secondary" id="reset" type="button">Reset recommended</button>
+        </div>
+      </section>
+
+      <section class="panel summary" aria-labelledby="output-title">
+        <h2 id="output-title">Required implementation</h2>
+        <div id="badges"></div>
+        <div>
+          <h2>Actions</h2>
+          <ul id="actions"></ul>
+        </div>
+        <div>
+          <h2>SQL grants</h2>
+          <pre id="sql"></pre>
+        </div>
+        <div>
+          <h2>Validation checklist</h2>
+          <ul id="validation"></ul>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const grantSets = {
+      baseline: [
+        "GRANT CREATE SESSION TO graph_diag_user;",
+        "GRANT EXECUTE ON DBMS_XPLAN TO graph_diag_user;",
+        "",
+        "GRANT SELECT ON SYS.V_$SQL TO graph_diag_user;",
+        "GRANT SELECT ON SYS.V_$SQLSTATS TO graph_diag_user;",
+        "GRANT SELECT ON SYS.V_$SQLAREA_PLAN_HASH TO graph_diag_user;",
+        "GRANT SELECT ON SYS.V_$SQL_PLAN TO graph_diag_user;",
+        "GRANT SELECT ON SYS.V_$SQL_PLAN_STATISTICS_ALL TO graph_diag_user;",
+        "GRANT SELECT ON SYS.V_$SQL_SHARED_CURSOR TO graph_diag_user;",
+        "GRANT SELECT ON SYS.V_$SQLTEXT TO graph_diag_user;",
+        "GRANT SELECT ON SYS.V_$PARAMETER TO graph_diag_user;",
+        "GRANT SELECT ON SYS.V_$SESSION TO graph_diag_user;",
+        "GRANT SELECT ON SYS.V_$ACTIVE_SESSION_HISTORY TO graph_diag_user;",
+        "GRANT SELECT ON SYS.V_$SYSMETRIC_HISTORY TO graph_diag_user;",
+        "GRANT SELECT ON SYS.V_$SYSTEM_EVENT TO graph_diag_user;",
+        "GRANT SELECT ON SYS.V_$SGASTAT TO graph_diag_user;",
+        "GRANT SELECT ON SYS.V_$PGASTAT TO graph_diag_user;"
+      ],
+      catalog: [
+        "GRANT SELECT ON DBA_PROPERTY_GRAPHS TO graph_diag_user;",
+        "GRANT SELECT ON DBA_PG_ELEMENTS TO graph_diag_user;",
+        "GRANT SELECT ON DBA_PG_EDGE_RELATIONSHIPS TO graph_diag_user;",
+        "GRANT SELECT ON DBA_TABLES TO graph_diag_user;",
+        "GRANT SELECT ON DBA_INDEXES TO graph_diag_user;",
+        "GRANT SELECT ON DBA_IND_COLUMNS TO graph_diag_user;",
+        "GRANT SELECT ON DBA_TAB_STATISTICS TO graph_diag_user;",
+        "GRANT SELECT ON DBA_TAB_COL_STATISTICS TO graph_diag_user;"
+      ],
+      health: [
+        "GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO graph_diag_user;",
+        "GRANT SELECT ON DBA_TEMP_FREE_SPACE TO graph_diag_user;",
+        "GRANT SELECT ON DBA_AUTO_INDEX_CONFIG TO graph_diag_user;",
+        "GRANT SELECT ON DBA_AUTO_INDEX_IND_ACTIONS TO graph_diag_user;",
+        "GRANT SELECT ON DBA_AUTO_INDEX_EXECUTIONS TO graph_diag_user;",
+        "GRANT SELECT ON DBA_HIST_SNAPSHOT TO graph_diag_user;",
+        "GRANT SELECT ON DBA_HIST_SYSMETRIC_SUMMARY TO graph_diag_user;",
+        "GRANT SELECT ON DBA_HIST_SYSTEM_EVENT TO graph_diag_user;",
+        "GRANT SELECT ON DBA_HIST_PGASTAT TO graph_diag_user;",
+        "GRANT SELECT ON DBA_HIST_ACTIVE_SESS_HISTORY TO graph_diag_user;"
+      ],
+      planBaseline: [
+        "GRANT SELECT ON DBA_SQL_PLAN_BASELINES TO graph_diag_user;"
+      ],
+      selfInstall: [
+        "-- Installation-only. Revoke after tool validation.",
+        "GRANT CREATE PROCEDURE TO graph_diag_user;",
+        "GRANT EXECUTE ON C##CLOUD$SERVICE.DBMS_CLOUD_AI_AGENT TO graph_diag_user;",
+        "",
+        "-- After validation:",
+        "REVOKE CREATE PROCEDURE FROM graph_diag_user;"
+      ],
+      executeChanges: [
+        "-- Optional non-production elevated mode only.",
+        "GRANT CREATE INDEX TO graph_diag_user;",
+        "GRANT ALTER SESSION TO graph_diag_user;",
+        "GRANT EXECUTE ON DBMS_STATS TO graph_diag_user;"
+      ]
+    };
+
+    const els = {
+      otherSchemas: document.getElementById("otherSchemas"),
+      health: document.getElementById("health"),
+      planBaseline: document.getElementById("planBaseline"),
+      nativeMcp: document.getElementById("nativeMcp"),
+      selfInstall: document.getElementById("selfInstall"),
+      executeChanges: document.getElementById("executeChanges"),
+      actions: document.getElementById("actions"),
+      validation: document.getElementById("validation"),
+      sql: document.getElementById("sql"),
+      badges: document.getElementById("badges"),
+      copy: document.getElementById("copy"),
+      reset: document.getElementById("reset")
+    };
+
+    function addList(target, text) {
+      const li = document.createElement("li");
+      li.textContent = text;
+      target.appendChild(li);
+    }
+
+    function selectedGrants() {
+      const grants = [...grantSets.baseline];
+      if (els.otherSchemas.checked) grants.push("", ...grantSets.catalog);
+      if (els.health.checked) grants.push("", ...grantSets.health);
+      if (els.planBaseline.checked) grants.push("", ...grantSets.planBaseline);
+      if (els.nativeMcp.checked && els.selfInstall.checked) grants.push("", ...grantSets.selfInstall);
+      if (els.executeChanges.checked) grants.push("", ...grantSets.executeChanges);
+      return grants.join("\n");
+    }
+
+    function render() {
+      els.actions.textContent = "";
+      els.validation.textContent = "";
+      els.badges.textContent = "";
+
+      const badge = document.createElement("span");
+      badge.className = "badge";
+      badge.textContent = els.nativeMcp.checked ? "Primary runtime: ADB Native MCP" : "Fallback runtime: SQLcl/session";
+      els.badges.appendChild(badge);
+
+      addList(els.actions, "Create one dedicated technical database user per target database. Do not use personal users or ADMIN.");
+      addList(els.actions, "Apply baseline read-only grants for session, DBMS_XPLAN, and dynamic performance views.");
+
+      if (els.otherSchemas.checked) {
+        addList(els.actions, "Grant graph catalog and object metadata views because the diagnostic user must inspect graphs owned by other schemas.");
+      } else {
+        addList(els.actions, "Use owner-scoped USER_* views only if the diagnostic user connects as the graph owner.");
+      }
+
+      if (els.health.checked) {
+        addList(els.actions, "Grant health, AWR/ASH, tablespace/temp, and Auto Indexing views.");
+      }
+
+      if (els.planBaseline.checked) {
+        addList(els.actions, "Grant SQL plan baseline visibility.");
+      }
+
+      if (els.nativeMcp.checked) {
+        addList(els.actions, "Enable ADB Native MCP and expose only RUN_SQL with read-only guardrails.");
+        if (els.selfInstall.checked) {
+          addList(els.actions, "Temporarily grant installation privileges to the diagnostic user, validate RUN_SQL, then revoke installation-only privileges.");
+        } else {
+          addList(els.actions, "Preferred: have a DBA or installer create RUN_SQL in the diagnostic schema. Do not grant CREATE PROCEDURE at runtime.");
+        }
+      } else {
+        addList(els.actions, "Use SQLcl/session fallback. This is outside the preferred ADB Serverless Diagnostic Mode runtime.");
+      }
+
+      if (els.executeChanges.checked) {
+        addList(els.actions, "Allow elevated test-change grants only in non-production and only with explicit approval.");
+      }
+
+      addList(els.validation, "Confirm MCP endpoint connectivity.");
+      addList(els.validation, "Confirm tools/list exposes only the approved diagnostic tool for the baseline deployment.");
+      addList(els.validation, "Run a SELECT smoke test through the tool.");
+      addList(els.validation, "Confirm CREATE TABLE, DELETE, and PL/SQL blocks are rejected by RUN_SQL.");
+      addList(els.validation, "Confirm access to SYS.V_$SQL.");
+      if (els.otherSchemas.checked) addList(els.validation, "Confirm access to DBA_PROPERTY_GRAPHS.");
+      if (els.health.checked) addList(els.validation, "Confirm access to DBA_HIST_SNAPSHOT and SYS.V_$ACTIVE_SESSION_HISTORY.");
+
+      els.sql.textContent = selectedGrants();
+    }
+
+    function outputText() {
+      const actions = [...els.actions.querySelectorAll("li")].map((li) => `- ${li.textContent}`).join("\n");
+      const validation = [...els.validation.querySelectorAll("li")].map((li) => `- ${li.textContent}`).join("\n");
+      return `Diagnostic Mode requirements\n\nActions\n${actions}\n\nSQL grants\n${els.sql.textContent}\n\nValidation\n${validation}\n`;
+    }
+
+    document.querySelectorAll("input[type='checkbox']").forEach((input) => {
+      input.addEventListener("change", render);
+    });
+
+    els.copy.addEventListener("click", async () => {
+      const text = outputText();
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        textarea.remove();
+      }
+      els.copy.textContent = "Copied";
+      setTimeout(() => { els.copy.textContent = "Copy output"; }, 1200);
+    });
+
+    els.reset.addEventListener("click", () => {
+      els.otherSchemas.checked = true;
+      els.health.checked = true;
+      els.planBaseline.checked = false;
+      els.nativeMcp.checked = true;
+      els.selfInstall.checked = false;
+      els.executeChanges.checked = false;
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
