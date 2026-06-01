@@ -103,6 +103,38 @@
       padding: 18px;
     }
 
+    .preset {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .preset h3 {
+      margin: 0 0 6px;
+      font-size: 15px;
+    }
+
+    .preset p {
+      margin: 0;
+      font-size: 13px;
+    }
+
+    details {
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .advanced-help {
+      margin: 6px 0 8px;
+      font-size: 13px;
+    }
+
     .option {
       display: grid;
       grid-template-columns: 22px 1fr;
@@ -149,6 +181,12 @@
       color: var(--text);
       font-size: 13px;
       font-weight: 600;
+    }
+
+    #badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
     ul {
@@ -227,59 +265,69 @@
 
     <div class="layout">
       <section class="panel" aria-labelledby="inputs-title">
-        <h2 id="inputs-title" data-i18n="scenarioTitle">Scenario</h2>
+        <h2 id="inputs-title" data-i18n="scenarioTitle">Recommended minimum</h2>
 
-        <label class="option">
-          <input id="otherSchemas" type="checkbox" checked>
-          <span>
-            <strong data-i18n="otherSchemasTitle">Inspect graphs owned by other schemas</strong>
-            <span data-i18n="otherSchemasHelp">Use this when the diagnostic user is different from the graph owner.</span>
-          </span>
-        </label>
+        <div class="preset">
+          <h3 data-i18n="presetTitle">Preloaded production diagnostic baseline</h3>
+          <p data-i18n="presetDescription">ADB Native MCP, dedicated diagnostic user, cross-schema graph inspection, workload health/AWR/ASH evidence, and DBA-managed RUN_SQL. No runtime install privileges or test-change grants.</p>
+        </div>
 
-        <label class="option">
-          <input id="health" type="checkbox" checked>
-          <span>
-            <strong data-i18n="healthTitle">Include health, AWR/ASH, and Auto Indexing evidence</strong>
-            <span data-i18n="healthHelp">Recommended for production-style workload diagnosis.</span>
-          </span>
-        </label>
+        <details>
+          <summary data-i18n="advancedTitle">Advanced configuration</summary>
+          <p class="advanced-help" data-i18n="advancedHelp">Open this only if you need to remove, add, or customize requirements.</p>
 
-        <label class="option">
-          <input id="planBaseline" type="checkbox">
-          <span>
-            <strong data-i18n="planBaselineTitle">Include SQL plan baseline visibility</strong>
-            <span data-i18n="planBaselineHelp">Only when plan management or baseline state is in scope.</span>
-          </span>
-        </label>
+          <label class="option">
+            <input id="otherSchemas" type="checkbox" checked>
+            <span>
+              <strong data-i18n="otherSchemasTitle">Inspect graphs owned by other schemas</strong>
+              <span data-i18n="otherSchemasHelp">Use this when the diagnostic user is different from the graph owner.</span>
+            </span>
+          </label>
 
-        <label class="option">
-          <input id="nativeMcp" type="checkbox" checked>
-          <span>
-            <strong data-i18n="nativeMcpTitle">Use ADB Native MCP</strong>
-            <span data-i18n="nativeMcpHelp">Preferred runtime for ADB Serverless Diagnostic Mode.</span>
-          </span>
-        </label>
+          <label class="option">
+            <input id="health" type="checkbox" checked>
+            <span>
+              <strong data-i18n="healthTitle">Include health, AWR/ASH, and Auto Indexing evidence</strong>
+              <span data-i18n="healthHelp">Recommended for production-style workload diagnosis.</span>
+            </span>
+          </label>
 
-        <label class="option">
-          <input id="selfInstall" type="checkbox">
-          <span>
-            <strong data-i18n="selfInstallTitle">Diagnostic user installs or updates RUN_SQL</strong>
-            <span data-i18n="selfInstallHelp">Leave off when a DBA or installer owns the tool lifecycle.</span>
-          </span>
-        </label>
+          <label class="option">
+            <input id="planBaseline" type="checkbox">
+            <span>
+              <strong data-i18n="planBaselineTitle">Include SQL plan baseline visibility</strong>
+              <span data-i18n="planBaselineHelp">Only when plan management or baseline state is in scope.</span>
+            </span>
+          </label>
 
-        <label class="option">
-          <input id="executeChanges" type="checkbox">
-          <span>
-            <strong data-i18n="executeChangesTitle">Skill executes test changes in non-production</strong>
-            <span data-i18n="executeChangesHelp">Optional elevated mode, not required for analyze/propose.</span>
-          </span>
-        </label>
+          <label class="option">
+            <input id="nativeMcp" type="checkbox" checked>
+            <span>
+              <strong data-i18n="nativeMcpTitle">Use ADB Native MCP</strong>
+              <span data-i18n="nativeMcpHelp">Preferred runtime for ADB Serverless Diagnostic Mode.</span>
+            </span>
+          </label>
+
+          <label class="option">
+            <input id="selfInstall" type="checkbox">
+            <span>
+              <strong data-i18n="selfInstallTitle">Diagnostic user installs or updates RUN_SQL</strong>
+              <span data-i18n="selfInstallHelp">Leave off when a DBA or installer owns the tool lifecycle.</span>
+            </span>
+          </label>
+
+          <label class="option">
+            <input id="executeChanges" type="checkbox">
+            <span>
+              <strong data-i18n="executeChangesTitle">Skill executes test changes in non-production</strong>
+              <span data-i18n="executeChangesHelp">Optional elevated mode, not required for analyze/propose.</span>
+            </span>
+          </label>
+        </details>
 
         <div class="actions">
           <button id="copy" type="button" data-i18n="copyButton">Copy output</button>
-          <button class="secondary" id="reset" type="button" data-i18n="resetButton">Reset recommended</button>
+          <button class="secondary" id="reset" type="button" data-i18n="resetButton">Reset to recommended</button>
         </div>
       </section>
 
@@ -309,7 +357,11 @@
         title: "Diagnostic Mode Requirements Selector",
         intro: "Select the target operating model. The output lists the required implementation steps, grants, and validations for the Graph DBA Advisor skill.",
         languageLabel: "Language",
-        scenarioTitle: "Scenario",
+        scenarioTitle: "Recommended minimum",
+        presetTitle: "Preloaded production diagnostic baseline",
+        presetDescription: "ADB Native MCP, dedicated diagnostic user, cross-schema graph inspection, workload health/AWR/ASH evidence, and DBA-managed RUN_SQL. No runtime install privileges or test-change grants.",
+        advancedTitle: "Advanced configuration",
+        advancedHelp: "Open this only if you need to remove, add, or customize requirements.",
         otherSchemasTitle: "Inspect graphs owned by other schemas",
         otherSchemasHelp: "Use this when the diagnostic user is different from the graph owner.",
         healthTitle: "Include health, AWR/ASH, and Auto Indexing evidence",
@@ -324,14 +376,17 @@
         executeChangesHelp: "Optional elevated mode, not required for analyze/propose.",
         copyButton: "Copy output",
         copiedButton: "Copied",
-        resetButton: "Reset recommended",
+        resetButton: "Reset to recommended",
         outputTitle: "Required implementation",
         actionsTitle: "Actions",
         sqlTitle: "SQL grants",
         validationTitle: "Validation checklist",
+        badgeRecommended: "Preset: recommended minimum",
+        badgeCustomized: "Preset: customized",
         badgeNative: "Primary runtime: ADB Native MCP",
         badgeFallback: "Fallback runtime: SQLcl/session",
         outputHeading: "Diagnostic Mode requirements",
+        outputProfile: "Profile",
         outputActions: "Actions",
         outputSql: "SQL grants",
         outputValidation: "Validation",
@@ -363,7 +418,11 @@
         title: "Selector de Requerimientos - Modo Diagnóstico",
         intro: "Selecciona el modelo operativo objetivo. El resultado lista los pasos de implementación, grants y validaciones requeridas para el skill Graph DBA Advisor.",
         languageLabel: "Idioma",
-        scenarioTitle: "Escenario",
+        scenarioTitle: "Mínimo recomendado",
+        presetTitle: "Baseline diagnóstico productivo precargado",
+        presetDescription: "ADB Native MCP, usuario diagnóstico dedicado, inspección cross-schema de graphs, evidencia de health/AWR/ASH del workload y RUN_SQL administrado por DBA. Sin privilegios de instalación en runtime ni grants para cambios de prueba.",
+        advancedTitle: "Configuración avanzada",
+        advancedHelp: "Abrir solo si necesitás quitar, agregar o customizar requerimientos.",
         otherSchemasTitle: "Inspeccionar graphs de otros schemas",
         otherSchemasHelp: "Usar cuando el usuario diagnóstico es distinto del owner del graph.",
         healthTitle: "Incluir evidencia de health, AWR/ASH y Auto Indexing",
@@ -378,14 +437,17 @@
         executeChangesHelp: "Modo elevado opcional; no requerido para analizar/proponer.",
         copyButton: "Copiar resultado",
         copiedButton: "Copiado",
-        resetButton: "Reset recomendado",
+        resetButton: "Restaurar recomendado",
         outputTitle: "Implementación requerida",
         actionsTitle: "Acciones",
         sqlTitle: "Grants SQL",
         validationTitle: "Checklist de validación",
+        badgeRecommended: "Preset: mínimo recomendado",
+        badgeCustomized: "Preset: customizado",
         badgeNative: "Runtime primario: ADB Native MCP",
         badgeFallback: "Runtime fallback: SQLcl/session",
         outputHeading: "Requerimientos de Diagnostic Mode",
+        outputProfile: "Perfil",
         outputActions: "Acciones",
         outputSql: "Grants SQL",
         outputValidation: "Validación",
@@ -412,6 +474,15 @@
           history: "Confirmar acceso a DBA_HIST_SNAPSHOT y SYS.V_$ACTIVE_SESSION_HISTORY."
         }
       }
+    };
+
+    const recommended = {
+      otherSchemas: true,
+      health: true,
+      planBaseline: false,
+      nativeMcp: true,
+      selfInstall: false,
+      executeChanges: false
     };
 
     const grantSets = {
@@ -511,6 +582,16 @@
       target.appendChild(li);
     }
 
+    function isRecommended() {
+      return Object.entries(recommended).every(([key, value]) => els[key].checked === value);
+    }
+
+    function applyRecommended() {
+      Object.entries(recommended).forEach(([key, value]) => {
+        els[key].checked = value;
+      });
+    }
+
     function selectedGrants() {
       const grants = [...grantSets.baseline];
       if (els.otherSchemas.checked) grants.push("", ...grantSets.catalog);
@@ -530,6 +611,11 @@
       badge.className = "badge";
       badge.textContent = els.nativeMcp.checked ? t().badgeNative : t().badgeFallback;
       els.badges.appendChild(badge);
+
+      const profileBadge = document.createElement("span");
+      profileBadge.className = "badge";
+      profileBadge.textContent = isRecommended() ? t().badgeRecommended : t().badgeCustomized;
+      els.badges.appendChild(profileBadge);
 
       addList(els.actions, t().actions.dedicatedUser);
       addList(els.actions, t().actions.baseline);
@@ -577,7 +663,8 @@
     function outputText() {
       const actions = [...els.actions.querySelectorAll("li")].map((li) => `- ${li.textContent}`).join("\n");
       const validation = [...els.validation.querySelectorAll("li")].map((li) => `- ${li.textContent}`).join("\n");
-      return `${t().outputHeading}\n\n${t().outputActions}\n${actions}\n\n${t().outputSql}\n${els.sql.textContent}\n\n${t().outputValidation}\n${validation}\n`;
+      const profile = isRecommended() ? t().badgeRecommended : t().badgeCustomized;
+      return `${t().outputHeading}\n\n${t().outputProfile}\n${profile}\n\n${t().outputActions}\n${actions}\n\n${t().outputSql}\n${els.sql.textContent}\n\n${t().outputValidation}\n${validation}\n`;
     }
 
     document.querySelectorAll("input[type='checkbox']").forEach((input) => {
@@ -604,12 +691,7 @@
     });
 
     els.reset.addEventListener("click", () => {
-      els.otherSchemas.checked = true;
-      els.health.checked = true;
-      els.planBaseline.checked = false;
-      els.nativeMcp.checked = true;
-      els.selfInstall.checked = false;
-      els.executeChanges.checked = false;
+      applyRecommended();
       render();
     });
 
@@ -619,6 +701,7 @@
     });
 
     applyLanguage();
+    applyRecommended();
     render();
   </script>
 </body>
