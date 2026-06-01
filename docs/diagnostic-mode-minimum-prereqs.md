@@ -89,45 +89,33 @@ need grant/admin privileges at runtime.
 
 ```mermaid
 flowchart TD
-    start[Implement Diagnostic Mode] --> runtime[Create dedicated diagnostic user]
-    runtime --> baseline[Apply baseline read-only grants]
-    baseline --> graph{Need graph catalog across schemas}
-    graph -- Yes --> graphGrants[Grant graph catalog and object metadata views]
-    graph -- No --> ownerPath[Use owner scoped path if connected as graph owner]
+    A["Implement Diagnostic Mode"] --> B["Create dedicated diagnostic user"]
+    B --> C["Apply baseline read-only grants"]
+    C --> D{"Need catalog across schemas?"}
+    D -->|Yes| E["Grant graph catalog and object metadata views"]
+    D -->|No| F["Use owner-scoped path if connected as graph owner"]
 
-    graphGrants --> health{Need health AWR ASH Auto Indexing}
-    ownerPath --> health
-    health -- Yes --> healthGrants[Grant health AWR ASH and Auto Indexing views]
-    health -- No --> plan
+    E --> G{"Need health or historical evidence?"}
+    F --> G
+    G -->|Yes| H["Grant health, AWR ASH, and Auto Indexing views"]
+    G -->|No| J{"Need SQL plan baseline visibility?"}
 
-    healthGrants --> plan{Need SQL plan baseline visibility}
-    plan -- Yes --> planGrant[Grant SELECT on DBA_SQL_PLAN_BASELINES]
-    plan -- No --> mcp
-    planGrant --> mcp
+    H --> J
+    J -->|Yes| K["Grant SELECT on DBA_SQL_PLAN_BASELINES"]
+    J -->|No| L{"Using ADB Native MCP?"}
+    K --> L
 
-    mcp{Using ADB Native MCP}
-    mcp -- Yes --> runSql[Expose RUN_SQL with read-only guardrails]
-    mcp -- No --> sqlcl[Use SQLcl or session fallback]
+    L -->|Yes| M["Expose RUN_SQL with read-only guardrails"]
+    L -->|No| N["Use SQLcl or session fallback"]
 
-    runSql --> installer{Will diagnostic user install RUN_SQL}
-    installer -- No --> dbaInstall[DBA or installer creates RUN_SQL]
-    installer -- Yes --> tempPrivs[Temporarily grant install privileges]
-    tempPrivs --> revoke[Validate and revoke installation-only privileges]
-    dbaInstall --> validate
-    revoke --> validate
-    sqlcl --> validate
+    M --> O{"Will diagnostic user install RUN_SQL?"}
+    O -->|No| P["DBA or installer creates RUN_SQL"]
+    O -->|Yes| Q["Temporarily grant install privileges"]
+    Q --> R["Validate and revoke installation-only privileges"]
 
-    validate[Validate tools list, read smoke test, write rejection, catalog and AWR access]
-
-    classDef required fill:#ecfdf5,stroke:#059669,color:#064e3b;
-    classDef decision fill:#eff6ff,stroke:#2563eb,color:#1e3a8a;
-    classDef optional fill:#fff7ed,stroke:#ea580c,color:#7c2d12;
-    classDef fallback fill:#f3f4f6,stroke:#9ca3af,color:#374151,stroke-dasharray: 5 5;
-
-    class start,runtime,baseline,runSql,validate required;
-    class graph,health,plan,mcp,installer decision;
-    class graphGrants,healthGrants,planGrant,tempPrivs,revoke,dbaInstall optional;
-    class ownerPath,sqlcl fallback;
+    P --> S["Validate tools/list, read smoke test, write rejection, catalog and AWR access"]
+    R --> S
+    N --> S
 ```
 
 Grant sets used in the flow:
