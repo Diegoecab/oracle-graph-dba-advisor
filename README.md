@@ -340,9 +340,27 @@ Knowledge files include version metadata such as `verified_version` and
 
 ### Install in Codex
 
-1. Clone or open this repository in Codex.
-2. Use the repository root as the working directory so Codex can read
-   `SKILL.md`, `SYSTEM_PROMPT.md`, `knowledge/`, and `sql-templates/`.
+1. Install the skill files into the local Codex skills directory.
+
+   Windows PowerShell:
+
+   ```powershell
+   npx degit Diegoecab/oracle-graph-dba-advisor "$env:USERPROFILE\.codex\skills\oracle-graph-dba-advisor"
+   ```
+
+   macOS/Linux:
+
+   ```bash
+   npx degit Diegoecab/oracle-graph-dba-advisor "$HOME/.codex/skills/oracle-graph-dba-advisor"
+   ```
+
+   If Node.js is not available, use Git instead:
+
+   ```powershell
+   git clone --depth 1 https://github.com/Diegoecab/oracle-graph-dba-advisor.git "$env:USERPROFILE\.codex\skills\oracle-graph-dba-advisor"
+   ```
+
+2. Restart Codex so it loads the new skill.
 3. Configure one MCP server per target ADB. For the Mini-DOWNER demo, replace
    the database OCID and token:
 
@@ -353,8 +371,8 @@ Knowledge files include version metadata such as `verified_version` and
      --bearer-token-env-var ADB_MCP_TOKEN
    ```
 
-4. Start Codex from this repo and ask it to use the Oracle Graph DBA Advisor
-   skill instructions. The runtime MCP surface should expose only `RUN_SQL`.
+4. Ask Codex to use the `oracle-graph-dba-advisor` skill. The runtime MCP
+   surface should expose only `RUN_SQL`.
 
 Mini-DOWNER starter prompt:
 

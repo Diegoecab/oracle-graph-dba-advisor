@@ -1,3 +1,8 @@
+---
+name: oracle-graph-dba-advisor
+description: Diagnose Oracle SQL/PGQ property graph performance with read-only SQL evidence, templates, and recommendations for ADB Native MCP or SQLcl MCP.
+---
+
 # Oracle Graph DBA Advisor — Skill Manifest
 
 ## Identity
