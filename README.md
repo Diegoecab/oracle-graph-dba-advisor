@@ -380,37 +380,84 @@ Mini-DOWNER starter prompt:
 Estoy viendo lentitud en Mini-DOWNER. Podés revisar qué está pasando y decirme cuál parece ser la causa principal, con evidencia y una recomendación concreta?
 ```
 
-### Install in Claude Desktop
+### Install in Claude
 
-1. Create a Claude Project for the advisor, or open the repo with Claude Code.
-2. Load `SYSTEM_PROMPT.md` as the project instructions. Add `SKILL.md`,
-   `knowledge/`, `sql-templates/`, and the relevant `workload/` folder as
-   project knowledge when using Claude Desktop.
-3. Add the ADB Native MCP server to `claude_desktop_config.json`. Example for
-   Mini-DOWNER:
+Claude has two useful install paths:
 
-   ```json
-   {
-     "mcpServers": {
-       "graph-advisor-downer": {
-         "description": "Oracle Graph DBA Advisor on ADB Native MCP for Mini-DOWNER.",
-         "command": "npx",
-         "args": [
-           "-y",
-           "mcp-remote",
-           "https://dataaccess.adb.us-ashburn-1.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>"
-         ],
-         "transport": "streamable-http",
-         "headers": {
-           "Authorization": "Bearer <bearer-token>"
-         }
-       }
-     }
-   }
-   ```
+- **Claude Code**: install this repository as a local skill.
+- **Claude Desktop / claude.ai**: package the repository as a skill ZIP and
+  upload it through Claude's Skills UI.
 
-4. Restart Claude Desktop and verify that the server lists only the approved
-   read-only tool, normally `RUN_SQL`.
+#### Claude Code skill
+
+Windows PowerShell:
+
+```powershell
+npx degit Diegoecab/oracle-graph-dba-advisor "$env:USERPROFILE\.claude\skills\oracle-graph-dba-advisor"
+```
+
+macOS/Linux:
+
+```bash
+npx degit Diegoecab/oracle-graph-dba-advisor "$HOME/.claude/skills/oracle-graph-dba-advisor"
+```
+
+Then start Claude Code and invoke the skill directly when needed:
+
+```text
+/oracle-graph-dba-advisor
+```
+
+Configure the ADB Native MCP server separately. Example for Mini-DOWNER:
+
+```powershell
+$env:ADB_MCP_TOKEN = "<bearer-token>"
+claude mcp add --transport http --scope user `
+  --header "Authorization: Bearer $env:ADB_MCP_TOKEN" `
+  graph-advisor-downer `
+  "https://dataaccess.adb.us-ashburn-1.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>"
+```
+
+Use `/mcp` inside Claude Code to verify that the server is connected and that
+only the approved read-only tool, normally `RUN_SQL`, is available.
+
+#### Claude Desktop / claude.ai skill
+
+Package the skill as a ZIP:
+
+```powershell
+npx degit Diegoecab/oracle-graph-dba-advisor "$env:TEMP\oracle-graph-dba-advisor-skill\oracle-graph-dba-advisor"
+Compress-Archive -Path "$env:TEMP\oracle-graph-dba-advisor-skill\oracle-graph-dba-advisor" -DestinationPath ".\oracle-graph-dba-advisor-skill.zip" -Force
+```
+
+Upload `oracle-graph-dba-advisor-skill.zip` in Claude under
+`Customize > Skills > Create skill > Upload a skill`.
+
+If the target is Claude Desktop with local MCP enabled, add the ADB Native MCP
+server to `claude_desktop_config.json`. Example for Mini-DOWNER:
+
+```json
+{
+  "mcpServers": {
+    "graph-advisor-downer": {
+      "description": "Oracle Graph DBA Advisor on ADB Native MCP for Mini-DOWNER.",
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://dataaccess.adb.us-ashburn-1.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>"
+      ],
+      "transport": "streamable-http",
+      "headers": {
+        "Authorization": "Bearer <bearer-token>"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Desktop and verify that the server lists only the approved
+read-only tool, normally `RUN_SQL`.
 
 See [clients/README.md](clients/README.md) and
 [clients/claude-desktop-adb-bearer-multidb.json](clients/claude-desktop-adb-bearer-multidb.json)
