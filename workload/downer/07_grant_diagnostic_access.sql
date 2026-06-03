@@ -1,0 +1,65 @@
+--------------------------------------------------------------------------------
+-- 07_grant_diagnostic_access.sql
+-- Grants for GRAPH_DIAG_USER to diagnose DOWNER_DEMO through RUN_SQL.
+--
+-- Run as ADMIN after DOWNER_DEMO tables exist.
+--------------------------------------------------------------------------------
+
+WHENEVER SQLERROR EXIT SQL.SQLCODE
+
+SET DEFINE ON
+SET ECHO ON
+SET FEEDBACK ON
+
+DEFINE diag_user = GRAPH_DIAG_USER
+DEFINE graph_owner = DOWNER_DEMO
+
+GRANT CREATE SESSION TO &&diag_user;
+GRANT EXECUTE ON DBMS_XPLAN TO &&diag_user;
+
+GRANT SELECT ON SYS.V_$SQL TO &&diag_user;
+GRANT SELECT ON SYS.V_$SQLSTATS TO &&diag_user;
+GRANT SELECT ON SYS.V_$SQLAREA_PLAN_HASH TO &&diag_user;
+GRANT SELECT ON SYS.V_$SQL_PLAN TO &&diag_user;
+GRANT SELECT ON SYS.V_$SQL_PLAN_STATISTICS_ALL TO &&diag_user;
+GRANT SELECT ON SYS.V_$SQL_SHARED_CURSOR TO &&diag_user;
+GRANT SELECT ON SYS.V_$SQLTEXT TO &&diag_user;
+GRANT SELECT ON SYS.V_$PARAMETER TO &&diag_user;
+GRANT SELECT ON SYS.V_$SESSION TO &&diag_user;
+GRANT SELECT ON SYS.V_$ACTIVE_SESSION_HISTORY TO &&diag_user;
+GRANT SELECT ON SYS.V_$SYSMETRIC_HISTORY TO &&diag_user;
+GRANT SELECT ON SYS.V_$SYSTEM_EVENT TO &&diag_user;
+GRANT SELECT ON SYS.V_$SGASTAT TO &&diag_user;
+GRANT SELECT ON SYS.V_$PGASTAT TO &&diag_user;
+
+GRANT SELECT ON DBA_PROPERTY_GRAPHS TO &&diag_user;
+GRANT SELECT ON DBA_PG_ELEMENTS TO &&diag_user;
+GRANT SELECT ON DBA_PG_EDGE_RELATIONSHIPS TO &&diag_user;
+GRANT SELECT ON DBA_TABLES TO &&diag_user;
+GRANT SELECT ON DBA_INDEXES TO &&diag_user;
+GRANT SELECT ON DBA_IND_COLUMNS TO &&diag_user;
+GRANT SELECT ON DBA_TAB_STATISTICS TO &&diag_user;
+GRANT SELECT ON DBA_TAB_COL_STATISTICS TO &&diag_user;
+
+GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO &&diag_user;
+GRANT SELECT ON DBA_TEMP_FREE_SPACE TO &&diag_user;
+GRANT SELECT ON DBA_AUTO_INDEX_CONFIG TO &&diag_user;
+GRANT SELECT ON DBA_AUTO_INDEX_IND_ACTIONS TO &&diag_user;
+GRANT SELECT ON DBA_AUTO_INDEX_EXECUTIONS TO &&diag_user;
+GRANT SELECT ON DBA_HIST_SNAPSHOT TO &&diag_user;
+GRANT SELECT ON DBA_HIST_SYSMETRIC_SUMMARY TO &&diag_user;
+GRANT SELECT ON DBA_HIST_SYSTEM_EVENT TO &&diag_user;
+GRANT SELECT ON DBA_HIST_PGASTAT TO &&diag_user;
+GRANT SELECT ON DBA_HIST_ACTIVE_SESS_HISTORY TO &&diag_user;
+
+GRANT SELECT ON &&graph_owner..N_USER TO &&diag_user;
+GRANT SELECT ON &&graph_owner..N_DEVICE TO &&diag_user;
+GRANT SELECT ON &&graph_owner..N_BANK_ACCOUNT TO &&diag_user;
+GRANT SELECT ON &&graph_owner..N_CARD TO &&diag_user;
+GRANT SELECT ON &&graph_owner..N_IP TO &&diag_user;
+GRANT SELECT ON &&graph_owner..E_USES_DEVICE TO &&diag_user;
+GRANT SELECT ON &&graph_owner..E_WITHDRAWAL_BANK_ACCOUNT TO &&diag_user;
+GRANT SELECT ON &&graph_owner..E_USES_CARD TO &&diag_user;
+GRANT SELECT ON &&graph_owner..E_USES_IP TO &&diag_user;
+
+PROMPT Diagnostic grants completed for &&diag_user.

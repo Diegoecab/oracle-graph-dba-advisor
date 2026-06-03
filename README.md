@@ -313,6 +313,7 @@ The advisor selects and parameterizes templates from `sql-templates/`.
 | `03-analyze.sql` | Plan deep dive |
 | `04-selectivity-and-simulate.sql` | Selectivity and approved simulation |
 | `05-utilities.sql` | Utility queries |
+| `packs/missing-index/` | Demo-ready missing-index diagnostic pack |
 
 ## Knowledge base
 
@@ -337,12 +338,74 @@ Knowledge files include version metadata such as `verified_version` and
 | Cline | ADB Native MCP or SQLcl MCP | Uses `.clinerules`. |
 | Cursor | ADB Native MCP or SQLcl MCP | Uses `.cursor/rules/oracle-graph-dba.mdc`. |
 
+### Install in Codex
+
+1. Clone or open this repository in Codex.
+2. Use the repository root as the working directory so Codex can read
+   `SKILL.md`, `SYSTEM_PROMPT.md`, `knowledge/`, and `sql-templates/`.
+3. Configure one MCP server per target ADB. For the Mini-DOWNER demo, replace
+   the database OCID and token:
+
+   ```powershell
+   $env:ADB_MCP_TOKEN = "<bearer-token>"
+   codex mcp add graph-advisor-downer `
+     --url "https://dataaccess.adb.us-ashburn-1.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>" `
+     --bearer-token-env-var ADB_MCP_TOKEN
+   ```
+
+4. Start Codex from this repo and ask it to use the Oracle Graph DBA Advisor
+   skill instructions. The runtime MCP surface should expose only `RUN_SQL`.
+
+Mini-DOWNER starter prompt:
+
+```text
+Estoy viendo lentitud en Mini-DOWNER. Podés revisar qué está pasando y decirme cuál parece ser la causa principal, con evidencia y una recomendación concreta?
+```
+
+### Install in Claude Desktop
+
+1. Create a Claude Project for the advisor, or open the repo with Claude Code.
+2. Load `SYSTEM_PROMPT.md` as the project instructions. Add `SKILL.md`,
+   `knowledge/`, `sql-templates/`, and the relevant `workload/` folder as
+   project knowledge when using Claude Desktop.
+3. Add the ADB Native MCP server to `claude_desktop_config.json`. Example for
+   Mini-DOWNER:
+
+   ```json
+   {
+     "mcpServers": {
+       "graph-advisor-downer": {
+         "description": "Oracle Graph DBA Advisor on ADB Native MCP for Mini-DOWNER.",
+         "command": "npx",
+         "args": [
+           "-y",
+           "mcp-remote",
+           "https://dataaccess.adb.us-ashburn-1.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>"
+         ],
+         "transport": "streamable-http",
+         "headers": {
+           "Authorization": "Bearer <bearer-token>"
+         }
+       }
+     }
+   }
+   ```
+
+4. Restart Claude Desktop and verify that the server lists only the approved
+   read-only tool, normally `RUN_SQL`.
+
+See [clients/README.md](clients/README.md) and
+[clients/claude-desktop-adb-bearer-multidb.json](clients/claude-desktop-adb-bearer-multidb.json)
+for more client examples. Do not commit bearer tokens, wallets, or generated
+per-database client files.
+
 ## Sample workloads
 
 | Workload | Description |
 |---|---|
 | `workload/fraud/` | Fraud detection graph workload |
 | `workload/newfraud/` | Updated fraud workload and Native MCP validation scripts |
+| `workload/downer/` | Mini-DOWNER missing-index diagnostic demo |
 | `workload/catalog_compat/` | Catalog compatibility test workload |
 
 ## Project structure

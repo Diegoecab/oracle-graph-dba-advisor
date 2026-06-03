@@ -2,23 +2,84 @@
 
 ## Objetivo de la demo
 
-Mostrar como el skill ayuda al equipo de administracion a diagnosticar un problema de performance en minutos, usando evidencia concreta de la base y sin depender de analisis manual ad hoc.
+Mostrar como el skill ayuda al equipo de administracion a diagnosticar un
+problema de performance en minutos, usando evidencia concreta de la base y sin
+depender de analisis manual ad hoc.
 
-El caso demo validado simula una situacion de inestabilidad de planes sobre una misma SQL:
+El caso principal de esta demo simula un problema comun en workloads SQL/PGQ:
 
-- mismo `SQL_ID`
-- multiples `child cursors`
-- multiples `PLAN_HASH_VALUE`
-- invalidaciones
-- causas visibles de no comparticion del cursor
+- una consulta `GRAPH_TABLE` lenta
+- un recorrido de grafo sobre una tabla de aristas grande
+- `TABLE ACCESS FULL` sobre la arista principal
+- falta de indices lideres sobre `SRC` y `DST`
+- recomendacion de indices reversibles con evidencia de plan y selectividad
+
+El escenario usa un mini modelo `DOWNER_DEMO` inspirado en metadata real del
+cliente, reducido para correr en ADB-S Always Free.
+
+## Ambiente target
+
+La demo se ejecuta en OCI:
+
+1. Tenancy: `latinoamerica`.
+2. Perfil OCI CLI: `LATINOAMERICA_APIKEY`.
+3. Region: `us-ashburn-1`, porque es el home region `IAD` del tenancy.
+4. Compartment: `diego.e.cabrera` creado el `2026-04-10`, identificado porque
+   debajo tiene el subcompartment `pitwall`.
+5. Base: ADB-S Always Free, nombre sugerido `GADVDOWNERAF`.
+
+Always Free se mantiene como restriccion explicita de la demo. Por eso el
+dataset sintetico debe quedar por debajo del envelope de storage disponible y
+el paralelismo de pruebas debe ser moderado.
 
 ## Que problema representa este caso
 
-Este escenario representa un tipo de incidente donde una misma consulta cambia de comportamiento en el tiempo y el equipo necesita responder rapido preguntas como:
+Este escenario representa un incidente donde una consulta de grafo que deberia
+ser selectiva termina leyendo demasiadas filas por ausencia de indices en la
+tabla de aristas.
 
-1. Hay una SQL con regresion o comportamiento inconsistente?
-2. El problema viene de cambio de plan, de child cursors, de binds, o de invalidaciones?
-3. Que evidencia concreta justifica escalar al DBA o aplicar una accion correctiva?
+La pregunta operacional es:
+
+1. Cual es la SQL lenta?
+2. Que tabla y que paso del plan consume el costo?
+3. El full scan es razonable o indica un gap fisico?
+4. Falta un indice sobre la direccion de traversal?
+5. Que recomendacion puede escalarse al DBA con rollback claro?
+
+## Modelo de demo
+
+Schema sintetico:
+
+- `DOWNER_DEMO`
+
+Property graph:
+
+- `DOWNER_DEMO.DOWNER_GRAPH`
+
+Tablas de nodos:
+
+- `N_USER`
+- `N_DEVICE`
+- `N_BANK_ACCOUNT`
+- `N_CARD`
+- `N_IP`
+
+Tablas de aristas:
+
+- `E_USES_DEVICE`
+- `E_WITHDRAWAL_BANK_ACCOUNT`
+- `E_USES_CARD`
+- `E_USES_IP`
+
+El problema se induce de forma controlada:
+
+1. Las aristas secundarias tienen indices sobre `SRC` y `DST`.
+2. `E_USES_DEVICE` queda intencionalmente sin indices lideres sobre `SRC` y
+   `DST`.
+3. El workload `DOWNER_MI_Q01` busca usuarios que comparten dispositivos con
+   `U00000042`.
+4. La distribucion de datos crea dispositivos compartidos y fan-in/fan-out
+   suficiente para que la falta de indice sea visible.
 
 ## Como trabaja el skill
 
@@ -33,173 +94,261 @@ Trabaja con un playbook prearmado y versionado:
 5. Resume el hallazgo en lenguaje natural con evidencia.
 6. Propone proximos pasos operativos.
 
-En este caso, el pack usado es el de `plan instability`.
+En este caso, el pack usado es:
+
+- `sql-templates/packs/missing-index/`
 
 ## Arquitectura operativa del skill
 
 Para el cliente, el flujo es:
 
 1. El usuario admin interactua con el skill.
-2. El skill se conecta a la base objetivo mediante MCP.
+2. El skill se conecta a la base objetivo mediante ADB Native MCP.
 3. MCP expone herramientas controladas hacia la base.
-4. El skill ejecuta solo herramientas o queries empaquetadas.
-5. El skill devuelve diagnostico y recomendacion.
+4. El skill ejecuta solo `RUN_SQL`.
+5. `RUN_SQL` acepta solo `SELECT` y `WITH`.
+6. El skill devuelve diagnostico y recomendacion.
 
 Punto importante:
 
 - el canal de ejecucion es MCP
 - el acceso es con un usuario tecnico dedicado
 - el diagnostico es read-only
-- las acciones de remediacion quedan separadas y sujetas a aprobacion
+- la remediacion queda separada y sujeta a aprobacion
 
-## Prerrequisitos para este modo
+## Prerrequisitos
 
-Para correr el modo diagnostico del skill en una base cliente se necesita:
+Para correr el modo diagnostico del skill en esta demo se necesita:
 
-1. Una Autonomous Database con MCP habilitado.
-2. Un usuario tecnico dedicado para el skill.
-3. Grants minimos de observabilidad sobre vistas de performance.
-4. Autenticacion MCP por OAuth o bearer token.
+1. ADB-S Always Free disponible en `us-ashburn-1`.
+2. ADB Native MCP habilitado con el tag:
+   `adb$feature={"name":"mcp_server","enable":true}`.
+3. Usuario owner de laboratorio: `DOWNER_DEMO`.
+4. Usuario tecnico de diagnostico: `GRAPH_DIAG_USER`.
+5. Grants directos de observabilidad sobre vistas de performance y catalogo.
+6. Tool MCP read-only `RUN_SQL`.
+7. Bearer token generado con `GRAPH_DIAG_USER`.
 
-### Que significa un usuario tecnico dedicado
+## Setup de OCI y ADB
 
-Significa crear un usuario de base especifico para este skill dentro de cada base objetivo.
+El helper principal es:
 
-Ese usuario:
-
-1. no es un usuario personal
-2. no es `ADMIN`
-3. tiene solo los grants necesarios para diagnostico
-4. puede ser usado por el equipo admin
-5. se rota y audita como cualquier cuenta tecnica
-
-Modelo recomendado:
-
-1. una base objetivo
-2. un schema tecnico dedicado para el skill en esa base
-3. el mismo skill apuntando a multiples bases, cada una con su propio schema tecnico
-
-### Grants minimos de observabilidad
-
-Para el modo diagnostico base, el usuario tecnico deberia tener como minimo:
-
-```sql
-GRANT CREATE SESSION TO graph_diag_user;
-GRANT EXECUTE ON DBMS_XPLAN TO graph_diag_user;
-
-GRANT SELECT ON SYS.V_$SQL TO graph_diag_user;
-GRANT SELECT ON SYS.V_$SQLAREA_PLAN_HASH TO graph_diag_user;
-GRANT SELECT ON SYS.V_$SQL_PLAN TO graph_diag_user;
-GRANT SELECT ON SYS.V_$SQL_PLAN_STATISTICS_ALL TO graph_diag_user;
-GRANT SELECT ON SYS.V_$SQL_SHARED_CURSOR TO graph_diag_user;
-GRANT SELECT ON SYS.V_$SQLTEXT TO graph_diag_user;
-GRANT SELECT ON SYS.V_$PARAMETER TO graph_diag_user;
-GRANT SELECT ON SYS.V_$SESSION TO graph_diag_user;
-GRANT SELECT ON SYS.V_$SYSMETRIC_HISTORY TO graph_diag_user;
-GRANT SELECT ON SYS.V_$SYSTEM_EVENT TO graph_diag_user;
-GRANT SELECT ON SYS.V_$SGASTAT TO graph_diag_user;
-GRANT SELECT ON SYS.V_$PGASTAT TO graph_diag_user;
+```powershell
+.\lab\provision_downer_adb_always_free.ps1
 ```
 
-Notas practicas:
+Este script:
 
-1. estos son los minimos para observabilidad y analisis
-2. no incluyen remediacion automatica
-3. si luego se quiere analizar baselines de forma mas explicita, se puede sumar `SELECT ON DBA_SQL_PLAN_BASELINES`
+1. usa el perfil `LATINOAMERICA_APIKEY`
+2. valida que el tenancy sea `latinoamerica`
+3. confirma que el home region sea `us-ashburn-1`
+4. resuelve el compartment `diego.e.cabrera` correcto por el child `pitwall`
+5. lista ADBs visibles en el compartment
+6. emite el comando de creacion Always Free
+7. emite el comando para habilitar MCP cuando la ADB ya existe
 
-### Como se conecta especificamente por MCP
+Para crear la base, definir primero:
 
-La conexion tiene tres piezas:
+```powershell
+$env:ADB_ADMIN_PASSWORD = "<admin password>"
+.\lab\provision_downer_adb_always_free.ps1 -ExecuteCreate
+```
 
-1. la URL MCP de la base
-2. el usuario tecnico de base
-3. un mecanismo de autenticacion
+Para aplicar el tag MCP sobre una ADB ya visible:
 
-La URL MCP apunta a:
+```powershell
+.\lab\provision_downer_adb_always_free.ps1 -ExecuteMcpTag
+```
 
-`https://dataaccess.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>`
+## Setup de schema y workload
 
-Sobre autenticacion, hay dos opciones:
+Ejecutar como `ADMIN`:
 
-1. `OAuth`
-   el cliente MCP muestra una pantalla de login y el usuario ingresa sus credenciales de base de datos de forma interactiva
-2. `Bearer token`
-   se genera un token contra el endpoint de autenticacion de ADB usando el usuario tecnico y luego ese token se envia en el header `Authorization: Bearer <token>`
+```sql
+@workload/downer/00_create_users.sql "<downer_password>" "<graph_diag_password>"
+```
 
-Para este skill, bearer token suele ser la opcion mas practica cuando se quiere una integracion estable y repetible por base.
+Ejecutar como `DOWNER_DEMO`:
 
-Importante:
+```sql
+@workload/downer/01_create_schema.sql
+@workload/downer/02_create_property_graph.sql
+@workload/downer/03_generate_data.sql
+@workload/downer/04_workload_queries.sql
+@workload/downer/05_run_workload.sql
+@workload/downer/06_lab_summary.sql
+```
 
-- para el caso demo de laboratorio se uso un setup sintetico de workload
-- eso no forma parte del runtime normal del skill
-- en produccion, el modo diagnostico no necesita permisos de escritura para analizar
+Ejecutar como `ADMIN` despues de crear las tablas:
+
+```sql
+@workload/downer/07_grant_diagnostic_access.sql
+```
+
+Ejecutar como `GRAPH_DIAG_USER` para registrar el runtime MCP:
+
+```sql
+@clients/adb-native-run-sql-readonly.sql
+```
+
+Validacion esperada:
+
+1. `tools/list` expone solo `RUN_SQL`.
+2. `RUN_SQL` acepta `SELECT COUNT(*)`.
+3. `RUN_SQL` rechaza DDL, DML, PL/SQL, comentarios y semicolons.
 
 ## Secuencia sugerida para mostrar al cliente
 
 ### Paso 1 - Presentar el problema
 
-Explicar que se va a simular un incidente donde una misma consulta presenta comportamiento inestable y obliga normalmente a revisar SQL, planes, child cursors y causas de reparse.
+Explicar que se va a simular una consulta de grafo lenta por falta de indices
+fisicos sobre una tabla de aristas.
 
-### Paso 2 - Ejecutar el skill en modo diagnostico
+Prompt sugerido:
 
-Pedir al skill algo como:
+```text
+Estoy viendo lentitud en Mini-DOWNER. Podrias revisar que esta pasando y decirme cual parece ser la causa principal, con evidencia y una recomendacion concreta?
+```
 
-`Analiza si hay senales de plan instability o cursor churn en esta base`
+### Paso 2 - Ejecutar el pack diagnostico
 
-El skill entonces:
+El runner MCP read-only es:
 
-1. Ejecuta el resumen de candidatos.
-2. Ordena por severidad tecnica.
-3. Elige el `SQL_ID` mas representativo para drill-down.
+```bash
+workload/downer/08_missing_index_mcp_demo.sh
+```
 
-### Paso 3 - Mostrar el hallazgo principal
+Variables requeridas:
 
-En la validacion actual del demo, el skill detecto una SQL con:
+```bash
+export ADB_OCID="<autonomous database ocid>"
+export ADB_USERNAME="GRAPH_DIAG_USER"
+export ADB_PASSWORD="<graph diag password>"
+```
 
-1. `3` child cursors
-2. `2` plan hashes distintos
-3. invalidaciones
-4. razones de no comparticion visibles en `V$SQL_SHARED_CURSOR`
+Variables default:
 
-### Paso 4 - Mostrar la evidencia tecnica
+```bash
+export ADB_REGION="us-ashburn-1"
+export SQL_TAG="DOWNER_MI_Q01"
+export GRAPH_OWNER="DOWNER_DEMO"
+export GRAPH_NAME="DOWNER_GRAPH"
+export EDGE_TABLE="E_USES_DEVICE"
+```
 
-El skill profundiza con tres vistas del mismo caso:
+### Paso 3 - Mostrar candidato principal
 
-1. detalle por `child_number`
-2. razones de no comparticion del cursor
-3. resumen historico por `plan_hash`
+El pack ejecuta:
 
-Esto permite responder en minutos:
+- `01-candidate-sql.sql`
+- `02-primary-sqlid.sql`
 
-1. si hubo drift de plan
-2. si hubo bind mismatch
-3. si hubo optimizer mismatch
-4. cuantas invalidaciones se observaron
+Evidencia esperada:
 
-### Paso 5 - Traducir el hallazgo a una conclusion operativa
+1. `DOWNER_MI_Q01` aparece en `V$SQL`.
+2. Hay un `SQL_ID` principal.
+3. El ranking muestra elapsed time y buffer gets.
 
-El skill devuelve una conclusion de negocio-operacion, por ejemplo:
+### Paso 4 - Mostrar evidencia de plan
 
-`La consulta presenta inestabilidad dentro del mismo cursor padre. Se observan multiples child cursors, multiples plan hashes e invalidaciones. Las razones visibles apuntan a optimizer mismatch y bind mismatch. Recomendacion: revisar condiciones de binds, consistencia de entorno de optimizacion y, si aplica, evaluar baseline o estabilizacion del plan.`
+El pack ejecuta:
 
-### Paso 6 - Explicar el valor para el equipo admin
+- `03-hot-plan-operations.sql`
 
-El mensaje para el cliente deberia ser:
+Evidencia esperada:
 
-1. el skill reduce el tiempo de deteccion
-2. el skill estandariza el diagnostico
-3. el skill deja evidencia medible para DBA o owner tecnico
-4. el skill evita depender de investigacion manual desde cero
+1. `E_USES_DEVICE` aparece en operaciones del plan.
+2. Hay `TABLE ACCESS FULL` sobre la arista target.
+3. La operacion concentra buffer gets o elapsed time.
+
+### Paso 5 - Mostrar gap fisico
+
+El pack ejecuta:
+
+- `04-edge-fk-leading-index-gap.sql`
+
+Evidencia esperada:
+
+1. `E_USES_DEVICE.SRC` aparece como `MISSING_LEADING_INDEX`.
+2. `E_USES_DEVICE.DST` aparece como `MISSING_LEADING_INDEX`.
+3. Las otras aristas sirven como contraste porque tienen indices lideres.
+
+### Paso 6 - Mostrar selectividad y fan-out
+
+El pack ejecuta:
+
+- `05-degree-selectivity.sql`
+
+Evidencia esperada:
+
+1. El edge table tiene volumen suficiente para que el full scan sea relevante.
+2. El acceso por `SRC` es selectivo para el usuario ancla.
+3. El acceso por `DST` es relevante por dispositivos compartidos.
+
+### Paso 7 - Traducir a conclusion operativa
+
+El pack ejecuta:
+
+- `06-recommendations.sql`
+
+Conclusion esperada:
+
+```text
+La consulta DOWNER_MI_Q01 realiza un traversal selectivo sobre E_USES_DEVICE,
+pero el plan evidencia full scans sobre la arista target. El catalogo del grafo
+muestra que SRC y DST no estan cubiertos como columnas lideres de un indice.
+La recomendacion es validar indices invisibles sobre (SRC, END_DATE, DST) y
+(DST, END_DATE, SRC), medir buffer gets/elapsed time y luego promover la
+remediacion con aprobacion DBA.
+```
+
+## Validacion lab-only de remediacion
+
+La remediacion no se ejecuta por MCP.
+
+Para probar impacto, ejecutar como `DOWNER_DEMO`:
+
+```sql
+@workload/downer/09_invisible_index_validation.sql
+```
+
+Este script:
+
+1. crea indices invisibles sobre `E_USES_DEVICE`
+2. habilita `optimizer_use_invisible_indexes` solo en la sesion
+3. compara planes `DOWNER_MI_Q01_BASE` y `DOWNER_MI_Q01_INVISIBLE`
+4. compara elapsed time, buffer gets y plan hash entre
+   `DOWNER_MI_Q01_BASE_RUN` y `DOWNER_MI_Q01_INVISIBLE_RUN`
+
+DDL esperado para validar:
+
+```sql
+CREATE INDEX idx_e_uses_device_src_ed_dst
+  ON e_uses_device (src, end_date, dst)
+  INVISIBLE;
+
+CREATE INDEX idx_e_uses_device_dst_ed_src
+  ON e_uses_device (dst, end_date, src)
+  INVISIBLE;
+```
+
+Rollback:
+
+```sql
+DROP INDEX idx_e_uses_device_src_ed_dst;
+DROP INDEX idx_e_uses_device_dst_ed_src;
+```
 
 ## Que demuestra especificamente esta demo
 
 Esta demo demuestra que el skill puede:
 
-1. conectarse por MCP a una base objetivo
+1. conectarse por MCP a una ADB objetivo
 2. ejecutar diagnostico read-only
-3. detectar senales reales de inestabilidad de cursores y planes
-4. resumir el problema de manera accionable
-5. servir como capa intermedia entre el incidente y la intervencion del DBA
+3. identificar una SQL de grafo lenta
+4. mapear el problema a operaciones relacionales del plan
+5. detectar gaps de indices en aristas de un property graph
+6. generar recomendacion accionable con rollback
 
 ## Que no demuestra esta demo
 
@@ -210,19 +359,28 @@ Esta demo no intenta demostrar:
 3. reemplazo del DBA
 4. cobertura total de todos los incidentes de performance
 
-Su objetivo es mostrar una primera capacidad concreta y de alto valor: diagnosticar rapido y con evidencia.
+Su objetivo es mostrar una primera capacidad concreta y de alto valor:
+diagnosticar rapido y con evidencia.
 
 ## Mensaje clave para el cliente
 
 El skill trabaja como una capa de diagnostico operacional para admins.
 
-No depende de preguntas vagas ni de SQL armado en vivo. Usa playbooks tecnicos empaquetados, ejecuta evidencia contra la base real via MCP, y devuelve una conclusion util para acelerar troubleshooting y escalar con mejor contexto.
+No depende de preguntas vagas ni de SQL armado en vivo. Usa playbooks tecnicos
+empaquetados, ejecuta evidencia contra la base real via MCP, y devuelve una
+conclusion util para acelerar troubleshooting y escalar con mejor contexto.
 
-## Anexo interno
+## Anexo interno - Plan instability
 
-Assets usados para esta demo validada:
+El caso previo de `plan instability` queda como demo secundaria.
+
+Assets:
 
 - `workload/newfraud/08_setup_plan_instability_lab.sql`
 - `workload/newfraud/08_plan_instability_demo.sh`
 - `workload/newfraud/08_grant_plan_instability_lab_extras.sql`
 - `sql-templates/packs/plan-instability/`
+
+Usarlo cuando el mensaje que se quiera mostrar sea cursor churn, child cursors,
+plan hash drift e invalidaciones. Para la demo DOWNER, el caso principal es
+`missing-index`.
