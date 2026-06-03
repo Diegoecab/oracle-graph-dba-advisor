@@ -345,19 +345,19 @@ Knowledge files include version metadata such as `verified_version` and
    Windows PowerShell:
 
    ```powershell
-   npx degit Diegoecab/oracle-graph-dba-advisor "$env:USERPROFILE\.codex\skills\oracle-graph-dba-advisor"
+   npx --yes degit Diegoecab/oracle-graph-dba-advisor "$env:USERPROFILE\.agents\skills\oracle-graph-dba-advisor"
    ```
 
    macOS/Linux:
 
    ```bash
-   npx degit Diegoecab/oracle-graph-dba-advisor "$HOME/.codex/skills/oracle-graph-dba-advisor"
+   npx --yes degit Diegoecab/oracle-graph-dba-advisor "$HOME/.agents/skills/oracle-graph-dba-advisor"
    ```
 
    If Node.js is not available, use Git instead:
 
    ```powershell
-   git clone --depth 1 https://github.com/Diegoecab/oracle-graph-dba-advisor.git "$env:USERPROFILE\.codex\skills\oracle-graph-dba-advisor"
+   git clone --depth 1 https://github.com/Diegoecab/oracle-graph-dba-advisor.git "$env:USERPROFILE\.agents\skills\oracle-graph-dba-advisor"
    ```
 
 2. Restart Codex so it loads the new skill.
@@ -373,6 +373,9 @@ Knowledge files include version metadata such as `verified_version` and
 
 4. Ask Codex to use the `oracle-graph-dba-advisor` skill. The runtime MCP
    surface should expose only `RUN_SQL`.
+
+This is the local-skill install path. For repeatable team distribution, package
+the skill as a Codex plugin with a marketplace entry.
 
 Mini-DOWNER starter prompt:
 
@@ -393,20 +396,17 @@ Claude has two useful install paths:
 Windows PowerShell:
 
 ```powershell
-npx degit Diegoecab/oracle-graph-dba-advisor "$env:USERPROFILE\.claude\skills\oracle-graph-dba-advisor"
+npx --yes degit Diegoecab/oracle-graph-dba-advisor "$env:USERPROFILE\.claude\skills\oracle-graph-dba-advisor"
 ```
 
 macOS/Linux:
 
 ```bash
-npx degit Diegoecab/oracle-graph-dba-advisor "$HOME/.claude/skills/oracle-graph-dba-advisor"
+npx --yes degit Diegoecab/oracle-graph-dba-advisor "$HOME/.claude/skills/oracle-graph-dba-advisor"
 ```
 
-Then start Claude Code and invoke the skill directly when needed:
-
-```text
-/oracle-graph-dba-advisor
-```
+Then start Claude Code and ask it to use the `oracle-graph-dba-advisor` skill
+for graph workload diagnostics.
 
 Configure the ADB Native MCP server separately. Example for Mini-DOWNER:
 
@@ -423,11 +423,22 @@ only the approved read-only tool, normally `RUN_SQL`, is available.
 
 #### Claude Desktop / claude.ai skill
 
-Package the skill as a ZIP:
+Package the skill as a ZIP.
+
+Windows PowerShell:
 
 ```powershell
-npx degit Diegoecab/oracle-graph-dba-advisor "$env:TEMP\oracle-graph-dba-advisor-skill\oracle-graph-dba-advisor"
+npx --yes degit Diegoecab/oracle-graph-dba-advisor "$env:TEMP\oracle-graph-dba-advisor-skill\oracle-graph-dba-advisor"
 Compress-Archive -Path "$env:TEMP\oracle-graph-dba-advisor-skill\oracle-graph-dba-advisor" -DestinationPath ".\oracle-graph-dba-advisor-skill.zip" -Force
+```
+
+macOS/Linux:
+
+```bash
+tmpdir="$(mktemp -d)"
+out="$PWD/oracle-graph-dba-advisor-skill.zip"
+npx --yes degit Diegoecab/oracle-graph-dba-advisor "$tmpdir/oracle-graph-dba-advisor"
+(cd "$tmpdir" && zip -qr "$out" oracle-graph-dba-advisor)
 ```
 
 Upload `oracle-graph-dba-advisor-skill.zip` in Claude under
