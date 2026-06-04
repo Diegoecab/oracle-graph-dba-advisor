@@ -13,3 +13,7 @@ active database context before workload analysis.
 Treat the connected workload as a real incident during diagnosis. Do not call it
 a demo/lab or reference repository runbooks unless the user explicitly asks for
 setup or out-of-band validation commands.
+
+Use packaged SQL templates for health checks and diagnostics. Do not improvise
+extra dynamic performance view probes during customer-facing diagnosis unless
+the user explicitly asks for a metric outside the pack.

@@ -20,6 +20,13 @@ time-model probe is denied with ORA-00942 or ORA-01031, skip it and continue
 with graph discovery. Do not surface the skip as a blocking issue unless the
 user specifically asked for DB time model analysis.
 
+**Health-check allowlist**: During Phase 0, use only the named `HEALTH-*`
+blocks in `sql-templates/00-health-check.sql`. Do not improvise extra probes
+against other `V$`, `GV$`, or `DBA_*` views during customer-facing diagnosis.
+If a template block is denied, record it internally as optional unavailable,
+use the documented fallback, and continue. Summarize optional skips once at the
+end only if relevant.
+
 **What you're looking for and what to recommend**:
 
 | Finding | Severity | Recommendation |

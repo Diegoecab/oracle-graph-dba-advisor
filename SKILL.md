@@ -29,6 +29,9 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
 - Keep diagnostics read-only. Generate DDL recommendations as text with
   validation and rollback; do not execute DDL/DML through the diagnostic MCP
   channel.
+- Use packaged SQL templates for health checks and diagnostics. Do not
+  improvise extra dynamic performance view probes during customer-facing
+  diagnosis unless the user explicitly asks for a metric outside the pack.
 - Do not select `missing-index`, `plan-instability`, or any other specialized
   pack from a demo/workload name alone. Run general triage first and select the
   pack only when the SQL, plan, wait, and object metadata support it.

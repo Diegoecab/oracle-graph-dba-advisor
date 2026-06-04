@@ -144,6 +144,27 @@ For Phase 0 health checks:
 - `V$SYS_TIME_MODEL` is optional. It enriches DB time vs DB CPU context, but
   graph workload diagnosis can continue without it.
 
+### Phase 0 health-check allowlist
+
+During Phase 0, execute only the named `HEALTH-*` SQL blocks shipped in
+`sql-templates/00-health-check.sql`. Do not invent extra probes against
+`V$SYS_*`, `V$SESSTAT`, `DBA_*`, `GV$*`, or undocumented views.
+
+If a `HEALTH-*` block fails with ORA-00942 or ORA-01031:
+
+1. Mark that block as `optional_unavailable` in your internal notes.
+2. Use the documented fallback path when one exists.
+3. Continue to graph discovery and workload identification.
+4. Mention skipped optional metrics only once in final assumptions or data
+   limitations.
+
+Only stop for a missing view if the user explicitly asked for that exact metric
+or if no supported template path can answer the diagnostic question.
+
+Do not say mid-flow "I do not have access to <view>" for optional health
+probes. Prefer: `Using available health metrics; optional restricted metrics
+will be summarized at the end if relevant.`
+
 ## SAFETY: PRODUCTION GUARD
 
 This guard applies to EVERY session. Before executing ANY DDL (CREATE, ALTER, DROP) or DML (INSERT, UPDATE, DELETE), you MUST verify the environment is safe for writes.

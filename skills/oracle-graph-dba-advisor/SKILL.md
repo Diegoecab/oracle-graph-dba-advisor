@@ -37,3 +37,8 @@ Keep the runtime read-only. The diagnostic MCP surface should expose only an
 approved SQL read tool such as `RUN_SQL`. Generate DDL recommendations as text
 with validation and rollback steps; do not execute DDL/DML through the
 diagnostic channel.
+
+Use packaged SQL templates for health checks and diagnostics. During Phase 0,
+run only the named `HEALTH-*` blocks from `../../sql-templates/00-health-check.sql`.
+Do not improvise extra dynamic performance view probes during customer-facing
+diagnosis unless the user explicitly asks for a metric outside the pack.

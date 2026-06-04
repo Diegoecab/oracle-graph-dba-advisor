@@ -27,6 +27,7 @@
 - For Mini-DOWNER, `missing-index` is the expected lab conclusion only when evidence shows a hot graph SQL, full scan or inefficient access on the edge table, and missing leading indexes on traversal columns.
 - For Mini-DOWNER supernode/fan-out, `supernode-fanout` is justified only when evidence shows a high-degree vertex driving excessive intermediate rows or path expansion, not merely because the workload is tagged `DOWNER_SN_Q01`.
 - During customer-facing diagnosis, treat Mini-DOWNER as a real operational workload. Do not use demo/lab language or cite `workload/` scripts unless the user asks for setup, reproduction, or out-of-band validation runbooks.
+- During Phase 0, keep health checks on the `HEALTH-*` template allowlist. Do not add ad hoc dynamic performance view probes to runtime instructions unless a template gap is being intentionally closed.
 
 ## Runtime Safety
 
