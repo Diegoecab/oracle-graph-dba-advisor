@@ -116,6 +116,14 @@ Code, run `/mcp`, and authenticate with `GRAPH_DIAG_USER`.
   not stop the diagnosis; skip `OPTIONAL-02C` and continue with the default
   `HEALTH-*` path.
 
+DB time model grant update from 2026-06-04:
+
+- applied `GRANT SELECT ON SYS.V_$SYS_TIME_MODEL TO GRAPH_DIAG_USER`
+- verified in `DBA_TAB_PRIVS`
+- verified through the real diagnostic path:
+  `GRAPH_DIAG_USER.RUN_SQL('SELECT COUNT(*) AS TOTAL_ROWS FROM V$SYS_TIME_MODEL', 0, 10)`
+  returned `TOTAL_ROWS=15`
+
 Validation evidence from 2026-06-04:
 
 - accepted `SELECT` returning a text literal containing `CREATE INDEX`,
