@@ -28,6 +28,15 @@ For Mini-DOWNER setup, reproduction, or out-of-band validation requests,
 context. Do not use those files as diagnostic evidence during normal workload
 analysis unless the user explicitly asks for setup or validation commands.
 
+Before executing SQL, select the database MCP target. If multiple database MCP
+servers or SQL connections are visible and the user did not name an exact
+target, list the visible database candidates and ask the user to choose one. If
+the user names an alias that is not visible, do not guess; show visible
+candidates or close matches and ask for explicit confirmation. If no Oracle SQL
+channel is visible, stop and explain that the database MCP connector is missing.
+After selecting a target, confirm the active database context there before any
+workload analysis.
+
 Do not choose `missing-index`, `supernode-fanout`, `plan-instability`, or any
 other specialized pack from the Mini-DOWNER name or SQL tag alone. Run the
 general triage path first and select the pack only if the SQL, plan, wait, and

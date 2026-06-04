@@ -403,9 +403,14 @@ Estoy viendo lentitud en el grafo Mini-DOWNER y Performance Hub muestra carga co
 ```
 
 Buena practica: el primer mensaje tecnico del skill debe mostrar el contexto de
-conexion antes de leer performance. Esto evita diagnosticar otra ADB si el
-usuario tiene varios MCPs configurados. Si el contexto no coincide con
-Mini-DOWNER, el skill debe detenerse y pedir confirmacion.
+conexion antes de leer performance. Antes de ese SQL de contexto, si el cliente
+tiene varios MCPs de base de datos visibles y el prompt no nombra uno exacto,
+el skill debe listar los MCPs ADB/SQL candidatos y pedir que el usuario elija
+uno. Si el usuario nombra un alias que no existe, el skill debe mostrar los
+candidatos visibles o el match cercano, pero no debe elegir por fuzzy match sin
+confirmacion. Esto evita diagnosticar otra ADB por memoria vieja, configs
+locales stale o aliases parecidos. Si el contexto no coincide con Mini-DOWNER,
+el skill debe detenerse y pedir confirmacion.
 
 El usuario no necesita pedir SQL_IDs, clases de problema ni formato de reporte.
 El skill debe hacer broad triage por defecto y reportar cobertura para

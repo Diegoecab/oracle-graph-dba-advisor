@@ -275,7 +275,7 @@ Detailed docs:
 
 | Phase | Goal |
 |---|---|
-| 0. Safety gate | Confirm environment, runtime user, tool surface, and read-only posture. |
+| 0. Target and safety gate | Select the intended database MCP target, confirm environment, runtime user, tool surface, and read-only posture. |
 | 1. Health baseline | Review CPU, memory, I/O, temp, tablespace, waits, and Auto Indexing. |
 | 2. Graph discovery | Inventory graphs, backing tables, indexes, stats, and owner metadata. |
 | 3. Workload identification | Find top SQL/PGQ statements by elapsed time, executions, and waits. |
@@ -365,6 +365,23 @@ MCP configs. Authentication belongs to the MCP client flow:
   `Authorization` header, then authenticate through `/mcp`.
 - **Claude Desktop / claude.ai**: the uploaded skill gives methodology only.
   The ADB MCP connector must also be added and enabled in the chat.
+
+### Runtime Target Selection
+
+In a customer environment, the user normally refers to the ADB by the MCP alias
+configured in their client, not by a demo name. The skill must select the
+database target before executing SQL:
+
+- If the user names an exact visible database MCP alias, use it.
+- If exactly one database MCP or SQL connection is visible, use it and state the
+  selected alias before the connection check.
+- If multiple database MCPs are visible and the user did not name an exact
+  alias, list the visible database candidates and ask the user to choose one.
+- If the user names an alias that is not visible, show the visible database
+  candidates or close matches and ask for explicit confirmation.
+- If no Oracle SQL MCP tool is visible, stop and tell the user to attach the ADB
+  Native MCP or SQLcl MCP connector. Repository files and memory are setup aids,
+  not live diagnostic evidence.
 
 ### Upgrade or Update After a New Skill Version
 
@@ -523,8 +540,9 @@ Estoy viendo lentitud en el grafo Mini-DOWNER y Performance Hub muestra carga co
 The skill treats the connection check, broad triage, multi-cause coverage, and
 report structure as mandatory internal behavior. The user does not need to ask
 for SQL_IDs, issue classes, or report sections explicitly. If multiple ADB MCP
-servers are configured, name the intended MCP server in the user prompt so the
-advisor can bind the diagnostic session to the correct database.
+servers are configured and the prompt does not name one exactly, the advisor
+must list the visible database candidates and ask the user to choose one before
+executing SQL.
 
 Mini-DOWNER stale-context check: the current live demo database is documented
 in [docs/mini-downer-demo-database.md](docs/mini-downer-demo-database.md). If a

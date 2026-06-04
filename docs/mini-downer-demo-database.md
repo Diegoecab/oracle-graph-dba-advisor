@@ -41,6 +41,10 @@ is stale unless this file has been intentionally updated to match it.
 
 ## MCP client commands
 
+If more than one ADB MCP is configured in the client, the skill should not guess
+the target. It should list the visible database MCP candidates and ask the user
+to choose one unless the prompt names `graph-mini-fraud-downer-26ai` exactly.
+
 Claude Code OAuth/no-bearer:
 
 ```powershell

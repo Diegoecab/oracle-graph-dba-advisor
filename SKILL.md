@@ -23,9 +23,14 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
 
 ## Runtime Rules
 
-- Confirm the active database context before workload analysis.
-- If multiple MCP database servers or SQL connections are available, use only
-  the target explicitly named by the user.
+- Select the database MCP target before workload analysis. If multiple database
+  MCP servers or SQL connections are visible and the user did not name an exact
+  target, list the visible database candidates and ask the user to choose one
+  before executing SQL.
+- If the user names an alias that is not visible, do not guess. Show visible
+  database candidates or close matches and ask for explicit confirmation.
+- Confirm the active database context on the selected target before workload
+  analysis.
 - Keep diagnostics read-only. Generate DDL recommendations as text with
   validation and rollback; do not execute DDL/DML through the diagnostic MCP
   channel.
