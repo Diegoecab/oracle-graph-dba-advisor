@@ -60,6 +60,10 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   `SYSTEM_PROMPT.md`; include `Impact`, `Effort`, and `Priority`, put
   actionable rows first, and include concise `SKIPPED` coverage rows for
   supported categories that were checked but not evidenced.
+- When recommending out-of-band DBA validation, provide exact step-by-step SQL
+  commands before the final summary. Do not stop at generic text such as
+  "create invisible indexes and compare"; include schema, DDL, session settings,
+  validation query, measurement query, promotion, and rollback.
 - During diagnosis, treat the connected workload as a real incident. Do not call
   it a demo/lab or reference repository runbooks unless the user explicitly asks
   for setup or out-of-band validation commands.

@@ -163,6 +163,7 @@ SELECT
   plan_hash_value,
   executions,
   ROUND(elapsed_time / NULLIF(executions, 0) / 1e3, 3) AS avg_elapsed_ms,
+  ROUND(cpu_time / NULLIF(executions, 0) / 1e3, 3) AS avg_cpu_ms,
   ROUND(buffer_gets / NULLIF(executions, 0)) AS avg_buffer_gets,
   last_active_time
 FROM v$sql

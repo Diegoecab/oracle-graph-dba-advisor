@@ -28,3 +28,8 @@ Runtime rule:
 
 - Use this pack through `RUN_SQL` only for diagnosis.
 - Test indexes only through lab scripts outside the read-only MCP runtime.
+- If this pack supports a missing-index recommendation, the advisor must output
+  the exact DBA validation runbook in the recommendation detail: schema/session
+  setup, invisible index DDL, `optimizer_use_invisible_indexes`, target SQL,
+  `V$SQL` or `DBMS_XPLAN` comparison query, promotion command, and rollback.
+  Do not leave the user with only "create invisible indexes and compare".

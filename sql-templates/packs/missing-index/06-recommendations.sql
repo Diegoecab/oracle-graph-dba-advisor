@@ -29,7 +29,7 @@ UNION ALL
 SELECT
   50,
   'VALIDATION',
-  'After the approved physical design change, rerun the same SQL_ID and compare buffer gets, disk reads, elapsed time, and plan operations',
+  'Before any visible change, provide an exact DBA runbook with CURRENT_SCHEMA, CREATE INDEX INVISIBLE, optimizer_use_invisible_indexes TRUE, target SQL, V$SQL elapsed and buffer comparison, promote commands, and DROP INDEX rollback',
   '01-candidate-sql.sql'
 FROM dual
 ORDER BY priority_order

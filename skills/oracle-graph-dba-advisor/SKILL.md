@@ -62,6 +62,11 @@ detected. In the final table, use the canonical category names from
 actionable rows first, and include concise `SKIPPED` coverage rows for
 supported categories that were checked but not evidenced.
 
+When recommending out-of-band DBA validation, provide exact step-by-step SQL
+commands before the final summary. Do not stop at generic text such as "create
+invisible indexes and compare"; include schema, DDL, session settings,
+validation query, measurement query, promotion, and rollback.
+
 Keep the runtime read-only. The diagnostic MCP surface should expose only an
 approved SQL read tool such as `RUN_SQL`. Generate DDL recommendations as text
 with validation and rollback steps; do not execute DDL/DML through the

@@ -16,6 +16,21 @@ SET PAGESIZE 120
 
 ALTER SESSION SET CURRENT_SCHEMA = DOWNER_DEMO;
 
+PROMPT Current V$SQL snapshot for the hot SQL_ID identified by the advisor.
+
+SELECT
+  sql_id,
+  child_number,
+  plan_hash_value,
+  executions,
+  ROUND(elapsed_time / NULLIF(executions, 0) / 1e3, 3) AS avg_elapsed_ms,
+  ROUND(cpu_time / NULLIF(executions, 0) / 1e3, 3) AS avg_cpu_ms,
+  ROUND(buffer_gets / NULLIF(executions, 0)) AS avg_buffer_gets,
+  last_active_time
+FROM v$sql
+WHERE sql_id = 'gbqr5nn5muh7j'
+ORDER BY child_number, last_active_time DESC;
+
 BEGIN
   EXECUTE IMMEDIATE 'DROP INDEX idx_e_uses_device_src_ed_dst';
 EXCEPTION
@@ -145,6 +160,7 @@ SELECT
   plan_hash_value,
   executions,
   ROUND(elapsed_time / NULLIF(executions, 0) / 1e3, 3) AS avg_elapsed_ms,
+  ROUND(cpu_time / NULLIF(executions, 0) / 1e3, 3) AS avg_cpu_ms,
   ROUND(buffer_gets / NULLIF(executions, 0)) AS avg_buffer_gets,
   last_active_time
 FROM v$sql

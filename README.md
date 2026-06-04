@@ -617,6 +617,14 @@ supporting evidence appear as concise `SKIPPED` rows with `Impact=None`,
 `Effort=None`, and `Priority=Skip`, so the user can see what was ruled out
 without losing focus on the real finding.
 
+When the advisor proposes a DBA validation outside the read-only MCP channel,
+it must include an exact step-by-step command block before the final summary:
+schema/session setup, validation DDL such as `CREATE INDEX ... INVISIBLE`,
+`ALTER SESSION` settings, the exact SQL to execute, the `V$SQL` or
+`DBMS_XPLAN` comparison query, and promote/rollback commands. The final summary
+keeps the short action label; the executable runbook belongs in the detailed
+recommendation section before it.
+
 Mini-DOWNER stale-context check: the current live demo database is documented
 in [docs/mini-downer-demo-database.md](docs/mini-downer-demo-database.md). If a
 client or prior session says Mini-DOWNER is `GADVDOWNERAF`, `us-ashburn-1`, or

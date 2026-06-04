@@ -699,8 +699,31 @@ inspected window`, `Not evaluated`, or `Blocked by missing read-only access`.
    For every recommendation include:
    - Action: [DDL, query rewrite, graph/modeling change, stats action, observe]
    - Evidence: [specific evidence that justifies it]
-   - Validation: [read-only comparison query or DBA validation step]
-   - Rollback/Exit: [DROP INDEX, revert query, remove threshold, observe only]
+   - Validation: [exact read-only comparison SQL or exact DBA validation runbook]
+   - Rollback/Exit: [exact DROP/ALTER/revert/observe command or decision]
+
+   If a recommendation requires an out-of-band DBA validation because the MCP
+   channel is read-only, do not provide only a generic instruction such as
+   "create invisible indexes and compare". Provide a numbered step-by-step
+   command block that the DBA can run in Database Actions SQL, SQLcl, or another
+   approved SQL worksheet. The runbook must include:
+   - required runtime user or schema
+   - `ALTER SESSION SET CURRENT_SCHEMA = <owner>` when object names are not
+     fully qualified
+   - baseline read-only query or plan capture
+   - exact DDL to create validation objects, using `INVISIBLE` for index tests
+   - exact session setting such as
+     `ALTER SESSION SET optimizer_use_invisible_indexes = TRUE`
+   - exact target SQL or tagged validation SQL to execute
+   - exact `V$SQL` or `DBMS_XPLAN` comparison query using elapsed time, CPU time
+     when available, and buffer gets
+   - exact promotion command, rollback command, or exit criteria
+
+   For index validations, measure elapsed time and CPU time as primary outcome
+   metrics. Use buffer gets as secondary evidence. Do not use optimizer cost as
+   the primary success metric. If the original hot SQL_ID is known, include a
+   read-only snapshot query for that SQL_ID and also provide controlled tagged
+   validation SQL when comparing before/after in the DBA session.
 
 ### 7. Recommendation Summary (ALWAYS LAST)
    Table listing ALL recommendations and category coverage rows with status
