@@ -162,10 +162,19 @@ GRANT SELECT ON SYS.V_$SESSION TO graph_diag_user;
 GRANT SELECT ON SYS.V_$ACTIVE_SESSION_HISTORY TO graph_diag_user;
 GRANT SELECT ON SYS.V_$SYSMETRIC_HISTORY TO graph_diag_user;
 GRANT SELECT ON SYS.V_$SYSTEM_EVENT TO graph_diag_user;
-GRANT SELECT ON SYS.V_$SYS_TIME_MODEL TO graph_diag_user;
 GRANT SELECT ON SYS.V_$SGASTAT TO graph_diag_user;
 GRANT SELECT ON SYS.V_$PGASTAT TO graph_diag_user;
 ```
+
+Optional health enrichment:
+
+```sql
+GRANT SELECT ON SYS.V_$SYS_TIME_MODEL TO graph_diag_user;
+```
+
+`SYS.V_$SYS_TIME_MODEL` is optional. If the grant is not available in the target
+ADB, the advisor must skip `OPTIONAL-02C` and continue with the default
+`HEALTH-*` path.
 
 Graph catalog and object metadata:
 

@@ -36,6 +36,7 @@
 - For Mini-DOWNER plan instability, `plan-instability` is justified only when evidence shows multiple child cursors, multiple plan hashes, invalidations, bind mismatch, or elapsed-time deviation for the same SQL, not merely because the workload is tagged `DOWNER_PI_Q01`.
 - During customer-facing diagnosis, treat Mini-DOWNER as a real operational workload. Do not use demo/lab language or cite `workload/` scripts unless the user asks for setup, reproduction, or out-of-band validation runbooks.
 - During Phase 0, keep health checks on the `HEALTH-*` template allowlist. Do not add ad hoc dynamic performance view probes to runtime instructions unless a template gap is being intentionally closed.
+- Do not run `OPTIONAL-*` health probes such as `OPTIONAL-02C` / `V$SYS_TIME_MODEL` by default; these are opt-in or explicitly granted metrics only.
 
 ## Runtime Safety
 

@@ -1,6 +1,6 @@
 {
   "name": "oracle-graph-dba-advisor",
-  "version": "0.2.16",
+  "version": "0.2.17",
   "description": "Oracle Graph DBA Advisor for read-only SQL/PGQ performance diagnostics on ADB Native MCP or SQLcl MCP.",
   "author": {
     "name": "Diego Cabrera",

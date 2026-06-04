@@ -304,14 +304,19 @@ For Phase 0 health checks:
 
 - AWR/ASH views are preferred when available.
 - V$ fallback views are acceptable when AWR/ASH is unavailable.
-- `V$SYS_TIME_MODEL` is optional. It enriches DB time vs DB CPU context, but
-  graph workload diagnosis can continue without it.
+- `V$SYS_TIME_MODEL` is optional and not part of the default health path. It
+  enriches DB time vs DB CPU context, but graph workload diagnosis can continue
+  without it.
 
 ### Phase 0 health-check allowlist
 
 During Phase 0, execute only the named `HEALTH-*` SQL blocks shipped in
 `sql-templates/00-health-check.sql`. Do not invent extra probes against
 `V$SYS_*`, `V$SESSTAT`, `DBA_*`, `GV$*`, or undocumented views.
+Do not execute `OPTIONAL-*` blocks such as `OPTIONAL-02C` by default. Run an
+optional block only when the user explicitly asks for that metric or the
+connected environment is known to grant it and the metric is necessary for the
+current question.
 
 If a `HEALTH-*` block fails with ORA-00942 or ORA-01031:
 

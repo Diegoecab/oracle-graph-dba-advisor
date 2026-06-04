@@ -109,6 +109,9 @@ Code, run `/mcp`, and authenticate with `GRAPH_DIAG_USER`.
   PL/SQL, comments, statement terminators, `SELECT FOR UPDATE`, and
   side-effect packages outside string literals, while allowing recommendation
   text literals that contain words such as `CREATE INDEX` or `DROP INDEX`.
+- `SYS.V_$SYS_TIME_MODEL` is optional. If `RUN_SQL` returns ORA-00942 for that
+  view, do not stop the diagnosis; skip `OPTIONAL-02C` and continue with the
+  default `HEALTH-*` path.
 
 Validation evidence from 2026-06-04:
 

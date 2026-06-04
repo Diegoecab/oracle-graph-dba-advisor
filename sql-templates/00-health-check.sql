@@ -100,8 +100,10 @@ SELECT * FROM (
     ORDER BY time_waited_micro DESC
 ) WHERE ROWNUM <= 10;
 
--- HEALTH-02C: Optional DB time model breakdown
--- If ORA-00942 or ORA-01031, skip this metric and continue.
+-- OPTIONAL-02C: Optional DB time model breakdown
+-- Not part of the default Phase 0 health path. Run only if the user asks for
+-- DB time model detail or this view is known to be granted. If ORA-00942 or
+-- ORA-01031, skip this metric and continue.
 SELECT
     stat_name,
     ROUND(value / 1e6, 2) AS total_seconds

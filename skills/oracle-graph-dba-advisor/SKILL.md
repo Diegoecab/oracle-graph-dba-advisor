@@ -69,5 +69,7 @@ diagnostic channel.
 
 Use packaged SQL templates for health checks and diagnostics. During Phase 0,
 run only the named `HEALTH-*` blocks from `../../sql-templates/00-health-check.sql`.
-Do not improvise extra dynamic performance view probes during customer-facing
+Do not run `OPTIONAL-*` health probes such as `OPTIONAL-02C` /
+`V$SYS_TIME_MODEL` unless the user explicitly asks for that metric. Do not
+improvise extra dynamic performance view probes during customer-facing
 diagnosis unless the user explicitly asks for a metric outside the pack.
