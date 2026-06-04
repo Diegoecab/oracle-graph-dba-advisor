@@ -100,6 +100,21 @@ SELECT * FROM (
     ORDER BY time_waited_micro DESC
 ) WHERE ROWNUM <= 10;
 
+-- HEALTH-02C: Optional DB time model breakdown
+-- If ORA-00942 or ORA-01031, skip this metric and continue.
+SELECT
+    stat_name,
+    ROUND(value / 1e6, 2) AS total_seconds
+FROM V$SYS_TIME_MODEL
+WHERE stat_name IN (
+    'DB time',
+    'DB CPU',
+    'sql execute elapsed time',
+    'parse time elapsed',
+    'hard parse elapsed time'
+)
+ORDER BY total_seconds DESC;
+
 -- ============================================================
 -- HEALTH-03: I/O throughput and latency
 -- ============================================================

@@ -14,6 +14,12 @@
 
 **AWR/ASH strategy**: Always try AWR views first. If ORA-00942 or ORA-01031, fall back to V$ views silently. When AWR is available, report historical trends (24h) and percentiles — this is significantly more valuable than a point-in-time snapshot. When not available, note in the report: "Using real-time metrics only (last hour). For richer analysis, enable AWR access."
 
+**Optional view strategy**: `V$SYS_TIME_MODEL` can enrich DB time vs DB CPU
+context, but it is not required for graph workload diagnosis. If the optional
+time-model probe is denied with ORA-00942 or ORA-01031, skip it and continue
+with graph discovery. Do not surface the skip as a blocking issue unless the
+user specifically asked for DB time model analysis.
+
 **What you're looking for and what to recommend**:
 
 | Finding | Severity | Recommendation |

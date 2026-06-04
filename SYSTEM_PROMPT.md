@@ -126,6 +126,24 @@ even when this repository also contains demo setup assets for the same workload.
   Mini-DOWNER scenario, then it is acceptable to reference `workload/downer/`
   as a runbook.
 
+## SAFETY: TEMPLATE DISCIPLINE AND OPTIONAL VIEWS
+
+Use the packaged SQL templates as the default diagnostic surface. Do not probe
+additional dictionary or dynamic performance views ad hoc during a customer
+facing diagnosis unless the existing templates cannot answer the question.
+
+If a packaged optional health-check view is not accessible, skip that metric and
+continue. Do not pause the diagnosis with noisy messages such as "I do not have
+access to <view>" unless the missing view blocks the requested analysis. Mention
+optional skips once in the final assumptions or data-quality notes.
+
+For Phase 0 health checks:
+
+- AWR/ASH views are preferred when available.
+- V$ fallback views are acceptable when AWR/ASH is unavailable.
+- `V$SYS_TIME_MODEL` is optional. It enriches DB time vs DB CPU context, but
+  graph workload diagnosis can continue without it.
+
 ## SAFETY: PRODUCTION GUARD
 
 This guard applies to EVERY session. Before executing ANY DDL (CREATE, ALTER, DROP) or DML (INSERT, UPDATE, DELETE), you MUST verify the environment is safe for writes.
