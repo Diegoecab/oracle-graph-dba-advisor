@@ -49,7 +49,10 @@ codex mcp add graph-mini-fraud-downer-26ai `
   --bearer-token-env-var ADB_MCP_TOKEN
 ```
 
-Bearer tokens are temporary; refresh `ADB_MCP_TOKEN` before a live demo.
+Bearer tokens are valid for 1 hour from issuance. Refresh `ADB_MCP_TOKEN`
+immediately before a live demo if using Codex or any static bearer-token client.
+Claude Code OAuth/no-bearer mode avoids manual token refresh by running the
+browser authorization flow.
 
 ## Runtime users
 

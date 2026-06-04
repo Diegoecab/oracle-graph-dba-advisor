@@ -406,6 +406,11 @@ Para Mini-DOWNER, el MCP remoto correcto es:
 https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa
 ```
 
+Si se usa bearer token estatico en lugar de OAuth, el token dura 1 hora desde
+su emision. Generarlo justo antes de la demo, actualizar `ADB_MCP_TOKEN` y
+reiniciar o reconectar el cliente MCP. Si durante la demo el MCP empieza a
+fallar por autenticacion, asumir primero token expirado.
+
 No confundir el skill con el MCP: el skill aporta metodologia; el MCP aporta el
 tool `RUN_SQL` que permite consultar la ADB.
 

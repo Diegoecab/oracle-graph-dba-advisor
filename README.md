@@ -420,9 +420,12 @@ $env:ADB_MCP_TOKEN = $tokenResponse.access_token
 Remove-Variable graphDiagPassword -ErrorAction SilentlyContinue
 ```
 
-The bearer token is valid for 1 hour. Prefer OAuth/no-bearer mode for Claude
-Code and Claude Desktop when the client supports it, because the client handles
-the browser authorization flow instead of requiring a copied token.
+The bearer token is valid for 1 hour from issuance. For a live demo, generate a
+fresh token immediately before starting the session, export it as
+`ADB_MCP_TOKEN`, and restart or reconnect the MCP client. Prefer
+OAuth/no-bearer mode for Claude Code and Claude Desktop when the client
+supports it, because the client handles the browser authorization flow instead
+of requiring a copied token.
 
 #### Add the ADB Native MCP server in Codex
 
@@ -559,9 +562,9 @@ Troubleshooting:
   completes.
 - If `/mcp` shows the server still connecting, retry the authorization flow or
   remove and re-add the MCP server.
-- If using bearer mode and authentication starts failing after a while,
-  regenerate `ADB_MCP_TOKEN`, update the environment variable, and restart
-  Claude Code.
+- If using bearer mode and authentication starts failing after a while, assume
+  the 1-hour token expired. Regenerate `ADB_MCP_TOKEN`, update the environment
+  variable, and restart Claude Code.
 
 #### Update the Claude Code plugin
 
