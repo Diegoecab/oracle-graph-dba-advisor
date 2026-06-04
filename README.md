@@ -241,7 +241,7 @@ Detailed docs:
      "mcpServers": {
        "oracle-graph-advisor": {
          "type": "streamableHttp",
-         "url": "https://dataaccess.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>",
+         "url": "https://dataaccess.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<adb-ocid>",
          "headers": {
            "Authorization": "Bearer <token>"
          }
@@ -369,14 +369,62 @@ If Node.js is not available, use Git instead:
 git clone --depth 1 https://github.com/Diegoecab/oracle-graph-dba-advisor.git "$env:USERPROFILE\.agents\skills\oracle-graph-dba-advisor"
 ```
 
-Restart Codex after installing the marketplace plugin or local skill. Then
-configure one MCP server per target ADB. For the Mini-DOWNER demo, replace the
-database OCID and token:
+Restart Codex after installing the marketplace plugin or local skill.
+
+#### Generate the ADB Native MCP bearer token
+
+Generate the bearer token from the ADB Native MCP auth endpoint with the
+dedicated diagnostic database user, normally `GRAPH_DIAG_USER`. The token is
+temporary; regenerate it when it expires.
+
+For the current Mini-DOWNER live demo database, use the values in
+[docs/mini-downer-demo-database.md](docs/mini-downer-demo-database.md):
 
 ```powershell
-$env:ADB_MCP_TOKEN = "<bearer-token>"
+$env:ADB_REGION = "sa-saopaulo-1"
+$env:ADB_OCID = "ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa"
+$env:ADB_USERNAME = "GRAPH_DIAG_USER"
+```
+
+```powershell
+$env:ADB_REGION = "<adb-region>"
+$env:ADB_OCID = "<adb-ocid>"
+$env:ADB_USERNAME = "GRAPH_DIAG_USER"
+$securePassword = Read-Host "GRAPH_DIAG_USER password" -AsSecureString
+$passwordPtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
+try {
+  $graphDiagPassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($passwordPtr)
+} finally {
+  if ($passwordPtr -ne [IntPtr]::Zero) {
+    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passwordPtr)
+  }
+}
+
+$tokenBody = @{
+  grant_type = "password"
+  username = $env:ADB_USERNAME
+  password = $graphDiagPassword
+} | ConvertTo-Json -Compress
+
+$tokenResponse = Invoke-RestMethod `
+  -Method Post `
+  -Uri "https://dataaccess.adb.$env:ADB_REGION.oraclecloudapps.com/adb/auth/v1/databases/$env:ADB_OCID/token" `
+  -ContentType "application/json" `
+  -Headers @{ Accept = "application/json" } `
+  -Body $tokenBody
+
+$env:ADB_MCP_TOKEN = $tokenResponse.access_token
+Remove-Variable graphDiagPassword -ErrorAction SilentlyContinue
+```
+
+#### Add the ADB Native MCP server in Codex
+
+Configure one MCP server per target ADB. For the Mini-DOWNER demo, replace the
+ADB OCID and use the token generated above:
+
+```powershell
 codex mcp add graph-advisor-downer `
-  --url "https://dataaccess.adb.us-ashburn-1.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>" `
+  --url "https://dataaccess.adb.$env:ADB_REGION.oraclecloudapps.com/adb/mcp/v1/databases/$env:ADB_OCID" `
   --bearer-token-env-var ADB_MCP_TOKEN
 ```
 
@@ -386,7 +434,7 @@ should expose only `RUN_SQL`.
 Mini-DOWNER starter prompt:
 
 ```text
-Estoy viendo lentitud en Mini-DOWNER. Podés revisar qué está pasando y decirme cuál parece ser la causa principal, con evidencia y una recomendación concreta?
+Estoy viendo lentitud en Mini-DOWNER. Puedes revisar que esta pasando y decirme cual parece ser la causa principal, con evidencia y una recomendacion concreta?
 ```
 
 ### Install in Claude
@@ -396,8 +444,12 @@ plugin marketplace, then install the plugin.
 
 ```powershell
 claude plugin marketplace add Diegoecab/oracle-graph-dba-advisor
-claude plugin install oracle-graph-dba-advisor@oracle-graph-dba-advisor
+claude plugin install oracle-graph-dba-advisor@oracle-graph-dba-advisor --scope user
+claude plugin list
 ```
+
+If the current Claude Code build does not resolve the marketplace package after
+`marketplace add`, use the Claude Code skill fallback below.
 
 Claude also has two useful non-marketplace paths:
 
@@ -422,14 +474,15 @@ npx --yes degit Diegoecab/oracle-graph-dba-advisor "$HOME/.claude/skills/oracle-
 Then start Claude Code and ask it to use the `oracle-graph-dba-advisor` skill
 for graph workload diagnostics.
 
+#### Add the ADB Native MCP server in Claude Code
+
 Configure the ADB Native MCP server separately. Example for Mini-DOWNER:
 
 ```powershell
-$env:ADB_MCP_TOKEN = "<bearer-token>"
 claude mcp add --transport http --scope user `
-  --header "Authorization: Bearer $env:ADB_MCP_TOKEN" `
   graph-advisor-downer `
-  "https://dataaccess.adb.us-ashburn-1.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>"
+  "https://dataaccess.adb.$env:ADB_REGION.oraclecloudapps.com/adb/mcp/v1/databases/$env:ADB_OCID" `
+  --header "Authorization: Bearer $env:ADB_MCP_TOKEN"
 ```
 
 Use `/mcp` inside Claude Code to verify that the server is connected and that
@@ -470,7 +523,7 @@ server to `claude_desktop_config.json`. Example for Mini-DOWNER:
       "args": [
         "-y",
         "mcp-remote",
-        "https://dataaccess.adb.us-ashburn-1.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>"
+        "https://dataaccess.adb.us-ashburn-1.oraclecloudapps.com/adb/mcp/v1/databases/<adb-ocid>"
       ],
       "transport": "streamable-http",
       "headers": {

@@ -6,6 +6,10 @@ param(
   [string]$DbName = "GADVDOWNERAF",
   [string]$DisplayName = "Graph Advisor DOWNER Always Free",
   [string]$DbVersion = "26ai",
+  [string]$KeepResourceReason = "Mini-DOWNER demo ADB - preserve for customer demo",
+  [string]$ResourceControlTeam = "To_be_Assigned",
+  [switch]$SkipResourceControlTags,
+  [switch]$AllowNonHomeRegion,
   [switch]$ExecuteCreate,
   [switch]$ExecuteMcpTag
 )
@@ -21,7 +25,7 @@ function Invoke-OciJson {
 
   $output = & oci @OciArgs
   if ($LASTEXITCODE -ne 0) {
-    throw "OCI CLI failed: oci $($OciArgs -join ' ')"
+    throw "OCI CLI failed: oci $(Format-OciArgsForLog $OciArgs)"
   }
 
   $text = ($output -join "`n").Trim()
@@ -30,6 +34,27 @@ function Invoke-OciJson {
   }
 
   return $text | ConvertFrom-Json
+}
+
+function Format-OciArgsForLog {
+  param([string[]]$OciArgs)
+
+  $safeArgs = @()
+  $maskNext = $false
+  foreach ($arg in $OciArgs) {
+    if ($maskNext) {
+      $safeArgs += "********"
+      $maskNext = $false
+      continue
+    }
+
+    $safeArgs += $arg
+    if ($arg -eq "--admin-password") {
+      $maskNext = $true
+    }
+  }
+
+  return ($safeArgs -join ' ')
 }
 
 function Get-OciProfileValue {
@@ -92,7 +117,22 @@ function Resolve-TargetCompartment {
 
 function Show-Command {
   param([string[]]$OciArgs)
-  $quoted = foreach ($arg in $OciArgs) {
+  $safeArgs = @()
+  $maskNext = $false
+  foreach ($arg in $OciArgs) {
+    if ($maskNext) {
+      $safeArgs += '$env:ADB_ADMIN_PASSWORD'
+      $maskNext = $false
+      continue
+    }
+
+    $safeArgs += $arg
+    if ($arg -eq "--admin-password") {
+      $maskNext = $true
+    }
+  }
+
+  $quoted = foreach ($arg in $safeArgs) {
     if ($arg -match '^[A-Za-z0-9._:/=\\\-$]+$') {
       $arg
     } else {
@@ -102,8 +142,24 @@ function Show-Command {
   "oci $($quoted -join ' ')"
 }
 
+function New-OciJsonFileArg {
+  param(
+    [string]$Name,
+    [string]$JsonText
+  )
+
+  $fileName = "{0}-{1}.json" -f $Name, ([guid]::NewGuid().ToString("N"))
+  $path = Join-Path ([System.IO.Path]::GetTempPath()) $fileName
+  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($path, $JsonText, $utf8NoBom)
+  return "file://$path"
+}
+
 $mcpTagKey = 'adb$feature'
 $mcpTagValue = '{"name":"mcp_server","enable":true}'
+$resourceControlNamespace = '0-ResourceControl'
+$preserveDeleteValue = 'WeeklyDeleteResourceNo'
+$preserveShutdownValue = 'NightlyShutdownNo'
 
 function New-McpFreeformTagsJson {
   param($ExistingTags)
@@ -117,6 +173,83 @@ function New-McpFreeformTagsJson {
 
   $tags[$mcpTagKey] = $mcpTagValue
   return ($tags | ConvertTo-Json -Compress)
+}
+
+function ConvertTo-Hashtable {
+  param($InputObject)
+
+  $hash = @{}
+  if (-not $InputObject) {
+    return $hash
+  }
+
+  foreach ($prop in $InputObject.PSObject.Properties) {
+    if ($prop.Value -is [System.Management.Automation.PSCustomObject]) {
+      $hash[$prop.Name] = ConvertTo-Hashtable $prop.Value
+    } else {
+      $hash[$prop.Name] = $prop.Value
+    }
+  }
+
+  return $hash
+}
+
+function New-DemoDefinedTagsJson {
+  param($ExistingTags)
+
+  $tags = ConvertTo-Hashtable $ExistingTags
+  if (-not $tags.ContainsKey($resourceControlNamespace) -or -not ($tags[$resourceControlNamespace] -is [hashtable])) {
+    $tags[$resourceControlNamespace] = @{}
+  }
+
+  $resourceTags = $tags[$resourceControlNamespace]
+  $resourceTags['DeleteResource'] = $preserveDeleteValue
+  $resourceTags['ShutdownResource'] = $preserveShutdownValue
+  $resourceTags['KeepResource'] = $KeepResourceReason
+  $resourceTags['ShutdownTime'] = 'Manual only'
+  $resourceTags['Team'] = $ResourceControlTeam
+
+  return ($tags | ConvertTo-Json -Compress -Depth 8)
+}
+
+function Assert-DemoResourceControlTags {
+  param($AutonomousDatabase)
+
+  if ($SkipResourceControlTags) {
+    Write-Warning "Resource-control tag validation skipped by operator."
+    return
+  }
+
+  $definedTags = $AutonomousDatabase."defined-tags"
+  if (-not $definedTags -or -not ($definedTags.PSObject.Properties.Name -contains $resourceControlNamespace)) {
+    throw "ADB $($AutonomousDatabase.'display-name') is missing $resourceControlNamespace defined tags. This tenancy may auto-delete or auto-shutdown untagged resources."
+  }
+
+  $resourceTags = $definedTags.PSObject.Properties[$resourceControlNamespace].Value
+  $deleteResource = $resourceTags.DeleteResource
+  $shutdownResource = $resourceTags.ShutdownResource
+
+  if ($deleteResource -ne $preserveDeleteValue) {
+    throw "ADB $($AutonomousDatabase.'display-name') has DeleteResource=$deleteResource; expected $preserveDeleteValue to avoid scheduled deletion."
+  }
+
+  if ($shutdownResource -ne $preserveShutdownValue) {
+    throw "ADB $($AutonomousDatabase.'display-name') has ShutdownResource=$shutdownResource; expected $preserveShutdownValue to avoid scheduled shutdown."
+  }
+}
+
+function Get-AutonomousDatabase {
+  param([string]$AutonomousDatabaseId)
+
+  $response = Invoke-OciJson @(
+    "db", "autonomous-database", "get",
+    "--profile", $Profile,
+    "--region", $Region,
+    "--autonomous-database-id", $AutonomousDatabaseId,
+    "--output", "json"
+  )
+
+  return $response.data
 }
 
 $tenancyId = Get-OciProfileValue -ProfileName $Profile -Key "tenancy"
@@ -167,9 +300,15 @@ $existingTarget = if ($adbs -and $adbs.data) { @($adbs.data | Where-Object { $_.
   existing_target_count = @($existingTarget).Count
 } | ConvertTo-Json
 
-if ($homeRegion."region-name" -ne $Region) {
+if ($homeRegion."region-name" -ne $Region -and -not $AllowNonHomeRegion) {
   throw "Always Free must be created in the tenancy home region. Home region is $($homeRegion.'region-name'), requested $Region."
 }
+
+if ($homeRegion."region-name" -ne $Region -and $AllowNonHomeRegion) {
+  Write-Warning "Requested region $Region differs from home region $($homeRegion.'region-name'). Always Free creation may fail; continuing because -AllowNonHomeRegion was set."
+}
+
+$createFreeformTagsArg = New-OciJsonFileArg -Name "downer-freeform-tags" -JsonText (New-McpFreeformTagsJson $null)
 
 $createBaseArgs = @(
   "db", "autonomous-database", "create",
@@ -183,7 +322,15 @@ $createBaseArgs = @(
   "--is-free-tier", "true",
   "--license-model", "LICENSE_INCLUDED",
   "--is-mtls-connection-required", "true",
-  "--freeform-tags", (New-McpFreeformTagsJson $null),
+  "--freeform-tags", $createFreeformTagsArg
+)
+
+if (-not $SkipResourceControlTags) {
+  $createDefinedTagsArg = New-OciJsonFileArg -Name "downer-defined-tags" -JsonText (New-DemoDefinedTagsJson $null)
+  $createBaseArgs += @("--defined-tags", $createDefinedTagsArg)
+}
+
+$createBaseArgs += @(
   "--wait-for-state", "AVAILABLE",
   "--max-wait-seconds", "3600"
 )
@@ -200,16 +347,23 @@ Write-Host ""
 Write-Host "Create command:"
 Show-Command $createDisplayArgs
 
+$createdAdb = $null
 if ($ExecuteCreate) {
   if (-not $env:ADB_ADMIN_PASSWORD) {
     throw "Set ADB_ADMIN_PASSWORD before using -ExecuteCreate."
   }
-  Invoke-OciJson $createRunArgs | ConvertTo-Json -Depth 8
+  $createResponse = Invoke-OciJson $createRunArgs
+  $createResponse | ConvertTo-Json -Depth 8
+
+  if ($createResponse -and $createResponse.data -and $createResponse.data.id) {
+    $createdAdb = Get-AutonomousDatabase -AutonomousDatabaseId $createResponse.data.id
+    Assert-DemoResourceControlTags -AutonomousDatabase $createdAdb
+  }
 }
 
-$targetAdb = if (@($existingTarget).Count -gt 0) { $existingTarget[0] } else { $null }
+$targetAdb = if ($createdAdb) { $createdAdb } elseif (@($existingTarget).Count -gt 0) { $existingTarget[0] } else { $null }
 if ($targetAdb) {
-  $mcpTags = New-McpFreeformTagsJson $targetAdb."freeform-tags"
+  $mcpTags = New-OciJsonFileArg -Name "downer-update-freeform-tags" -JsonText (New-McpFreeformTagsJson $targetAdb."freeform-tags")
   $tagArgs = @(
     "db", "autonomous-database", "update",
     "--profile", $Profile,
@@ -219,12 +373,25 @@ if ($targetAdb) {
     "--force"
   )
 
+  if (-not $SkipResourceControlTags) {
+    $definedTagsArg = New-OciJsonFileArg -Name "downer-update-defined-tags" -JsonText (New-DemoDefinedTagsJson $targetAdb."defined-tags")
+    $tagArgs += @("--defined-tags", $definedTagsArg)
+
+    try {
+      Assert-DemoResourceControlTags -AutonomousDatabase $targetAdb
+    } catch {
+      Write-Warning "$($_.Exception.Message) The update command below will re-apply preservation tags."
+    }
+  }
+
   Write-Host ""
-  Write-Host "MCP tag command:"
+  Write-Host "MCP/resource-control tag command:"
   Show-Command $tagArgs
 
   if ($ExecuteMcpTag) {
     Invoke-OciJson $tagArgs | ConvertTo-Json -Depth 8
+    $targetAdb = Get-AutonomousDatabase -AutonomousDatabaseId $targetAdb.id
+    Assert-DemoResourceControlTags -AutonomousDatabase $targetAdb
   }
 
   Write-Host ""

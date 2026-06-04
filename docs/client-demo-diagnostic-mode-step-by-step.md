@@ -32,6 +32,13 @@ Always Free se mantiene como restriccion explicita de la demo. Por eso el
 dataset sintetico debe quedar por debajo del envelope de storage disponible y
 el paralelismo de pruebas debe ser moderado.
 
+Nota de ejecucion actual, 2026-06-04: la ADB activa de Mini-DOWNER fue creada en
+`sa-saopaulo-1` como Developer Tier, no Always Free, con DB name
+`F416HUO273AA732K` y OCID
+`ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa`.
+Mantener el dataset bajo 20 GB y el workload en 4 workers para conservar la demo
+controlada. Ver [mini-downer-demo-database.md](mini-downer-demo-database.md).
+
 ## Que problema representa este caso
 
 Este escenario representa un incidente donde una consulta de grafo que deberia
@@ -145,7 +152,34 @@ Este script:
 4. resuelve el compartment `diego.e.cabrera` correcto por el child `pitwall`
 5. lista ADBs visibles en el compartment
 6. emite el comando de creacion Always Free
-7. emite el comando para habilitar MCP cuando la ADB ya existe
+7. agrega tags de preservacion contra borrado o shutdown automatico
+8. emite el comando para habilitar MCP cuando la ADB ya existe
+
+### Tags obligatorios de preservacion
+
+Este tenancy usa tags de control operativo que pueden apagar o eliminar
+recursos automaticamente. La ADB de demo no debe crearse sin validar estos
+tags.
+
+El helper aplica y valida estos defined tags en `0-ResourceControl`:
+
+```text
+DeleteResource=WeeklyDeleteResourceNo
+ShutdownResource=NightlyShutdownNo
+KeepResource=Mini-DOWNER demo ADB - preserve for customer demo
+ShutdownTime=Manual only
+Team=To_be_Assigned
+```
+
+Tambien conserva el freeform tag de MCP:
+
+```text
+adb$feature={"name":"mcp_server","enable":true}
+```
+
+Si una ADB existente aparece con `DeleteResource=WeeklyDeleteResourceYes` o
+`ShutdownResource=NightlyShutdownYes`, ejecutar el helper con `-ExecuteMcpTag`
+para re-aplicar los tags seguros antes de usarla para la demo.
 
 Para crear la base, definir primero:
 
@@ -223,10 +257,16 @@ Arrancar la carga en estado problematico:
 @workload/downer/11_start_dashboard_load_before.sql
 ```
 
+Para una demo en vivo mas larga, arrancar la misma carga durante 120 minutos:
+
+```sql
+@workload/downer/16_start_dashboard_load_before_long.sql
+```
+
 Defaults:
 
 1. 4 workers.
-2. 12 minutos.
+2. 12 minutos en el script corto, 120 minutos en el script largo.
 3. `anchor_mode = MIXED`.
 4. SQL tag: `DOWNER_MI_Q01_DASH_BEFORE`.
 5. Module: `MINI_DOWNER_DASHBOARD_LOAD`.
@@ -290,7 +330,7 @@ workload/downer/08_missing_index_mcp_demo.sh
 Variables requeridas:
 
 ```bash
-export ADB_OCID="<autonomous database ocid>"
+export ADB_OCID="ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa"
 export ADB_USERNAME="GRAPH_DIAG_USER"
 export ADB_PASSWORD="<graph diag password>"
 ```
@@ -298,7 +338,7 @@ export ADB_PASSWORD="<graph diag password>"
 Variables default:
 
 ```bash
-export ADB_REGION="us-ashburn-1"
+export ADB_REGION="sa-saopaulo-1"
 export SQL_TAG="DOWNER_MI_Q01"
 export GRAPH_OWNER="DOWNER_DEMO"
 export GRAPH_NAME="DOWNER_GRAPH"

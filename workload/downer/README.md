@@ -28,6 +28,7 @@ Execution order:
 10. Run `08_missing_index_mcp_demo.sh` from WSL/bash to exercise the read-only pack.
 11. Optionally run `09_invisible_index_validation.sql` as `DOWNER_DEMO` for lab-only remediation proof.
 12. For a live ADB Performance Dashboard demo, run `10_dashboard_load_setup.sql`, then `11_start_dashboard_load_before.sql`.
+    For a longer customer demo window, use `16_start_dashboard_load_before_long.sql`.
 13. After the advisor recommendation, run `14_apply_visible_index_fix.sql`, then `12_start_dashboard_load_after.sql`.
 14. Stop or clean up with `13_stop_dashboard_load.sql` and `15_rollback_visible_index_fix.sql`.
 
@@ -39,9 +40,10 @@ sample.
 ## Performance Dashboard choreography
 
 The dashboard workload uses `DBMS_SCHEDULER` jobs inside ADB, with a conservative
-default of 4 workers for 12 minutes. This keeps the demo under the Always Free
-session limit while producing active SQL load that can appear in Performance
-Dashboard, Performance Hub, ASH, and `V$SQL`.
+default of 4 workers for 12 minutes. For a live customer demo, the long-run
+script starts the same workload for 120 minutes. This keeps the demo under the
+Always Free session limit while producing active SQL load that can appear in
+Performance Dashboard, Performance Hub, ASH, and `V$SQL`.
 
 If `DOWNER_DEMO` was created before `00_create_users.sql` included scheduler
 privileges, run this once as `ADMIN`:
@@ -60,6 +62,12 @@ Start the bad-state load:
 
 ```sql
 @workload/downer/11_start_dashboard_load_before.sql
+```
+
+Start a longer bad-state load for a live dashboard session:
+
+```sql
+@workload/downer/16_start_dashboard_load_before_long.sql
 ```
 
 Dashboard filters/signals:

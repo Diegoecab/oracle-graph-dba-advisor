@@ -161,6 +161,7 @@ CREATE OR REPLACE PROCEDURE downer_dashboard_load_worker (
   v_anchor_id    VARCHAR2(64);
   v_result_count NUMBER;
   v_executions   NUMBER := 0;
+  v_error_message VARCHAR2(4000);
 BEGIN
   v_end_at := TO_TIMESTAMP_TZ(p_end_at_text, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM');
 
@@ -238,19 +239,21 @@ BEGIN
   COMMIT;
 EXCEPTION
   WHEN OTHERS THEN
+    v_error_message := SUBSTR(SQLERRM, 1, 4000);
+
     UPDATE downer_dashboard_load_workers
     SET status = 'ERROR',
         executions = v_executions,
         last_anchor_id = v_anchor_id,
         last_heartbeat = SYSTIMESTAMP,
-        error_message = SUBSTR(SQLERRM, 1, 4000)
+        error_message = v_error_message
     WHERE run_id = p_run_id
       AND worker_id = p_worker_id;
 
     UPDATE downer_dashboard_load_runs
     SET status = 'ERROR',
         stopped_at = SYSTIMESTAMP,
-        note = SUBSTR('Worker ' || p_worker_id || ': ' || SQLERRM, 1, 4000)
+        note = SUBSTR('Worker ' || p_worker_id || ': ' || v_error_message, 1, 4000)
     WHERE run_id = p_run_id;
 
     COMMIT;
@@ -266,7 +269,7 @@ CREATE OR REPLACE PROCEDURE start_downer_dashboard_load (
 ) AS
   v_run_id      NUMBER;
   v_workers     NUMBER := LEAST(GREATEST(TRUNC(p_workers), 1), 12);
-  v_minutes     NUMBER := LEAST(GREATEST(p_minutes, 1), 60);
+  v_minutes     NUMBER := LEAST(GREATEST(p_minutes, 1), 240);
   v_sql_tag     VARCHAR2(64);
   v_anchor_mode VARCHAR2(16);
   v_ends_at     TIMESTAMP WITH TIME ZONE;
