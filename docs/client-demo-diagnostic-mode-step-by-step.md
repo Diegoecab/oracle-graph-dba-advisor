@@ -323,6 +323,16 @@ varios dias, usar el script de 5 dias:
 @workload/downer/17_start_dashboard_load_before_5_days.sql
 ```
 
+Para la demo coexistente con los tres huecos activos a la vez, usar:
+
+```sql
+@workload/downer/27_start_dashboard_load_all_issues_5_days.sql
+```
+
+Ese script arranca 4 workers totales: 2 para missing-index
+`DOWNER_MI_Q01_DASH_BEFORE`, 1 para supernode/fan-out `DOWNER_SN_Q01_DASH` y 1
+para plan-instability `DOWNER_PI_Q01_DASH`.
+
 Defaults:
 
 1. 4 workers.
@@ -332,14 +342,16 @@ Defaults:
 4. SQL tag: `DOWNER_MI_Q01_DASH_BEFORE`.
 5. Module: `MINI_DOWNER_DASHBOARD_LOAD`.
 
-Nota operativa: el script de 5 dias es solo para laboratorio o demo. Mantiene
-4 sesiones activas y puede consumir compute mientras corre, especialmente en la
-ADB Developer Tier de Sao Paulo.
+Nota operativa: los scripts de 5 dias son solo para laboratorio o demo.
+Mantienen sesiones activas y pueden consumir compute mientras corren,
+especialmente en la ADB Developer Tier de Sao Paulo.
 
 Durante la demo, abrir Performance Dashboard y mostrar:
 
 1. carga activa mientras corren los scheduler jobs
-2. `DOWNER_MI_Q01_DASH_BEFORE` en Top SQL o SQL Activity
+2. `DOWNER_MI_Q01_DASH_BEFORE`, `DOWNER_SN_Q01_DASH` y
+   `DOWNER_PI_Q01_DASH` en Top SQL o SQL Activity si se usa el script
+   coexistente
 3. elapsed time / buffer gets altos
 4. evidencia posterior del plan con full scans sobre `E_USES_DEVICE`
 
@@ -671,6 +683,14 @@ Objetivo:
 2. mostrar que el skill no debe recomendar DDL automaticamente
 3. evidenciar que un nodo de grado extremo puede dominar la cardinalidad
 4. recomendar mitigaciones de modelo/query/features
+
+En la demo coexistente, este caso no usa `E_USES_DEVICE`, porque esa arista se
+reserva para el defecto de missing-index. El supernode usa `E_USES_IP`, que ya
+tiene indices lideres, con ancla `IP00000001`. Asi el skill puede distinguir:
+
+- `DOWNER_MI_Q01`: missing-index sobre `E_USES_DEVICE`
+- `DOWNER_SN_Q01`: fan-out de alto grado sobre `E_USES_IP`
+- `DOWNER_PI_Q01`: inestabilidad de plan sobre el workload de lookup sesgado
 
 Preparacion fuera del canal MCP diagnostico:
 

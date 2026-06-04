@@ -88,16 +88,16 @@ BEGIN
       SELECT /* ' || p_sql_tag || ' */
              COUNT(*)
       FROM GRAPH_TABLE (downer_graph
-        MATCH (d IS device) <-[ed IS uses_device]- (u IS user_account)
-                            -[wb IS withdrawal_bank_account]-> (b IS bank_account)
-        WHERE d.id = :anchor_id
-          AND ed.end_date IS NULL
+        MATCH (ipn IS ip) <-[ei IS uses_ip]- (u IS user_account)
+                           -[wb IS withdrawal_bank_account]-> (b IS bank_account)
+        WHERE ipn.id = :anchor_id
+          AND ei.end_date IS NULL
           AND wb.end_date IS NULL
         COLUMNS (
-          d.id AS device_id,
+          ipn.id AS ip_id,
           u.id AS user_id,
           b.id AS bank_account_id,
-          ed.device_type AS device_edge_type
+          ei.used_at_date AS ip_used_at_date
         )
       )';
   ELSE
@@ -209,11 +209,11 @@ BEGIN
 
     IF UPPER(p_sql_tag) LIKE 'DOWNER_SN_Q01%' THEN
       IF v_anchor_mode = 'RANDOM' THEN
-        v_anchor_id := 'D' || LPAD(TRUNC(DBMS_RANDOM.VALUE(2, 1201)), 8, '0');
+        v_anchor_id := 'IP' || LPAD(TRUNC(DBMS_RANDOM.VALUE(2, 3001)), 8, '0');
       ELSIF v_anchor_mode = 'MIXED' AND MOD(v_executions, 4) = 0 THEN
-        v_anchor_id := 'D' || LPAD(TRUNC(DBMS_RANDOM.VALUE(2, 1201)), 8, '0');
+        v_anchor_id := 'IP' || LPAD(TRUNC(DBMS_RANDOM.VALUE(2, 3001)), 8, '0');
       ELSE
-        v_anchor_id := 'D00000001';
+        v_anchor_id := 'IP00000001';
       END IF;
     ELSIF v_anchor_mode = 'HOT' THEN
       v_anchor_id := 'U00000042';
@@ -315,7 +315,8 @@ CREATE OR REPLACE PROCEDURE start_downer_dashboard_load (
   p_minutes     IN NUMBER DEFAULT 12,
   p_workers     IN NUMBER DEFAULT 4,
   p_sql_tag     IN VARCHAR2 DEFAULT 'DOWNER_MI_Q01_DASH_BEFORE',
-  p_anchor_mode IN VARCHAR2 DEFAULT 'MIXED'
+  p_anchor_mode IN VARCHAR2 DEFAULT 'MIXED',
+  p_stop_existing IN VARCHAR2 DEFAULT 'Y'
 ) AS
   v_run_id      NUMBER;
   v_workers     NUMBER := LEAST(GREATEST(TRUNC(p_workers), 1), 12);
@@ -326,7 +327,9 @@ CREATE OR REPLACE PROCEDURE start_downer_dashboard_load (
   v_ends_text   VARCHAR2(64);
   v_job_name    VARCHAR2(128);
 BEGIN
-  stop_downer_dashboard_load;
+  IF UPPER(SUBSTR(p_stop_existing, 1, 1)) = 'Y' THEN
+    stop_downer_dashboard_load;
+  END IF;
 
   v_sql_tag := REGEXP_REPLACE(UPPER(SUBSTR(p_sql_tag, 1, 60)), '[^A-Z0-9_]', '_');
   IF v_sql_tag NOT LIKE 'DOWNER_MI_Q01%' AND
@@ -410,7 +413,7 @@ BEGIN
   END LOOP;
 
   DBMS_OUTPUT.PUT_LINE('Started Mini-DOWNER dashboard load run_id=' || v_run_id);
-  DBMS_OUTPUT.PUT_LINE('sql_tag=' || v_sql_tag || ', workers=' || v_workers || ', minutes=' || v_minutes || ', anchor_mode=' || v_anchor_mode);
+  DBMS_OUTPUT.PUT_LINE('sql_tag=' || v_sql_tag || ', workers=' || v_workers || ', minutes=' || v_minutes || ', anchor_mode=' || v_anchor_mode || ', stop_existing=' || UPPER(SUBSTR(p_stop_existing, 1, 1)));
 END;
 /
 
@@ -441,3 +444,4 @@ PROMPT Dashboard load support installed.
 PROMPT Use 11_start_dashboard_load_before.sql for 12 minutes, 16_start_dashboard_load_before_long.sql for 120 minutes, or 17_start_dashboard_load_before_5_days.sql for five days.
 PROMPT Use 12_start_dashboard_load_after.sql after applying the fix, and 13_stop_dashboard_load.sql to stop active load.
 PROMPT Use 24_start_dashboard_load_plan_instability.sql after 22_setup_plan_instability.sql for the plan-instability signal.
+PROMPT Use 27_start_dashboard_load_all_issues_5_days.sql to keep missing-index, supernode, and plan-instability signals active together.

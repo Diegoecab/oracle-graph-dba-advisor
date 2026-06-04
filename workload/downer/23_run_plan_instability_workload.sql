@@ -45,21 +45,23 @@ BEGIN
 END;
 /
 
-SELECT
-  sql_id,
-  COUNT(*) AS child_cursor_count,
-  COUNT(DISTINCT plan_hash_value) AS distinct_plan_hashes,
-  SUM(executions) AS total_executions,
-  ROUND(SUM(elapsed_time) / NULLIF(SUM(executions), 0) / 1000, 3) AS avg_elapsed_ms,
-  ROUND(MIN(elapsed_time / NULLIF(executions, 0)) / 1000, 3) AS min_child_avg_elapsed_ms,
-  ROUND(MAX(elapsed_time / NULLIF(executions, 0)) / 1000, 3) AS max_child_avg_elapsed_ms,
-  SUM(buffer_gets) AS total_buffer_gets,
-  MAX(last_active_time) AS last_active_time
-FROM v$sql
-WHERE UPPER(sql_text) LIKE '%DOWNER_PI_Q01%'
-  AND UPPER(sql_text) NOT LIKE '%V$SQL%'
-  AND NVL(executions, 0) > 0
-GROUP BY sql_id
-ORDER BY distinct_plan_hashes DESC, child_cursor_count DESC, total_buffer_gets DESC;
+DECLARE
+  v_count NUMBER;
+BEGIN
+  EXECUTE IMMEDIATE q'[
+    SELECT COUNT(*)
+    FROM v$sql
+    WHERE UPPER(sql_text) LIKE '%DOWNER_PI_Q01%'
+      AND UPPER(sql_text) NOT LIKE '%V$SQL%'
+      AND NVL(executions, 0) > 0
+  ]' INTO v_count;
+
+  DBMS_OUTPUT.PUT_LINE('DOWNER_PI_Q01 visible rows in V$SQL=' || v_count);
+EXCEPTION
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('V$SQL summary skipped for DOWNER_DEMO: ' || SQLERRM);
+    DBMS_OUTPUT.PUT_LINE('Use GRAPH_DIAG_USER/RUN_SQL or ADMIN for the read-only plan-instability pack.');
+END;
+/
 
 PROMPT DOWNER_PI_Q01 seeded. Use sql-templates/packs/plan-instability/ through RUN_SQL for read-only diagnosis.

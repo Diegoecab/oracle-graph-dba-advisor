@@ -76,3 +76,12 @@ WHERE end_date IS NULL
 GROUP BY dst
 ORDER BY active_in_degree DESC
 FETCH FIRST 10 ROWS ONLY;
+
+SELECT
+  dst AS ip_id,
+  COUNT(*) AS active_in_degree
+FROM e_uses_ip
+WHERE end_date IS NULL
+GROUP BY dst
+ORDER BY active_in_degree DESC
+FETCH FIRST 10 ROWS ONLY;

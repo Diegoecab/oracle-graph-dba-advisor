@@ -152,6 +152,8 @@ The Mini-DOWNER setup creates:
 - node tables `N_USER`, `N_DEVICE`, `N_BANK_ACCOUNT`, `N_CARD`, `N_IP`
 - edge tables `E_USES_DEVICE`, `E_WITHDRAWAL_BANK_ACCOUNT`, `E_USES_CARD`, `E_USES_IP`
 - deliberate missing leading indexes on `E_USES_DEVICE.SRC` and `E_USES_DEVICE.DST`
+- coexisting supernode/fan-out evidence on indexed `E_USES_IP`, anchored at
+  `IP00000001`
 - optional plan-instability case `DOWNER_PI_Q01` using `PLAN_INSTABILITY_DEMO`
 - dashboard workload procedures and scheduler workers
 
@@ -163,13 +165,16 @@ scheduled for a later day and the Performance Hub signal should stay alive for
 five consecutive days. This run keeps four database sessions active and can
 consume Developer Tier compute while running.
 
+Use `workload/downer/27_start_dashboard_load_all_issues_5_days.sql` when the
+demo should show all three coexistence signals at once: missing-index,
+supernode/fan-out, and plan-instability.
+
 Current run as of 2026-06-04:
 
-- run_id: `5`
-- SQL tag: `DOWNER_MI_Q01_DASH_BEFORE`
-- status: `RUNNING`
-- workers: `4`
-- expected end: `2026-06-09 04:32:15 UTC`
+- run_id `6`: `DOWNER_MI_Q01_DASH_BEFORE`, status `RUNNING`, workers `2`
+- run_id `7`: `DOWNER_SN_Q01_DASH`, status `RUNNING`, workers `1`
+- run_id `8`: `DOWNER_PI_Q01_DASH`, status `RUNNING`, workers `1`
+- expected end: `2026-06-09 17:19:23 UTC`
 
 ## Optional plan-instability signal
 
@@ -189,7 +194,6 @@ deviation. The diagnostic path must select `plan-instability` only after seeing
 evidence of multiple child cursors, multiple plan hashes, invalidations, bind
 mismatch, or elapsed spread for the same SQL.
 
-Do not start `DOWNER_PI_Q01_DASH` while preserving the current
-`DOWNER_MI_Q01_DASH_BEFORE` dashboard signal. The shared dashboard loader stops
-existing `DDASH_%` workers when a new signal starts, so use these scenarios
-sequentially.
+The standard single-signal scripts still stop existing `DDASH_%` workers when a
+new signal starts. Use `27_start_dashboard_load_all_issues_5_days.sql` when all
+three signals must remain active together.

@@ -14,9 +14,10 @@ The primary induced issue is deliberate: `E_USES_DEVICE` has no leading index on
 on `E_USES_DEVICE` until the out-of-band invisible indexes are tested.
 
 The secondary induced issue is `DOWNER_SN_Q01`, a supernode / fan-out scenario.
-It prepares `D00000001` as a high-degree shared fingerprint and uses indexed
-traversal paths so the dominant problem is path expansion, not a simple missing
-index.
+It prepares `IP00000001` as a high-degree shared IP fingerprint on indexed
+`E_USES_IP` traversal paths so the dominant problem is path expansion, not a
+simple missing index. This lets the supernode case coexist with the
+missing-index defect on `E_USES_DEVICE`.
 
 The third induced issue is `DOWNER_PI_Q01`, a plan-instability scenario. It uses
 a skewed Mini-DOWNER risk lookup query with one stable SQL text and controlled
@@ -52,8 +53,12 @@ Execution order:
     as `DOWNER_DEMO`.
 16. For the plan-instability dashboard signal, run
     `24_start_dashboard_load_plan_instability.sql`.
-17. After the advisor recommendation, run `14_apply_visible_index_fix.sql`, then `12_start_dashboard_load_after.sql`.
-18. Stop or clean up with `13_stop_dashboard_load.sql` and `15_rollback_visible_index_fix.sql`.
+17. To exercise the supernode read-only MCP pack directly, run
+    `26_supernode_fanout_mcp_demo.sh`.
+18. To leave all three issue classes visible together in Performance Dashboard,
+    run `27_start_dashboard_load_all_issues_5_days.sql`.
+19. After the advisor recommendation, run `14_apply_visible_index_fix.sql`, then `12_start_dashboard_load_after.sql`.
+20. Stop or clean up with `13_stop_dashboard_load.sql` and `15_rollback_visible_index_fix.sql`.
 
 The PowerShell helper can include the plan-instability setup with
 `-SetupPlanInstability`. Use `-StartPlanInstabilityDashboardLoad` only when the
@@ -117,6 +122,15 @@ Start a five-day bad-state load when the demo is scheduled for a later day:
 The five-day run is useful only for lab/demo environments. It keeps four
 database sessions active and can consume Developer Tier compute while running.
 
+To keep all three coexistence signals visible for a later demo, run:
+
+```sql
+@workload/downer/27_start_dashboard_load_all_issues_5_days.sql
+```
+
+This starts four workers total: two for `DOWNER_MI_Q01_DASH_BEFORE`, one for
+`DOWNER_SN_Q01_DASH`, and one for `DOWNER_PI_Q01_DASH`.
+
 Dashboard filters/signals:
 
 - Module: `MINI_DOWNER_DASHBOARD_LOAD`
@@ -151,7 +165,7 @@ Rollback the lab-only visible indexes:
 
 ## Supernode / fan-out scenario
 
-Prepare the high-degree device and supporting indexed access paths:
+Prepare the high-degree IP on already-indexed access paths:
 
 ```sql
 @workload/downer/18_setup_supernode_fanout.sql
@@ -173,15 +187,23 @@ Dashboard filters/signals:
 
 - Module: `MINI_DOWNER_DASHBOARD_LOAD`
 - SQL text tag: `DOWNER_SN_Q01_DASH`
-- Anchor device: `D00000001`
+- Anchor IP: `IP00000001`
 - Expected symptom: high rows processed and buffer gets caused by a high-degree
-  device expanding to many users and bank-account paths.
+  IP expanding to many users and bank-account paths.
 
 The corresponding read-only diagnostic templates are in
 `sql-templates/packs/supernode-fanout/`. The expected recommendation is not
 "add another index" by default. The advisor should first verify index coverage
 and then focus on degree-aware query guards, traversal constraints, precomputed
 features, or identifier/model cleanup.
+
+Direct read-only MCP pack runner:
+
+```bash
+ADB_REGION=sa-saopaulo-1 \
+ADB_OCID=<adb-ocid> \
+./workload/downer/26_supernode_fanout_mcp_demo.sh
+```
 
 ## Plan-instability scenario
 

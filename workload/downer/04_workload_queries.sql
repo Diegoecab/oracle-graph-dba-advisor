@@ -31,15 +31,15 @@ FETCH FIRST 100 ROWS ONLY;
 SELECT /* DOWNER_SN_Q01 */
   COUNT(*) AS candidate_paths
 FROM GRAPH_TABLE (downer_graph
-  MATCH (d IS device) <-[ed IS uses_device]- (u IS user_account)
-                      -[wb IS withdrawal_bank_account]-> (b IS bank_account)
-  WHERE d.id = 'D00000001'
-    AND ed.end_date IS NULL
+  MATCH (ipn IS ip) <-[ei IS uses_ip]- (u IS user_account)
+                     -[wb IS withdrawal_bank_account]-> (b IS bank_account)
+  WHERE ipn.id = 'IP00000001'
+    AND ei.end_date IS NULL
     AND wb.end_date IS NULL
   COLUMNS (
-    d.id AS device_id,
+    ipn.id AS ip_id,
     u.id AS user_id,
     b.id AS bank_account_id,
-    ed.device_type AS device_edge_type
+    ei.used_at_date AS ip_used_at_date
   )
 );

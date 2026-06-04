@@ -12,7 +12,7 @@ degree_by_dst AS (
 ),
 degree_stats AS (
   SELECT
-    COUNT(*) AS device_count,
+    COUNT(*) AS node_count,
     ROUND(AVG(active_in_degree), 2) AS avg_degree,
     MAX(active_in_degree) AS max_degree,
     PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY active_in_degree) AS p50_degree,
@@ -25,42 +25,42 @@ anchor_degree AS (
     dst,
     active_in_degree
   FROM degree_by_dst
-  WHERE dst = '__ANCHOR_DEVICE_ID__'
+  WHERE dst = '__ANCHOR_ID__'
 )
 SELECT
-  'ANCHOR_DEVICE_ID' AS metric_name,
-  '__ANCHOR_DEVICE_ID__' AS metric_value,
-  'Device used as traversal anchor'
+  'ANCHOR_ID' AS metric_name,
+  '__ANCHOR_ID__' AS metric_value,
+  'Vertex used as traversal anchor'
 FROM dual
 UNION ALL
 SELECT
   'ANCHOR_ACTIVE_IN_DEGREE',
   TO_CHAR(active_in_degree),
-  'Active users connected to the anchor device'
+  'Active users connected to the anchor vertex'
 FROM anchor_degree
 UNION ALL
 SELECT
-  'AVG_DEVICE_ACTIVE_IN_DEGREE',
+  'AVG_ACTIVE_IN_DEGREE',
   TO_CHAR(avg_degree),
-  'Average active device in-degree'
+  'Average active in-degree for this edge destination'
 FROM degree_stats
 UNION ALL
 SELECT
-  'P95_DEVICE_ACTIVE_IN_DEGREE',
+  'P95_ACTIVE_IN_DEGREE',
   TO_CHAR(ROUND(p95_degree, 2)),
-  'P95 active device in-degree'
+  'P95 active in-degree for this edge destination'
 FROM degree_stats
 UNION ALL
 SELECT
-  'P99_DEVICE_ACTIVE_IN_DEGREE',
+  'P99_ACTIVE_IN_DEGREE',
   TO_CHAR(ROUND(p99_degree, 2)),
-  'P99 active device in-degree'
+  'P99 active in-degree for this edge destination'
 FROM degree_stats
 UNION ALL
 SELECT
-  'MAX_DEVICE_ACTIVE_IN_DEGREE',
+  'MAX_ACTIVE_IN_DEGREE',
   TO_CHAR(max_degree),
-  'Largest active device in-degree'
+  'Largest active in-degree for this edge destination'
 FROM degree_stats
 UNION ALL
 SELECT

@@ -13,8 +13,8 @@ SET SERVEROUTPUT ON
 SET TIMING ON
 
 CREATE OR REPLACE PROCEDURE run_downer_supernode_workload (
-  p_cycles    NUMBER DEFAULT 12,
-  p_device_id VARCHAR2 DEFAULT 'D00000001'
+  p_cycles NUMBER DEFAULT 12,
+  p_ip_id  VARCHAR2 DEFAULT 'IP00000001'
 ) AS
   v_count NUMBER;
 BEGIN
@@ -23,21 +23,21 @@ BEGIN
       SELECT /* DOWNER_SN_Q01 */
              COUNT(*)
       FROM GRAPH_TABLE (downer_graph
-        MATCH (d IS device) <-[ed IS uses_device]- (u IS user_account)
-                            -[wb IS withdrawal_bank_account]-> (b IS bank_account)
-        WHERE d.id = :device_id
-          AND ed.end_date IS NULL
+        MATCH (ipn IS ip) <-[ei IS uses_ip]- (u IS user_account)
+                           -[wb IS withdrawal_bank_account]-> (b IS bank_account)
+        WHERE ipn.id = :ip_id
+          AND ei.end_date IS NULL
           AND wb.end_date IS NULL
         COLUMNS (
-          d.id AS device_id,
+          ipn.id AS ip_id,
           u.id AS user_id,
           b.id AS bank_account_id,
-          ed.device_type AS device_edge_type
+          ei.used_at_date AS ip_used_at_date
         )
       )
     ]'
     INTO v_count
-    USING p_device_id;
+    USING p_ip_id;
   END LOOP;
 
   DBMS_OUTPUT.PUT_LINE('DOWNER_SN_Q01 cycles=' || p_cycles || ', result_count=' || v_count);
@@ -45,6 +45,6 @@ END;
 /
 
 BEGIN
-  run_downer_supernode_workload(p_cycles => 16, p_device_id => 'D00000001');
+  run_downer_supernode_workload(p_cycles => 16, p_ip_id => 'IP00000001');
 END;
 /

@@ -135,9 +135,15 @@ For vague workload-performance prompts:
 For Mini-DOWNER specifically, a vague "Mini-DOWNER is slow" prompt must check
 for all three packaged issue classes when their SQL/evidence is visible:
 
-- `DOWNER_MI_Q01` / `missing-index`
-- `DOWNER_SN_Q01` / `supernode-fanout`
-- `DOWNER_PI_Q01` / `plan-instability`
+- `DOWNER_MI_Q01` / `missing-index`: shared-device traversal over
+  `E_USES_DEVICE`, where missing leading indexes on `SRC` and `DST` are the
+  expected lab defect when supported by plan/catalog evidence.
+- `DOWNER_SN_Q01` / `supernode-fanout`: high-degree IP traversal over indexed
+  `E_USES_IP`, normally anchored at `IP00000001`, where the expected defect is
+  path expansion from a high-degree identifier rather than an access-path gap.
+- `DOWNER_PI_Q01` / `plan-instability`: skewed lookup/query pattern where the
+  expected defect is multiple plan hashes, child cursor churn, invalidation, or
+  elapsed-time deviation for the same logical SQL.
 
 Only report a class as a finding when the evidence is present in the connected
 database. If the database currently exposes only `DOWNER_MI_Q01`, say that the

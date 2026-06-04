@@ -1,7 +1,7 @@
-WITH device_users AS (
+WITH anchor_users AS (
   SELECT DISTINCT src AS user_id
   FROM __GRAPH_OWNER__.__EDGE_TABLE__
-  WHERE dst = '__ANCHOR_DEVICE_ID__'
+  WHERE dst = '__ANCHOR_ID__'
     AND end_date IS NULL
 ),
 bank_edges AS (
@@ -9,15 +9,15 @@ bank_edges AS (
     w.src AS user_id,
     COUNT(*) AS active_bank_edges
   FROM __GRAPH_OWNER__.__SECOND_EDGE_TABLE__ w
-  JOIN device_users du
-    ON du.user_id = w.src
+  JOIN anchor_users au
+    ON au.user_id = w.src
   WHERE w.end_date IS NULL
   GROUP BY w.src
 ),
 summary AS (
   SELECT
-    COUNT(*) AS users_reached_from_device,
-    NVL(SUM(active_bank_edges), 0) AS estimated_device_user_bank_paths,
+    COUNT(*) AS users_reached_from_anchor,
+    NVL(SUM(active_bank_edges), 0) AS estimated_anchor_user_bank_paths,
     ROUND(AVG(active_bank_edges), 2) AS avg_bank_edges_per_reached_user,
     MAX(active_bank_edges) AS max_bank_edges_per_reached_user
   FROM bank_edges
@@ -25,23 +25,23 @@ summary AS (
 coverage AS (
   SELECT
     COUNT(*) AS users_without_bank_edge
-  FROM device_users du
+  FROM anchor_users au
   WHERE NOT EXISTS (
     SELECT 1
     FROM __GRAPH_OWNER__.__SECOND_EDGE_TABLE__ w
-    WHERE w.src = du.user_id
+    WHERE w.src = au.user_id
       AND w.end_date IS NULL
   )
 )
 SELECT
-  'USERS_REACHED_FROM_DEVICE' AS metric_name,
+  'USERS_REACHED_FROM_ANCHOR' AS metric_name,
   TO_CHAR(COUNT(*)) AS metric_value,
-  'First-hop users reached from the anchor device'
-FROM device_users
+  'First-hop users reached from the anchor vertex'
+FROM anchor_users
 UNION ALL
 SELECT
-  'ESTIMATED_DEVICE_USER_BANK_PATHS',
-  TO_CHAR(estimated_device_user_bank_paths),
+  'ESTIMATED_ANCHOR_USER_BANK_PATHS',
+  TO_CHAR(estimated_anchor_user_bank_paths),
   'Estimated result paths after expanding reached users to bank accounts'
 FROM summary
 UNION ALL
