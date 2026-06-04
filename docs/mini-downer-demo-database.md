@@ -62,7 +62,18 @@ claude mcp get graph-mini-fraud-downer-26ai
 ```
 
 For OAuth/no-bearer mode, the output should not include `Authorization`. If it
-does, remove and re-add the MCP with the Claude Code command above.
+does, remove and re-add the MCP without headers:
+
+```powershell
+claude mcp remove graph-mini-fraud-downer-26ai --scope user
+claude mcp add --transport http --scope user `
+  graph-mini-fraud-downer-26ai `
+  "https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa"
+claude mcp get graph-mini-fraud-downer-26ai
+```
+
+The `get` output should show no `Authorization` header. Then restart Claude
+Code, run `/mcp`, and authenticate with `GRAPH_DIAG_USER`.
 
 ## Runtime users
 
