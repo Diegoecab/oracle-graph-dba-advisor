@@ -363,6 +363,46 @@ MCP configs. Authentication belongs to the MCP client flow:
 - **Claude Desktop / claude.ai**: the uploaded skill gives methodology only.
   The ADB MCP connector must also be added and enabled in the chat.
 
+### Upgrade or Update After a New Skill Version
+
+When the repository code changes and a new plugin/skill version is published,
+update both layers only if both changed:
+
+1. **Skill/plugin layer**: refresh the advisor package so the client loads the
+   new methodology, templates, and report contract.
+2. **MCP layer**: keep the existing ADB MCP server unless the database endpoint,
+   authentication mode, or MCP name changed.
+
+Do not store database passwords in upgrade commands. Restart the client after a
+skill/plugin update so the new instructions are loaded.
+
+Claude Code, marketplace plugin:
+
+```powershell
+claude plugin marketplace update oracle-graph-dba-advisor
+claude plugin update oracle-graph-dba-advisor@oracle-graph-dba-advisor --scope user
+claude plugin list --json
+```
+
+Codex, Git marketplace plugin:
+
+```powershell
+codex plugin marketplace upgrade oracle-graph-dba-advisor
+```
+
+If Codex says the marketplace is not configured as a Git marketplace, add the
+GitHub marketplace again and restart Codex:
+
+```powershell
+codex plugin marketplace add Diegoecab/oracle-graph-dba-advisor
+```
+
+Local skill installed with `degit`: reinstall into the same skill directory and
+restart the client.
+
+Claude Desktop / claude.ai uploaded skill: rebuild the ZIP from the current repo
+version and upload it again in `Customize > Skills`.
+
 ### Install in Codex
 
 Recommended professional path: add this repository as a Codex plugin

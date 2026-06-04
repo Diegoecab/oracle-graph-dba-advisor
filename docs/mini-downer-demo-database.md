@@ -84,6 +84,43 @@ Code, run `/mcp`, and authenticate with `GRAPH_DIAG_USER`.
 Do not store database passwords, wallet passwords, bearer tokens, or wallet ZIPs
 in the repo.
 
+## Update the skill before rerunning analysis
+
+If the advisor code or plugin version changed, update the client-side
+skill/plugin before rerunning the Mini-DOWNER analysis. The ADB MCP entry does
+not need to be recreated unless the endpoint, MCP name, or authentication mode
+changed.
+
+Claude Code:
+
+```powershell
+claude plugin marketplace update oracle-graph-dba-advisor
+claude plugin update oracle-graph-dba-advisor@oracle-graph-dba-advisor --scope user
+claude plugin list --json
+```
+
+Then restart Claude Code and confirm it loads the new plugin version in the
+first response.
+
+Codex:
+
+```powershell
+codex plugin marketplace upgrade oracle-graph-dba-advisor
+```
+
+If Codex reports that the marketplace is not configured as a Git marketplace,
+add the GitHub marketplace again and restart Codex:
+
+```powershell
+codex plugin marketplace add Diegoecab/oracle-graph-dba-advisor
+```
+
+Claude Desktop / claude.ai uploaded skill:
+
+1. Rebuild the ZIP from the current repository version.
+2. Upload it again in `Customize > Skills`.
+3. Confirm the ADB MCP connector is enabled in the chat.
+
 ## Required tags
 
 Defined tags in `0-ResourceControl`:
