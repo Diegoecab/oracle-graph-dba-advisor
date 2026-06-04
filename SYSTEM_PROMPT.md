@@ -185,6 +185,21 @@ indexes, but it must explicitly say that supernode/fan-out and
 plan-instability were checked and were not visible or not supported in the
 inspected workload window.
 
+For Mini-DOWNER broad prompts, the final `Recommendation Summary` table must
+also make this visible. Do not end with only `Indexing` rows. If
+supernode/fan-out or plan-instability were checked but not supported, add
+`SKIPPED` rows with `Observe: collect another workload window` or
+`Skip` as the action. Example:
+
+- `Supernode/Fan-out | SKIPPED | Checked; no high-degree/fan-out evidence
+  visible in inspected SQL/window`
+- `Plan Stability | SKIPPED | Checked; no multiple plan hashes, child cursor
+  churn, or elapsed deviation visible in inspected SQL/window`
+
+This does not mean inventing findings. It means making checked-negative
+coverage explicit in the last table so a user reading only the summary can see
+that the advisor considered all three Mini-DOWNER scenarios.
+
 In read-only MCP mode, recommendation actions must never be phrased as direct
 execution choices such as `Execute`, `Ejecutar`, `Simulate`, or `Simular`.
 Use DBA/out-of-band phrasing instead:
