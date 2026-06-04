@@ -704,7 +704,7 @@ inspected window`, `Not evaluated`, or `Blocked by missing read-only access`.
 
 ### 7. Recommendation Summary (ALWAYS LAST)
    Table listing ALL recommendations and category coverage rows with status
-   and safe next action.
+   impact, effort, priority, and safe next action.
    No content after this table.
 ```
 
@@ -737,11 +737,49 @@ When reporting optimization impact, use ONE ROW per query with columns for both 
 The report MUST end with a numbered summary table of ALL recommendations and
 category coverage rows, including:
 - Status: `DONE`, `PROPOSED`, `SKIPPED`
+- Impact: expected workload or business effect if addressed
+- Effort: implementation complexity and operational/change risk
+- Priority: action order derived from evidence, impact, and effort
 - Action available: what the user can request safely
 
 In read-only MCP mode, the final table MUST use these columns:
 
-`# | Rec | Category | Status | Description | Evidence | Action Available`
+`# | Rec | Category | Status | Impact | Effort | Priority | Description | Evidence | Action Available`
+
+Use these stable values:
+
+- `Impact`: `High`, `Medium`, `Low`, or `None`.
+- `Effort`: `Low`, `Medium`, `High`, or `None`.
+- `Priority`: `High`, `Medium`, `Low`, or `Skip`.
+
+Interpretation:
+
+- `Impact=High`: supported evidence shows material effect on top graph SQL,
+  DB load, user-facing latency, or incident risk.
+- `Impact=Medium`: supported evidence shows a relevant but secondary workload
+  effect, localized risk, or meaningful prevention value.
+- `Impact=Low`: hygiene or optimization with limited visible workload effect.
+- `Impact=None`: checked category has no supporting evidence in the inspected
+  window.
+- `Effort=Low`: reversible or low-risk validation, observation, stats refresh,
+  or contained DBA action.
+- `Effort=Medium`: approved DDL, SQL rewrite, plan-management review, or
+  controlled application change that requires testing.
+- `Effort=High`: graph model, schema architecture, partitioning, materialized
+  design, or broader application behavior change.
+- `Effort=None`: no current action.
+- `Priority=High`: act first; evidence is strong and the impact/effort tradeoff
+  is favorable, or the issue is an active resource/availability risk.
+- `Priority=Medium`: schedule after high-priority work; evidence is valid but
+  impact is secondary, effort is higher, or the safest path is validation first.
+- `Priority=Low`: backlog or opportunistic improvement.
+- `Priority=Skip`: no current action because the category was checked but not
+  supported, not visible, or blocked by access.
+
+Do not overload `Priority` with the internal graph index hierarchy (`P0`-`P4`).
+The final table's `Priority` is customer action priority only. Sort actionable
+rows first by `Priority` (`High`, then `Medium`, then `Low`), then show concise
+`SKIPPED` coverage rows with `Impact=None`, `Effort=None`, and `Priority=Skip`.
 
 Allowed `Action Available` values in read-only MCP mode are DBA/out-of-band
 actions only, for example `DBA validation: create invisible index and compare`,
@@ -783,12 +821,12 @@ If any older example table in this repository lacks the `Evidence` column or
 uses direct execution language, the contract above takes precedence.
 
 ```
-| #  | Rec | Category      | Status   | Description                  | Evidence                | Action Available |
-|----|-----|---------------|----------|------------------------------|-------------------------|------------------|
-| 1  | R1  | Indexing      | PROPOSED | Composite edge traversal key | SQL_ID + plan/index gap | DBA validation: create invisible index and compare / Skip |
-| 2  | R2  | Supernode/Fan-out | PROPOSED | Degree-aware traversal guard | high-degree fan-out | App/query review / Skip |
-| 3  | R3  | Plan Stability | PROPOSED | Stabilize plan after review | plan hash drift | DBA validation: baseline/profile review / Observe only |
-| 4  | R4  | Query Rewriting | SKIPPED | No rewrite supported by current evidence | No unbounded traversal or predicate-pushdown issue observed | Skip |
+| #  | Rec | Category      | Status   | Impact | Effort | Priority | Description                  | Evidence                | Action Available |
+|----|-----|---------------|----------|--------|--------|----------|------------------------------|-------------------------|------------------|
+| 1  | R1  | Indexing      | PROPOSED | High   | Medium | High     | Composite edge traversal key | SQL_ID + plan/index gap | DBA validation: create invisible index and compare / Skip |
+| 2  | R2  | Supernode/Fan-out | PROPOSED | High | Medium | High     | Degree-aware traversal guard | high-degree fan-out | App/query review / Skip |
+| 3  | R3  | Plan Stability | PROPOSED | Medium | Medium | Medium   | Stabilize plan after review | plan hash drift | DBA validation: baseline/profile review / Observe only |
+| 4  | R4  | Query Rewriting | SKIPPED | None | None | Skip | No rewrite supported by current evidence | No unbounded traversal or predicate-pushdown issue observed | Skip |
 ```
 
 In read-only diagnostic mode, do not ask the user which recommendation to

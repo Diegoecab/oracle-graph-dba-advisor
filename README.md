@@ -563,9 +563,13 @@ The final `Recommendation Summary` uses stable categories across clients:
 `Indexing`, `Supernode/Fan-out`, `Plan Stability`,
 `Statistics & Optimizer`, `Query Rewriting`, `Graph Design / Modeling`,
 `Schema & Architecture`, `Resource / Health`, and `Auto Indexing`. Actionable
-rows appear first. Categories checked without supporting evidence appear as
-concise `SKIPPED` rows so the user can see what was ruled out without losing
-focus on the real finding.
+rows appear first and include `Impact`, `Effort`, and `Priority` columns.
+Use `Impact` to express expected workload/business effect, `Effort` to express
+implementation complexity and change risk, and `Priority` to express the
+recommended action order derived from the evidence. Categories checked without
+supporting evidence appear as concise `SKIPPED` rows with `Impact=None`,
+`Effort=None`, and `Priority=Skip`, so the user can see what was ruled out
+without losing focus on the real finding.
 
 Mini-DOWNER stale-context check: the current live demo database is documented
 in [docs/mini-downer-demo-database.md](docs/mini-downer-demo-database.md). If a

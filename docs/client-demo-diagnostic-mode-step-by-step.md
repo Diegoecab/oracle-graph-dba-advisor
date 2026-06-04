@@ -433,9 +433,13 @@ El `Recommendation Summary` final debe usar categorias estables en todos los
 clientes: `Indexing`, `Supernode/Fan-out`, `Plan Stability`,
 `Statistics & Optimizer`, `Query Rewriting`, `Graph Design / Modeling`,
 `Schema & Architecture`, `Resource / Health` y `Auto Indexing`. Las filas
-`PROPOSED` o `DONE` van primero. Las categorias sin evidencia se incluyen como
-`SKIPPED`, con una evidencia corta que explique por que no aplican o que dato
-no estuvo visible.
+`PROPOSED` o `DONE` van primero e incluyen `Impact`, `Effort` y `Priority`.
+`Impact` mide el efecto esperado sobre carga, latencia o riesgo operativo;
+`Effort` mide complejidad y riesgo de cambio; `Priority` ordena la accion
+recomendada a partir de evidencia, impacto y esfuerzo. Las categorias sin
+evidencia se incluyen como `SKIPPED`, con `Impact=None`, `Effort=None`,
+`Priority=Skip` y una evidencia corta que explique por que no aplican o que
+dato no estuvo visible.
 
 ### Troubleshooting MCP en Claude
 

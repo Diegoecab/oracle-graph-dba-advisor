@@ -220,7 +220,20 @@ come from `Indexing`, `Supernode/Fan-out`, and `Plan Stability` when the
 coexistence workload is visible. Other categories such as
 `Statistics & Optimizer`, `Query Rewriting`, `Graph Design / Modeling`,
 `Schema & Architecture`, `Resource / Health`, and `Auto Indexing` should appear
-as concise `SKIPPED` rows unless their own evidence is visible.
+as concise `SKIPPED` rows unless their own evidence is visible. Positive rows
+should include `Impact`, `Effort`, and `Priority` so the table is decision
+ready:
+
+- missing-index rows: usually `Impact=High`, `Effort=Medium`,
+  `Priority=High` when the top SQL still shows full scans on
+  `E_USES_DEVICE`.
+- supernode/fan-out row: usually `Impact=High`, `Effort=Medium`,
+  `Priority=High` when the high-degree anchor dominates a visible workload
+  query.
+- plan-instability row: usually `Impact=Medium`, `Effort=Medium`,
+  `Priority=Medium` unless one unstable SQL is the dominant workload driver.
+- checked categories without evidence: `Impact=None`, `Effort=None`,
+  `Priority=Skip`.
 
 Use `workload/downer/16_start_dashboard_load_before_long.sql` to start a
 120-minute bad-state workload for a live dashboard session.
