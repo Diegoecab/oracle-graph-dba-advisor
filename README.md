@@ -630,23 +630,21 @@ claude plugin update oracle-graph-dba-advisor@oracle-graph-dba-advisor --scope u
 claude plugin list --json
 ```
 
-To check whether a newer plugin version is available in Claude Code, compare the
-installed version with the available marketplace entry:
+To check the currently installed version in Claude Code:
 
 ```powershell
-$plugins = claude plugin list --available --json | ConvertFrom-Json
-$plugins.installed | Where-Object { $_.id -eq "oracle-graph-dba-advisor@oracle-graph-dba-advisor" } |
+claude plugin list --json |
+  ConvertFrom-Json |
+  Where-Object { $_.id -eq "oracle-graph-dba-advisor@oracle-graph-dba-advisor" } |
   Select-Object id, version, lastUpdated
-$plugins.available | Where-Object { $_.pluginId -eq "oracle-graph-dba-advisor@oracle-graph-dba-advisor" -or $_.name -eq "oracle-graph-dba-advisor" } |
-  Select-Object pluginId, version, marketplaceName
 ```
 
-Claude Code also exposes `claude plugin details oracle-graph-dba-advisor` for a
-component inventory, but `plugin list --available --json` is the practical
-version-check command.
-Do not rely only on an automatic prompt for plugin updates. Use the marketplace
-update plus `plugin list --available --json` before important demos, then run
-`claude plugin update ...` and restart Claude Code.
+For this GitHub marketplace, do not rely on `plugin list --available --json` to
+surface the custom plugin entry. Treat the GitHub release/tag or
+`.claude-plugin/plugin.json` version as the source of truth for whether a newer
+version exists, then run the marketplace update and plugin update commands
+above. Claude Code also exposes `claude plugin details oracle-graph-dba-advisor`
+for component inventory. Restart Claude Code after plugin updates.
 
 #### Claude Desktop / claude.ai skill
 
