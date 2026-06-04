@@ -27,6 +27,10 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   MCP servers or SQL connections are visible and the user did not name an exact
   target, list the visible database candidates and ask the user to choose one
   before executing SQL.
+- Treat unauthenticated ADB Native MCP servers that expose only
+  `authenticate`/`authorize` as database candidates with status
+  `needs authentication`; do not filter them out and auto-select another ready
+  ADB alias unless the user named that alias exactly.
 - If the user names an alias that is not visible, do not guess. Show visible
   database candidates or close matches and ask for explicit confirmation.
 - Confirm the active database context on the selected target before workload

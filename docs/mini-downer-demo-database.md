@@ -47,6 +47,10 @@ the target. It should list the visible database MCP candidates and ask the user
 to choose one unless the prompt names `graph-mini-fraud-downer-26ai` exactly.
 For gate testing, this repo also defines
 `graph-mini-fraud-downer-26ai-shadow`, pointing to the same ADB endpoint.
+If the shadow alias is not authenticated, it may expose only `authenticate`.
+That still counts as an ADB MCP candidate with status `needs authentication`;
+the skill should not filter it out and auto-select the primary alias unless the
+prompt named the primary alias exactly.
 
 Claude Code OAuth/no-bearer:
 

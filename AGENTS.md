@@ -23,6 +23,7 @@
 ## Diagnostic Behavior
 
 - Preserve the MCP target selection gate before the connection confirmation gate. If multiple database MCP servers are visible and the user did not name an exact alias, the skill must list candidates and ask for an explicit choice before executing SQL.
+- Treat unauthenticated ADB Native MCP aliases that expose only `authenticate` or `authorize` as database candidates with status `needs authentication`; do not filter them out and auto-select another ready alias unless the user named it exactly.
 - Always preserve the connection confirmation gate before any workload analysis.
 - Do not infer the target database from workload names, schema names, graph names, or demo names alone.
 - Do not choose a specialized diagnostic pack from the demo name alone.

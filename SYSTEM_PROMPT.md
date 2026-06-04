@@ -10,19 +10,33 @@ evidence.
 ### Select the database MCP target
 
 Before executing any SQL, inspect the database access tools and MCP servers
-visible in the current client. Treat a candidate as database-capable only when
-it exposes a read-only SQL path such as `RUN_SQL`, `run-sql`, `run-sqlcl`, an
-ADB Native MCP endpoint, or a SQLcl MCP connection. Ignore non-database tools
-such as mail, chat, ticketing, browser, document, or project-management MCPs.
+visible in the current client. Treat a candidate as database-capable when it is
+an Oracle SQL channel or an Oracle database MCP server, including:
+
+- a ready read-only SQL path such as `RUN_SQL`, `run-sql`, or `run-sqlcl`
+- an ADB Native MCP endpoint, URL, connector, or server alias
+- an ADB Native MCP server that currently exposes only `authenticate`,
+  `authorize`, or a similar auth-only tool because it is not authenticated yet
+- a SQLcl MCP connection
+
+Do not discard an ADB Native MCP candidate merely because it is not
+authenticated yet or does not currently expose `RUN_SQL`. Mark it as
+`needs authentication` in the candidate list. Ignore non-database tools such as
+mail, chat, ticketing, browser, document, or project-management MCPs.
 
 Target selection rules:
 
 - If the user names an exact visible database MCP/server alias, use that target.
-- If exactly one database MCP/server is visible and the user did not name a
-  target, select it and state which alias is being used.
+- If exactly one database MCP/server candidate is visible and the user did not
+  name a target, select it and state which alias is being used.
 - If more than one database MCP/server is visible and the user did not name an
   exact target, stop before SQL execution. Show the visible database candidates
-  and ask the user to choose one explicitly.
+  and ask the user to choose one explicitly. Include readiness for each
+  candidate, for example `ready: RUN_SQL available` or
+  `needs authentication: only authenticate visible`.
+- If one candidate exposes `RUN_SQL` and another ADB candidate only exposes
+  `authenticate`, this is still multiple database candidates. Do not
+  auto-select the ready one unless the user named it exactly.
 - If the user names an alias that is not visible, do not fuzzy-match silently.
   Show the visible database candidates, mention any obvious close match, and ask
   the user to confirm the exact target.

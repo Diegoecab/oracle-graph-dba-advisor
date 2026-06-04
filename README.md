@@ -377,6 +377,10 @@ database target before executing SQL:
   selected alias before the connection check.
 - If multiple database MCPs are visible and the user did not name an exact
   alias, list the visible database candidates and ask the user to choose one.
+- For ADB Native MCP, an alias that exposes only `authenticate` or `authorize`
+  still counts as a database candidate with status `needs authentication`.
+  Do not auto-select another ready ADB alias just because it already exposes
+  `RUN_SQL`, unless the user named that ready alias exactly.
 - If the user names an alias that is not visible, show the visible database
   candidates or close matches and ask for explicit confirmation.
 - If no Oracle SQL MCP tool is visible, stop and tell the user to attach the ADB
@@ -563,6 +567,10 @@ For target-selection gate testing, this repo also includes
 `graph-mini-fraud-downer-26ai-shadow`, a second MCP alias that points to the
 same Mini-DOWNER ADB. With both aliases visible, a vague prompt should make the
 skill ask which MCP target to use before running SQL.
+If the shadow alias is not authenticated yet, Claude may show only an
+`authenticate` tool for it. That still counts as a database candidate for the
+target-selection gate; the advisor should list it as `needs authentication`
+instead of silently selecting the primary alias.
 
 Mini-DOWNER remediation channel: the advisor MCP is read-only. Use Database
 Actions SQL / SQL Developer Web to apply approved DBA validation or remediation

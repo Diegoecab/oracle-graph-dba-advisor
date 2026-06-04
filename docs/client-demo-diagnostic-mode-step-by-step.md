@@ -418,6 +418,12 @@ confirmacion. Esto evita diagnosticar otra ADB por memoria vieja, configs
 locales stale o aliases parecidos. Si el contexto no coincide con Mini-DOWNER,
 el skill debe detenerse y pedir confirmacion.
 
+Para ADB Native MCP, un alias que solo expone `authenticate` o `authorize`
+porque todavia no esta autenticado sigue contando como candidato de base de
+datos. El skill debe listarlo como `needs authentication`; no debe seleccionar
+automaticamente el alias primario solo porque ese ya expone `RUN_SQL`, salvo que
+el prompt haya nombrado exactamente ese alias primario.
+
 El usuario no necesita pedir SQL_IDs, clases de problema ni formato de reporte.
 El skill debe hacer broad triage por defecto y reportar cobertura para
 missing-index, supernode/fan-out y plan-instability aunque solo una causa tenga

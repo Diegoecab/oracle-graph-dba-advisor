@@ -34,6 +34,10 @@ target, list the visible database candidates and ask the user to choose one. If
 the user names an alias that is not visible, do not guess; show visible
 candidates or close matches and ask for explicit confirmation. If no Oracle SQL
 channel is visible, stop and explain that the database MCP connector is missing.
+Treat unauthenticated ADB Native MCP servers that expose only
+`authenticate`/`authorize` as database candidates with status
+`needs authentication`; do not filter them out and auto-select another ready ADB
+alias unless the user named that alias exactly.
 After selecting a target, confirm the active database context there before any
 workload analysis.
 
