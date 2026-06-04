@@ -25,3 +25,8 @@ Intended use:
 - runtime consumption by the skill or MCP wrappers
 - no ad hoc SQL generation during diagnosis
 - stable, versioned query assets per diagnostic playbook
+- for Mini-DOWNER, run the pack with `__PLAN_TAG__ = DOWNER_PI_Q01` so both
+  `DOWNER_PI_Q01` and `DOWNER_PI_Q01_DASH` are included
+- do not require the tagged SQL to contain `GRAPH_TABLE`; this pack diagnoses
+  SQL workload plan stability, child cursor churn, plan-hash drift, and elapsed
+  deviation for the same logical statement

@@ -297,6 +297,19 @@ Validation evidence from the 2026-06-04 refresh:
   `fcs0b3h0xkh06` also shows `3` child cursors, `2` plan hashes, bind-aware
   execution, and elapsed ratio about `2.37x`.
 
+Live recheck on 2026-06-04 22:56 UTC:
+
+- `DOWNER_PI_Q01_DASH` is still running as run_id `11`; worker `1` was
+  `RUNNING` with more than `270k` executions.
+- Current `V$SQL` still supports a positive Plan Stability finding:
+  SQL_ID `fhvn4b3bguvvr` has `2` child cursors, `2` plan hashes, elapsed ratio
+  about `55.36x`; SQL_ID `fcs0b3h0xkh06` has `3` child cursors, `2` plan
+  hashes, bind-aware execution, and elapsed ratio about `2.18x`.
+- If a client reports Plan Stability as `SKIPPED`, the likely cause is that it
+  filtered only `GRAPH_TABLE` SQL. For Mini-DOWNER, run the plan-instability
+  pack with `__PLAN_TAG__ = DOWNER_PI_Q01`; this workload-level signal is not
+  required to be SQL/PGQ.
+
 Do not execute the out-of-band remediation validation scripts before the
 customer-facing diagnosis unless the purpose is to show the post-analysis
 validation step. They are intentionally outside the read-only MCP channel.

@@ -913,9 +913,18 @@ Assets:
 - `workload/downer/25_plan_instability_mcp_demo.sh`
 - `sql-templates/packs/plan-instability/`
 
+Para Mini-DOWNER usar `__PLAN_TAG__ = DOWNER_PI_Q01`, no un filtro exclusivo
+por `GRAPH_TABLE`.
+
 Usarlo cuando el mensaje que se quiera mostrar sea cursor churn, child cursors,
 plan hash drift, invalidaciones y desviacion de elapsed time para una SQL
 especifica.
+
+Importante: este caso es un SQL workload-level signal. Puede no contener
+`GRAPH_TABLE`, porque busca demostrar inestabilidad de plan/cursor en una query
+operacional del caso Mini-DOWNER. Si el skill lo marca `SKIPPED` mientras
+`DOWNER_PI_Q01_DASH` esta visible en `V$SQL`, revisar que no haya limitado el
+discovery a SQL/PGQ solamente.
 
 Ejecutar como `ADMIN`:
 
@@ -944,6 +953,14 @@ Tags esperados:
 
 - `DOWNER_PI_Q01`
 - `DOWNER_PI_Q01_DASH`
+
+Evidencia esperada cuando esta activo:
+
+- al menos un SQL_ID con `child_cursor_count > 1`
+- `distinct_plan_hashes > 1` o elapsed/buffer spread material entre child
+  cursors
+- `optimizer_modes` mezclando `ALL_ROWS` y `FIRST_ROWS`, o razones visibles en
+  `V$SQL_SHARED_CURSOR`
 
 El diagnostico correcto debe seleccionar este pack solo si la evidencia muestra
 inestabilidad para el mismo SQL. No debe seleccionarlo por el nombre del

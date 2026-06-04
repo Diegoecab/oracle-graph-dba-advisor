@@ -163,9 +163,14 @@ incident triage, not as permission to pick the first plausible pack.
 For vague workload-performance prompts:
 
 1. Confirm the connected database context.
-2. Identify the top relevant graph SQL statements, not just the first one.
+2. Identify the top relevant workload SQL statements, not just the first one.
    Default to up to 5 candidate SQL statements ranked by elapsed time,
    buffer gets, active time, or recent activity depending on available views.
+   For generic customer graph workloads, prioritize SQL/PGQ and graph-related
+   SQL. For packaged Mini-DOWNER diagnostics, also include tagged supporting
+   workload SQL such as `DOWNER_PI_Q01%` even when the statement is not a
+   `GRAPH_TABLE` expression, because plan stability is a SQL workload property
+   and not limited to graph syntax.
 3. Classify each relevant SQL by observed evidence:
    - access-path/index gap
    - supernode or fan-out expansion
@@ -191,7 +196,11 @@ for all three packaged issue classes when their SQL/evidence is visible:
   path expansion from a high-degree identifier rather than an access-path gap.
 - `DOWNER_PI_Q01` / `plan-instability`: skewed lookup/query pattern where the
   expected defect is multiple plan hashes, child cursor churn, invalidation, or
-  elapsed-time deviation for the same logical SQL.
+  elapsed-time deviation for the same logical SQL. This Mini-DOWNER diagnostic
+  signal is intentionally SQL workload-level and may not contain `GRAPH_TABLE`;
+  do not skip it merely because it is not a SQL/PGQ statement. Use
+  `sql-templates/packs/plan-instability/` with `__PLAN_TAG__ = DOWNER_PI_Q01`
+  so both `DOWNER_PI_Q01` and `DOWNER_PI_Q01_DASH` are inspected.
 
 Only report a class as a finding when the evidence is present in the connected
 database. If the database currently exposes only `DOWNER_MI_Q01`, say that the

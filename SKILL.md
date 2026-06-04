@@ -52,6 +52,10 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   inspect multiple relevant SQL statements and report diagnostic coverage
   across missing-index, supernode/fan-out, plan-instability, and any other
   supported classes before concluding.
+- For Mini-DOWNER, plan-instability evidence is workload-level and may come
+  from `DOWNER_PI_Q01%` SQL that is not a `GRAPH_TABLE` statement. Do not skip
+  the `plan-instability` pack merely because the tagged SQL is not SQL/PGQ.
+  Run the pack with `__PLAN_TAG__ = DOWNER_PI_Q01` when that tag is visible.
 - Use the `SYSTEM_PROMPT.md` output contract exactly in every client: connected
   context, workload scope, top SQL classification, findings, diagnostic
   coverage, recommendations, and a final `Recommendation Summary` table. Do not
