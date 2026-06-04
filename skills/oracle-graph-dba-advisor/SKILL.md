@@ -52,10 +52,11 @@ inspect multiple relevant SQL statements and report diagnostic coverage across
 missing-index, supernode/fan-out, plan-instability, and other supported classes
 before concluding. Do not stop after the first missing-index finding when other
 visible SQL evidence points to a different issue class.
-For Mini-DOWNER, plan-instability evidence is workload-level and may come from
-`DOWNER_PI_Q01%` SQL that is not a `GRAPH_TABLE` statement. Do not skip the
-`plan-instability` pack merely because the tagged SQL is not SQL/PGQ. Run the
-pack with `__PLAN_TAG__ = DOWNER_PI_Q01` when that tag is visible.
+Plan Stability is a SQL workload property, not a SQL/PGQ-only property. Do not
+skip the `plan-instability` pack merely because the relevant SQL is not a
+`GRAPH_TABLE` statement. Include non-graph SQL only when it is linked to the
+graph workload by backing tables, module/action, SQL tag, procedure, schema,
+incident window, or user-provided workload scope.
 
 Use the `../../SYSTEM_PROMPT.md` output contract exactly in every client:
 connected context, workload scope, top SQL classification, findings,

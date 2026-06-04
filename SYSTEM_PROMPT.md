@@ -166,11 +166,24 @@ For vague workload-performance prompts:
 2. Identify the top relevant workload SQL statements, not just the first one.
    Default to up to 5 candidate SQL statements ranked by elapsed time,
    buffer gets, active time, or recent activity depending on available views.
-   For generic customer graph workloads, prioritize SQL/PGQ and graph-related
-   SQL. For packaged Mini-DOWNER diagnostics, also include tagged supporting
-   workload SQL such as `DOWNER_PI_Q01%` even when the statement is not a
-   `GRAPH_TABLE` expression, because plan stability is a SQL workload property
-   and not limited to graph syntax.
+   Prioritize SQL/PGQ and graph-related SQL, but do not limit Plan Stability
+   analysis to `GRAPH_TABLE` statements. Plan stability is a SQL workload
+   property. Include non-`GRAPH_TABLE` SQL only when there is evidence that it
+   belongs to the same graph workload, for example:
+   - it references graph backing vertex/edge tables or supporting feature
+     tables discovered in Phase 1
+   - its `MODULE`, `ACTION`, SQL comment tag, client identifier, service, or
+     job name matches the graph application/workload being analyzed
+   - the user named the tag, module, schema, graph, procedure, or incident
+     window and the SQL appears in that scope
+   - AWR/ASH or `V$SQL` shows it as a top contributor in the same time window
+     as the graph incident
+   - it is produced by a graph scoring, fraud, feature-generation, or traversal
+     pipeline procedure that the graph catalog/workload discovery has surfaced
+
+   Do not include arbitrary application SQL just because it is expensive. If
+   the linkage to the graph workload is not visible, keep it out of the graph
+   findings or mark Plan Stability as not evaluated for that SQL.
 3. Classify each relevant SQL by observed evidence:
    - access-path/index gap
    - supernode or fan-out expansion
@@ -185,22 +198,12 @@ For vague workload-performance prompts:
    which could not be evaluated because the required workload evidence was not
    present or visible.
 
-For Mini-DOWNER specifically, a vague "Mini-DOWNER is slow" prompt must check
-for all three packaged issue classes when their SQL/evidence is visible:
-
-- `DOWNER_MI_Q01` / `missing-index`: shared-device traversal over
-  `E_USES_DEVICE`, where missing leading indexes on `SRC` and `DST` are the
-  expected lab defect when supported by plan/catalog evidence.
-- `DOWNER_SN_Q01` / `supernode-fanout`: high-degree IP traversal over indexed
-  `E_USES_IP`, normally anchored at `IP00000001`, where the expected defect is
-  path expansion from a high-degree identifier rather than an access-path gap.
-- `DOWNER_PI_Q01` / `plan-instability`: skewed lookup/query pattern where the
-  expected defect is multiple plan hashes, child cursor churn, invalidation, or
-  elapsed-time deviation for the same logical SQL. This Mini-DOWNER diagnostic
-  signal is intentionally SQL workload-level and may not contain `GRAPH_TABLE`;
-  do not skip it merely because it is not a SQL/PGQ statement. Use
-  `sql-templates/packs/plan-instability/` with `__PLAN_TAG__ = DOWNER_PI_Q01`
-  so both `DOWNER_PI_Q01` and `DOWNER_PI_Q01_DASH` are inspected.
+For packaged demo workloads such as Mini-DOWNER, demo-specific SQL tags are
+fixtures used to make the evidence repeatable. Treat them as examples of the
+generic workload-linkage rule above, not as customer heuristics. In real
+customer workloads, infer the equivalent scope from the customer's graph
+schema, modules, SQL tags, application names, procedures, backing tables,
+AWR/ASH window, or the user's stated incident context.
 
 Only report a class as a finding when the evidence is present in the connected
 database. If the database currently exposes only `DOWNER_MI_Q01`, say that the
@@ -237,22 +240,23 @@ coverage section must state:
 - issue classes not evaluated because data was not visible through the
   read-only MCP grants
 
-For Mini-DOWNER, always include coverage rows for at least:
+When the workload has documented expected issue classes, include coverage rows
+for each of those classes. For example, the packaged Mini-DOWNER demo documents
+coverage for:
 
 - missing-index
 - supernode/fan-out
 - plan-instability
 
-If the evidence only supports missing-index, the report can recommend only
-indexes, but it must explicitly say that supernode/fan-out and
-plan-instability were checked and were not visible or not supported in the
-inspected workload window.
+If the evidence only supports one class, the report can recommend only that
+class, but it must explicitly say which documented classes were checked and
+were not visible or not supported in the inspected workload window.
 
-For Mini-DOWNER broad prompts, the final `Recommendation Summary` table must
-also make this visible. Do not end with only `Indexing` rows. If
-supernode/fan-out or plan-instability were checked but not supported, add
-`SKIPPED` rows with `Observe only: collect a fresh workload window before
-action` or `Skip` as the action. Example:
+For broad prompts, the final `Recommendation Summary` table must also make
+documented coverage visible. Do not end with only one category when other
+documented classes were checked. If a documented class was checked but not
+supported, add `SKIPPED` rows with `Observe only: collect a fresh workload
+window before action` or `Skip` as the action. Example:
 
 - `Supernode/Fan-out | SKIPPED | Checked; no high-degree/fan-out evidence
   visible in inspected SQL/window`
@@ -261,7 +265,7 @@ action` or `Skip` as the action. Example:
 
 This does not mean inventing findings. It means making checked-negative
 coverage explicit in the last table so a user reading only the summary can see
-that the advisor considered all three Mini-DOWNER scenarios.
+which expected issue classes were considered.
 
 In read-only MCP mode, recommendation actions must never be phrased as direct
 execution choices such as `Execute`, `Ejecutar`, `Simulate`, or `Simular`.

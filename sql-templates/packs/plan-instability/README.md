@@ -25,8 +25,16 @@ Intended use:
 - runtime consumption by the skill or MCP wrappers
 - no ad hoc SQL generation during diagnosis
 - stable, versioned query assets per diagnostic playbook
-- for Mini-DOWNER, run the pack with `__PLAN_TAG__ = DOWNER_PI_Q01` so both
-  `DOWNER_PI_Q01` and `DOWNER_PI_Q01_DASH` are included
+- choose `__PLAN_TAG__` from the customer's visible workload scope: SQL comment
+  tag, module/action, named application query family, incident label, or a
+  packaged demo tag
 - do not require the tagged SQL to contain `GRAPH_TABLE`; this pack diagnoses
   SQL workload plan stability, child cursor churn, plan-hash drift, and elapsed
   deviation for the same logical statement
+- include non-`GRAPH_TABLE` SQL only when it is linked to the graph workload by
+  backing tables, module/action, schema, SQL tag, procedure, AWR/ASH window, or
+  user-provided scope
+
+Example: in the Mini-DOWNER demo, `__PLAN_TAG__ = DOWNER_PI_Q01` covers both
+`DOWNER_PI_Q01` and `DOWNER_PI_Q01_DASH`. This is a demo fixture, not a generic
+customer heuristic.
