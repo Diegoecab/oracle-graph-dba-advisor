@@ -79,6 +79,10 @@ confirm INSERT rate. If the evidence is not visible, state that limitation. Use
 Do not use `P1/P2` for user-facing recommendations. For supernode/fan-out
 findings, provide concrete `AS-IS` and `TO-BE` query or feature-table examples,
 plus rollback/exit criteria.
+Do not infer a supernode/fan-out finding from average degree alone. Use the
+supernode pack only when skew/outlier evidence or measured path expansion
+supports it, such as anchor degree versus P95/P99, max-to-P95 ratio, high
+actual rows, or excessive intermediate rows for the candidate SQL.
 
 Keep the runtime read-only. The diagnostic MCP surface should expose only an
 approved SQL read tool such as `RUN_SQL`. Generate DDL recommendations as text

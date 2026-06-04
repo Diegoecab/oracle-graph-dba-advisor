@@ -75,6 +75,10 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   table. Do not use `P1/P2` for user-facing recommendations.
 - For supernode/fan-out findings, provide concrete `AS-IS` and `TO-BE` query or
   feature-table examples, plus rollback/exit criteria.
+- Do not infer a supernode/fan-out finding from average degree alone. Use the
+  supernode pack only when skew/outlier evidence or measured path expansion
+  supports it, such as anchor degree versus P95/P99, max-to-P95 ratio,
+  high actual rows, or excessive intermediate rows for the candidate SQL.
 - During diagnosis, treat the connected workload as a real incident. Do not call
   it a demo/lab or reference repository runbooks unless the user explicitly asks
   for setup or out-of-band validation commands.

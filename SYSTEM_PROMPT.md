@@ -144,6 +144,11 @@ what class of problem is present:
   drives excessive intermediate rows or path expansion, especially when the
   relevant traversal indexes are already present and the issue is not explained
   by a simple access-path gap.
+- Do not label supernode/fan-out from average degree alone. Average degree may
+  justify further exploration, but a supernode finding requires skew/outlier
+  evidence such as anchor degree versus P95/P99, max-to-median or max-to-P95
+  ratio, rows processed far above estimates, or measured path expansion for the
+  candidate SQL.
 - If no specialized pack is justified, continue with the general 8-phase
   methodology and state that no pack has been selected yet.
 - When selecting a pack, say why in evidence terms, for example:

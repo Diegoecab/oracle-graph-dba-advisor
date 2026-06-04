@@ -32,6 +32,11 @@ Template placeholders:
 Runtime rule:
 
 - Use this pack through `RUN_SQL` only for diagnosis.
+- Average degree alone is not sufficient evidence for a supernode/fan-out
+  finding. Treat average degree as a context metric only. The finding requires
+  skew/outlier or path-expansion evidence, such as anchor degree versus P95/P99,
+  max-to-P95 ratio, actual rows far above estimates, or measured intermediate
+  row expansion for the candidate SQL.
 - Do not treat a supernode finding as an index-only remediation. Validate index
   coverage, then focus recommendations on degree-aware query constraints,
   high-degree handling, precomputed features, or model cleanup.
