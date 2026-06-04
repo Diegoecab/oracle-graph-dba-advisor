@@ -9,3 +9,7 @@ diagnostic phase. Select specialized packs only after the evidence in
 
 When an MCP SQL tool is available, keep diagnostics read-only and confirm the
 active database context before workload analysis.
+
+Treat the connected workload as a real incident during diagnosis. Do not call it
+a demo/lab or reference repository runbooks unless the user explicitly asks for
+setup or out-of-band validation commands.

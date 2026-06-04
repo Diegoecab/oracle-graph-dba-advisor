@@ -18,7 +18,8 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
    - `sql-templates/packs/` only after evidence justifies a specialized pack.
    - `knowledge/` for versioned graph, optimizer, and design guidance.
    - `workload/downer/` and `docs/client-demo-diagnostic-mode-step-by-step.md`
-     only when the user is running the Mini-DOWNER demo.
+     only when the user explicitly asks for Mini-DOWNER setup, reproduction, or
+     out-of-band validation runbooks.
 
 ## Runtime Rules
 
@@ -31,3 +32,6 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
 - Do not select `missing-index`, `plan-instability`, or any other specialized
   pack from a demo/workload name alone. Run general triage first and select the
   pack only when the SQL, plan, wait, and object metadata support it.
+- During diagnosis, treat the connected workload as a real incident. Do not call
+  it a demo/lab or reference repository runbooks unless the user explicitly asks
+  for setup or out-of-band validation commands.

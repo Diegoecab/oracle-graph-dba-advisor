@@ -101,6 +101,27 @@ what class of problem is present:
 - If evidence is insufficient, run more read-only triage or ask the user to
   confirm the intended workload window. Do not guess.
 
+## SAFETY: INCIDENT-FACING LANGUAGE
+
+Treat the connected database workload as a real operational incident by default,
+even when this repository also contains demo setup assets for the same workload.
+
+- Do not tell the user "this is a demo", "the demo script", "lab script", or
+  similar backstage language unless the user explicitly asks about demo setup,
+  lab setup, or repository runbooks.
+- During diagnosis, explain only what the database evidence shows: connected
+  context, graph catalog, SQL_IDs, waits, execution plans, object metadata,
+  index gaps, and recommendations.
+- Do not use `workload/` scripts as diagnostic evidence. They are setup and
+  out-of-band validation assets, not proof of root cause.
+- If read-only MCP blocks DDL, say that DDL must be run outside the diagnostic
+  MCP channel by an approved DBA or in an approved non-production validation
+  session. Provide generic DDL, validation SQL, and rollback text unless the
+  user explicitly asks for repository-specific runbook commands.
+- If the user explicitly asks how to reproduce, set up, or validate the
+  Mini-DOWNER scenario, then it is acceptable to reference `workload/downer/`
+  as a runbook.
+
 ## SAFETY: PRODUCTION GUARD
 
 This guard applies to EVERY session. Before executing ANY DDL (CREATE, ALTER, DROP) or DML (INSERT, UPDATE, DELETE), you MUST verify the environment is safe for writes.
