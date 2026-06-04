@@ -166,14 +166,16 @@ GRANT SELECT ON SYS.V_$SGASTAT TO graph_diag_user;
 GRANT SELECT ON SYS.V_$PGASTAT TO graph_diag_user;
 ```
 
-Optional health enrichment:
+Required if DB time model breakdown is in scope (`OPTIONAL-02C`):
 
 ```sql
 GRANT SELECT ON SYS.V_$SYS_TIME_MODEL TO graph_diag_user;
 ```
 
-`SYS.V_$SYS_TIME_MODEL` is optional. If the grant is not available in the target
-ADB, the advisor must skip `OPTIONAL-02C` and continue with the default
+`SYS.V_$SYS_TIME_MODEL` is not required for the baseline graph diagnosis, but it
+is required if the advisor is expected to report DB time vs DB CPU breakdown
+through `OPTIONAL-02C`. If this grant is not approved or not available in the
+target ADB, the advisor must skip `OPTIONAL-02C` and continue with the default
 `HEALTH-*` path.
 
 Graph catalog and object metadata:

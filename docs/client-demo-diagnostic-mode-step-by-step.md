@@ -457,6 +457,13 @@ en Claude `Customize > Connectors`, o configurar `mcp-remote` en
 `claude_desktop_config.json`, reiniciar Claude Desktop y habilitar ese conector
 en el chat antes de pedir el diagnostico.
 
+Si el alcance de la demo incluye breakdown DB time vs DB CPU, pedir/aplicar este
+grant antes de usar `OPTIONAL-02C`:
+
+```sql
+GRANT SELECT ON SYS.V_$SYS_TIME_MODEL TO GRAPH_DIAG_USER;
+```
+
 Si `RUN_SQL` devuelve `ORA-00942` sobre `SYS.V_$SYS_TIME_MODEL`, no detener el
 diagnostico. Ese probe corresponde a `OPTIONAL-02C`, una metrica opcional de DB
 time model que no forma parte del health path default. Actualizar el skill a la

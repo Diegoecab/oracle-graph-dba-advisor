@@ -21,6 +21,7 @@ Consultive Mode, and SQLcl runtime setup.
 | Diagnostic access | Direct read grants on performance, graph catalog, health, AWR, and ASH views | Yes |
 | Runtime writes | No DDL, DML, PL/SQL, or admin tool exposure | Yes |
 | AWR/ASH | Access approved for historical diagnosis | Yes |
+| DB time model | `SYS.V_$SYS_TIME_MODEL` for DB time vs DB CPU breakdown / `OPTIONAL-02C` | Conditional |
 
 Primary requirement detail:
 
@@ -182,6 +183,19 @@ GRANT SELECT ON DBA_HIST_SYSTEM_EVENT TO graph_diag_user;
 GRANT SELECT ON DBA_HIST_PGASTAT TO graph_diag_user;
 GRANT SELECT ON DBA_HIST_ACTIVE_SESS_HISTORY TO graph_diag_user;
 ```
+
+### DB time model breakdown
+
+Grant this when the diagnostic scope includes DB time vs DB CPU breakdown or
+the advisor should run `OPTIONAL-02C`:
+
+```sql
+GRANT SELECT ON SYS.V_$SYS_TIME_MODEL TO graph_diag_user;
+```
+
+This grant is not required for the baseline graph diagnosis. If it is not
+approved, the advisor must skip `OPTIONAL-02C` and continue with the default
+`HEALTH-*` path.
 
 ### Optional plan management visibility
 

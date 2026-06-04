@@ -274,6 +274,16 @@ Optional heavier historical extension:
 GRANT SELECT ON DBA_HIST_ACTIVE_SESS_HISTORY TO graph_diag_user;
 ```
 
+DB time model extension:
+
+```sql
+GRANT SELECT ON SYS.V_$SYS_TIME_MODEL TO graph_diag_user;
+```
+
+This is required only when the advisor should report DB time vs DB CPU
+breakdown through `OPTIONAL-02C`. It is not required for the baseline graph
+diagnosis.
+
 ## Native MCP requirements
 
 If the client uses **ADB Native MCP**, prefer a DBA/installer-managed lifecycle

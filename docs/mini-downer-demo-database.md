@@ -109,9 +109,12 @@ Code, run `/mcp`, and authenticate with `GRAPH_DIAG_USER`.
   PL/SQL, comments, statement terminators, `SELECT FOR UPDATE`, and
   side-effect packages outside string literals, while allowing recommendation
   text literals that contain words such as `CREATE INDEX` or `DROP INDEX`.
-- `SYS.V_$SYS_TIME_MODEL` is optional. If `RUN_SQL` returns ORA-00942 for that
-  view, do not stop the diagnosis; skip `OPTIONAL-02C` and continue with the
-  default `HEALTH-*` path.
+- `SYS.V_$SYS_TIME_MODEL` is required only if the demo scope includes DB time
+  vs DB CPU breakdown through `OPTIONAL-02C`. If that evidence is expected,
+  request/apply `GRANT SELECT ON SYS.V_$SYS_TIME_MODEL TO GRAPH_DIAG_USER`.
+  If the grant is not approved or `RUN_SQL` returns ORA-00942 for that view, do
+  not stop the diagnosis; skip `OPTIONAL-02C` and continue with the default
+  `HEALTH-*` path.
 
 Validation evidence from 2026-06-04:
 
