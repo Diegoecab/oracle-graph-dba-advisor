@@ -457,6 +457,14 @@ a separate `codex plugin list` or `codex plugin update` command. To know a new
 version is available, use the repository release/tag or the plugin manifest
 version in `.codex-plugin/plugin.json`, then run `marketplace upgrade`.
 
+If Codex reports `No configured Git marketplaces to upgrade`, add the GitHub
+marketplace again, restart Codex, and select the plugin from the plugin
+directory:
+
+```powershell
+codex plugin marketplace add Diegoecab/oracle-graph-dba-advisor
+```
+
 If the skill was installed by cloning the repository into the local skills
 directory, update it with Git:
 
