@@ -380,6 +380,35 @@ conexion antes de leer performance. Esto evita diagnosticar otra ADB si el
 usuario tiene varios MCPs configurados. Si el contexto no coincide con
 Mini-DOWNER, el skill debe detenerse y pedir confirmacion.
 
+### Troubleshooting MCP en Claude
+
+Si Claude Code muestra una URL de autorizacion como:
+
+```text
+https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/auth/v1/mcp/databases/.../authorize?...redirect_uri=http://localhost:<port>/callback...
+```
+
+eso es esperado. Abrir la URL completa en el navegador, autenticar con
+`GRAPH_DIAG_USER`, esperar el callback local y volver a Claude Code. Luego usar
+`/mcp` para confirmar que `graph-mini-fraud-downer-26ai` esta conectado y que
+expone `RUN_SQL`.
+
+Si Claude Desktop responde que no hay canal SQL disponible y lista solo Gmail,
+Drive, Slack, GitHub u otros conectores generales, el skill fue cargado pero la
+ADB no esta conectada a esa conversacion. Agregar el conector remoto de ADB MCP
+en Claude `Customize > Connectors`, o configurar `mcp-remote` en
+`claude_desktop_config.json`, reiniciar Claude Desktop y habilitar ese conector
+en el chat antes de pedir el diagnostico.
+
+Para Mini-DOWNER, el MCP remoto correcto es:
+
+```text
+https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa
+```
+
+No confundir el skill con el MCP: el skill aporta metodologia; el MCP aporta el
+tool `RUN_SQL` que permite consultar la ADB.
+
 ### Paso 2 - Ejecutar el camino diagnostico
 
 Durante la demo conversacional, el skill debe seleccionar el camino con base en

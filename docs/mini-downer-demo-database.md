@@ -28,6 +28,29 @@ Last verified: 2026-06-04
 - SQL Developer Web:
   `https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/ords/sql-developer`
 
+## MCP client commands
+
+Claude Code OAuth/no-bearer:
+
+```powershell
+claude mcp add --transport http --scope user `
+  graph-mini-fraud-downer-26ai `
+  "https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa"
+```
+
+When Claude Code prints the authorization URL, open it in a browser and sign in
+with `GRAPH_DIAG_USER`. The OAuth callback is local to the Claude Code session.
+
+Codex bearer-token mode:
+
+```powershell
+codex mcp add graph-mini-fraud-downer-26ai `
+  --url "https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa" `
+  --bearer-token-env-var ADB_MCP_TOKEN
+```
+
+Bearer tokens are temporary; refresh `ADB_MCP_TOKEN` before a live demo.
+
 ## Runtime users
 
 - Demo owner schema: `DOWNER_DEMO`

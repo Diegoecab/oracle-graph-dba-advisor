@@ -420,6 +420,10 @@ $env:ADB_MCP_TOKEN = $tokenResponse.access_token
 Remove-Variable graphDiagPassword -ErrorAction SilentlyContinue
 ```
 
+The bearer token is valid for 1 hour. Prefer OAuth/no-bearer mode for Claude
+Code and Claude Desktop when the client supports it, because the client handles
+the browser authorization flow instead of requiring a copied token.
+
 #### Add the ADB Native MCP server in Codex
 
 Configure one MCP server per target ADB. For the Mini-DOWNER demo, replace the
@@ -519,17 +523,45 @@ for graph workload diagnostics.
 
 #### Add the ADB Native MCP server in Claude Code
 
-Configure the ADB Native MCP server separately. Example for Mini-DOWNER:
+Configure the ADB Native MCP server separately. Recommended OAuth/no-bearer
+mode for Mini-DOWNER:
 
 ```powershell
 claude mcp add --transport http --scope user `
-  graph-advisor-downer `
+  graph-mini-fraud-downer-26ai `
+  "https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa"
+```
+
+Then start Claude Code, run `/mcp`, and follow the browser authorization URL.
+Log in with the dedicated diagnostic database user, normally
+`GRAPH_DIAG_USER`, and its database password. If Claude prints a long
+`/authorize?...redirect_uri=http://localhost:<port>/callback...` URL, that is
+the expected OAuth flow. Copy the full URL into a browser if it is line-wrapped
+in the terminal.
+
+Bearer-token mode is also supported, but the token expires after about one
+hour. Use it only when you explicitly want static-token behavior:
+
+```powershell
+claude mcp add --transport http --scope user `
+  graph-mini-fraud-downer-26ai `
   "https://dataaccess.adb.$env:ADB_REGION.oraclecloudapps.com/adb/mcp/v1/databases/$env:ADB_OCID" `
   --header "Authorization: Bearer $env:ADB_MCP_TOKEN"
 ```
 
 Use `/mcp` inside Claude Code to verify that the server is connected and that
 only the approved read-only tool, normally `RUN_SQL`, is available.
+
+Troubleshooting:
+
+- If Claude Code asks to open an authorization URL, open it, authenticate with
+  `GRAPH_DIAG_USER`, and return to the terminal after the localhost callback
+  completes.
+- If `/mcp` shows the server still connecting, retry the authorization flow or
+  remove and re-add the MCP server.
+- If using bearer mode and authentication starts failing after a while,
+  regenerate `ADB_MCP_TOKEN`, update the environment variable, and restart
+  Claude Code.
 
 #### Update the Claude Code plugin
 
@@ -580,24 +612,40 @@ npx --yes degit Diegoecab/oracle-graph-dba-advisor "$tmpdir/oracle-graph-dba-adv
 Upload `oracle-graph-dba-advisor-skill.zip` in Claude under
 `Customize > Skills > Create skill > Upload a skill`.
 
-If the target is Claude Desktop with local MCP enabled, add the ADB Native MCP
-server to `claude_desktop_config.json`. Example for Mini-DOWNER:
+The skill alone is not enough. Claude Desktop also needs an ADB MCP connector.
+If Claude says that Gmail, Drive, Slack, GitHub, etc. are available but no
+`RUN_SQL`, `run-sql`, `run-sqlcl`, ADB Native MCP, or SQLcl MCP tool exists,
+then the database connector is not attached to that chat.
+
+Option A: add the remote ADB MCP as a Claude custom connector from the UI.
+
+1. Open Claude `Customize > Connectors`.
+2. Choose `Add custom connector`.
+3. Use this Mini-DOWNER remote MCP URL:
+
+```text
+https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa
+```
+
+4. Connect/authenticate with `GRAPH_DIAG_USER`.
+5. In the chat, enable that connector before asking for diagnosis.
+
+Option B: if the target is Claude Desktop with local MCP config enabled, add
+the ADB Native MCP server to `claude_desktop_config.json` through `mcp-remote`.
+OAuth/no-bearer example for Mini-DOWNER:
 
 ```json
 {
   "mcpServers": {
-    "graph-advisor-downer": {
+    "graph-mini-fraud-downer-26ai": {
       "description": "Oracle Graph DBA Advisor on ADB Native MCP for Mini-DOWNER.",
       "command": "npx",
       "args": [
         "-y",
         "mcp-remote",
-        "https://dataaccess.adb.us-ashburn-1.oraclecloudapps.com/adb/mcp/v1/databases/<adb-ocid>"
-      ],
-      "transport": "streamable-http",
-      "headers": {
-        "Authorization": "Bearer <bearer-token>"
-      }
+        "--allow-http",
+        "https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa"
+      ]
     }
   }
 }
@@ -605,6 +653,30 @@ server to `claude_desktop_config.json`. Example for Mini-DOWNER:
 
 Restart Claude Desktop and verify that the server lists only the approved
 read-only tool, normally `RUN_SQL`.
+
+On Windows, if Claude Desktop cannot resolve `npx`, use the full Node.js path:
+
+```json
+{
+  "mcpServers": {
+    "graph-mini-fraud-downer-26ai": {
+      "description": "Oracle Graph DBA Advisor on ADB Native MCP for Mini-DOWNER.",
+      "command": "C:\\Program Files\\nodejs\\npx.cmd",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "--allow-http",
+        "https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa"
+      ]
+    }
+  }
+}
+```
+
+Do not put `"transport": "streamable-http"` in the Claude Desktop
+`mcp-remote` entry. `mcp-remote` manages the transport itself. For static
+bearer-token mode, prefer Claude Code's `claude mcp add --header ...` path;
+otherwise the one-hour token must be refreshed and the client restarted.
 
 See [clients/README.md](clients/README.md) and
 [clients/claude-desktop-adb-bearer-multidb.json](clients/claude-desktop-adb-bearer-multidb.json)
