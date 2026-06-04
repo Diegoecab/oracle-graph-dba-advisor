@@ -556,6 +556,14 @@ For target-selection gate testing, this repo also includes
 same Mini-DOWNER ADB. With both aliases visible, a vague prompt should make the
 skill ask which MCP target to use before running SQL.
 
+Mini-DOWNER remediation channel: the advisor MCP is read-only. Use Database
+Actions SQL / SQL Developer Web to apply approved DBA validation or remediation
+scripts:
+
+```text
+https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/ords/sql-developer
+```
+
 #### Update the Codex plugin or local skill
 
 For the marketplace path, refresh the configured marketplace and restart Codex:

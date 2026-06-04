@@ -36,7 +36,8 @@ is stale unless this file has been intentionally updated to match it.
   `https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/graphstudio/`
 - Graph Studio, OCI SSO launch:
   `https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/graphstudio/?sso=true`
-- SQL Developer Web:
+- Database Actions SQL / SQL Developer Web, for applying approved DBA
+  validation or remediation scripts outside the read-only MCP channel:
   `https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/ords/sql-developer`
 
 ## MCP client commands

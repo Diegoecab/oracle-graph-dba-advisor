@@ -45,7 +45,8 @@ URLs operativas de la ADB activa:
   `https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/graphstudio/`
 - Graph Studio via OCI SSO:
   `https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/graphstudio/?sso=true`
-- SQL Developer Web:
+- Database Actions SQL / SQL Developer Web para implementar recomendaciones
+  aprobadas fuera del MCP read-only:
   `https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/ords/sql-developer`
 
 ## Que problema representa este caso
@@ -363,7 +364,9 @@ Durante la demo, abrir Performance Dashboard y mostrar:
 6. evidencia posterior del plan con full scans sobre `E_USES_DEVICE`
 
 Luego ejecutar el skill por MCP read-only. La remediacion se aplica fuera del
-canal MCP, como accion lab-only de DBA:
+canal MCP, como accion lab-only de DBA, desde Database Actions SQL:
+
+`https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/ords/sql-developer`
 
 ```sql
 @workload/downer/14_apply_visible_index_fix.sql
@@ -570,7 +573,10 @@ remediacion con aprobacion DBA.
 
 ## Validacion lab-only de remediacion
 
-La remediacion no se ejecuta por MCP.
+La remediacion no se ejecuta por MCP. Usar Database Actions SQL / SQL Developer
+Web para correr estos scripts con el usuario adecuado:
+
+`https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/ords/sql-developer`
 
 Para probar impacto, ejecutar como `DOWNER_DEMO`:
 
