@@ -480,6 +480,18 @@ Para Mini-DOWNER, el MCP remoto correcto es:
 https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa
 ```
 
+Esta demo usa una ADB publica. Si el cliente usa ADB con Private Endpoint, el
+formato del MCP cambia solo en el host:
+
+```text
+https://<hostname_prefix>.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<adb-ocid>
+```
+
+El cliente MCP debe ejecutarse dentro de la VCN o desde una red conectada por
+VPN, FastConnect, Bastion/SOCKS o un compute runner en OCI. Mantener el
+hostname privado original en la URL; no reemplazarlo por `localhost`, una IP
+privada o un hostname de proxy que rompa TLS/SNI.
+
 Si se usa bearer token estatico en lugar de OAuth, el token dura 1 hora desde
 su emision. Generarlo justo antes de la demo, actualizar `ADB_MCP_TOKEN` y
 reiniciar o reconectar el cliente MCP. Si durante la demo el MCP empieza a

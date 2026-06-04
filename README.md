@@ -251,6 +251,25 @@ Detailed docs:
 
 5. Configure the MCP client with the ADB Native MCP endpoint.
 
+   Public endpoint format:
+
+   ```text
+   https://dataaccess.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<adb-ocid>
+   ```
+
+   Private endpoint format:
+
+   ```text
+   https://<hostname_prefix>.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<adb-ocid>
+   ```
+
+   For private endpoint databases, get `hostname_prefix` from the database's
+   Private Endpoint URL in the OCI Console network section. The MCP client must
+   run inside the target VCN or from a connected network path such as VPN,
+   FastConnect, OCI Bastion, or an OCI Compute runner in the VCN. Preserve the
+   private hostname in the MCP URL; do not replace it with `localhost`, an IP
+   address, or a proxy hostname that breaks TLS/SNI validation.
+
    ```json
    {
      "mcpServers": {
@@ -523,6 +542,33 @@ fresh token immediately before starting the session, export it as
 OAuth/no-bearer mode for Claude Code and Claude Desktop when the client
 supports it, because the client handles the browser authorization flow instead
 of requiring a copied token.
+
+#### Public vs private ADB MCP URLs
+
+The Mini-DOWNER demo database is currently public, so its MCP URL uses the
+public ADB Native MCP host:
+
+```text
+https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa
+```
+
+For a customer ADB with Private Endpoint enabled, only the host changes; keep
+the same MCP path and database OCID:
+
+```text
+https://<hostname_prefix>.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<adb-ocid>
+```
+
+Operational guidance for private ADB:
+
+- run Claude/Codex on an OCI Compute instance in the same VCN, or from a
+  corporate network connected through VPN/FastConnect
+- if using Bastion or SOCKS, preserve the original private hostname and TLS/SNI
+  in the MCP URL
+- avoid reverse proxies that expose the private endpoint publicly
+- create one MCP alias per ADB, exactly as with public endpoints
+- keep the skill unchanged; only the MCP URL, authentication, and network path
+  change
 
 #### Add the ADB Native MCP server in Codex
 
@@ -898,6 +944,34 @@ Runtime source-of-truth model:
 2. `SKILL.md`, `CLAUDE.md`, and `skills/oracle-graph-dba-advisor/SKILL.md` are
    lightweight loaders.
 3. `AGENTS.md` captures repository maintenance rules for future coding agents.
+
+## Prompt architecture
+
+`SYSTEM_PROMPT.md` is intentionally the canonical runtime contract, but it
+should not become a catch-all notebook. Keep it for rules that must be stable
+across Claude, Codex, and other MCP clients:
+
+- safety gates and read-only behavior
+- phase order and diagnostic decision rules
+- output contract and final report structure
+- canonical categories, statuses, and priority semantics
+- constraints that prevent known client drift
+
+Move everything else out of the system prompt:
+
+- executable SQL belongs in `sql-templates/`
+- specialized diagnostics belong in `sql-templates/packs/`
+- detailed phase instructions belong in `phases/`
+- versioned product knowledge belongs in `knowledge/`
+- demo setup, reproduction, and remediation runbooks belong in `docs/` or
+  `workload/`
+
+Best-practice rule for this repo: entrypoints stay small, the system prompt
+stays as the shared contract, and large procedural detail is loaded by
+progressive disclosure only when the current task needs it. If a new rule is
+only for one diagnostic path, put it in the relevant phase or pack instead of
+expanding `SYSTEM_PROMPT.md`. If a rule affects every client and every
+diagnostic report, keep it in `SYSTEM_PROMPT.md` and update the plugin version.
 
 ## Roadmap
 

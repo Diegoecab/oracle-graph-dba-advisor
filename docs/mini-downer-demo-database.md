@@ -40,6 +40,18 @@ is stale unless this file has been intentionally updated to match it.
   validation or remediation scripts outside the read-only MCP channel:
   `https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/ords/sql-developer`
 
+This demo ADB is public. If a future lab or customer ADB uses Private Endpoint,
+the MCP URL format changes only in the host:
+
+```text
+https://<hostname_prefix>.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<adb-ocid>
+```
+
+The client running Claude/Codex must be on the VCN or a connected network path
+that can resolve and reach the private hostname. Keep the private hostname in
+the MCP URL; do not replace it with `localhost`, a raw private IP, or a proxy
+hostname.
+
 ## MCP client commands
 
 If more than one ADB MCP is configured in the client, the skill should not guess

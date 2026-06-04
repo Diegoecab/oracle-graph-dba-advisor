@@ -8,6 +8,11 @@
 - `README.md` is user-facing install and operation documentation, not runtime policy.
 - For Mini-DOWNER, `docs/mini-downer-demo-database.md` is the operational source of truth. If older memory, local MCP files, or prior notes mention `GADVDOWNERAF`, `us-ashburn-1`, `graph-advisor-newfraud`, or an Ashburn OCID for Mini-DOWNER, treat that as stale unless the demo database doc has been updated to match it.
 - The current Mini-DOWNER MCP name is `graph-mini-fraud-downer-26ai`; use that explicit server name when multiple ADB MCP servers are configured.
+- Keep `SYSTEM_PROMPT.md` as the cross-client runtime contract, not a catch-all
+  notebook. Put universal safety, phase-order, target-selection, and report
+  format rules there. Put path-specific SQL, long examples, setup steps, and
+  remediation runbooks in `sql-templates/`, `sql-templates/packs/`, `phases/`,
+  `knowledge/`, `docs/`, or `workload/` instead.
 
 ## Skill Packaging
 
@@ -19,6 +24,10 @@
   - `.claude-plugin/plugin.json`
   - `.claude-plugin/marketplace.json`
 - Keep plugin and skill metadata concise. Put detailed workflows in `SYSTEM_PROMPT.md`, `phases/`, `knowledge/`, `sql-templates/`, and `docs/`.
+- When `SYSTEM_PROMPT.md` grows, first check whether the new material is a
+  universal behavioral contract. If it is only a diagnostic recipe, example,
+  product note, or demo procedure, move it to a lazily loaded support file and
+  add only a short pointer from the runtime contract.
 
 ## Diagnostic Behavior
 

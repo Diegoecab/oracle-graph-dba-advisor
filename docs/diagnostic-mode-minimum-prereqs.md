@@ -269,6 +269,27 @@ Revoke any other installation-only privileges that are not needed at runtime.
 For multi-database use, create one MCP server entry per target database. Keep
 the skill and tool contract unchanged.
 
+## Public and private ADB MCP endpoint formats
+
+Public ADB Native MCP endpoint:
+
+```text
+https://dataaccess.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<adb-ocid>
+```
+
+ADB with Private Endpoint:
+
+```text
+https://<hostname_prefix>.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<adb-ocid>
+```
+
+For private endpoint databases, `hostname_prefix` is the prefix shown in the
+database's Private Endpoint URL in OCI. The MCP client must be able to resolve
+and reach that private hostname from the VCN or a connected network path such
+as VPN, FastConnect, Bastion/SOCKS, or an OCI Compute runner in the VCN. Keep
+the original private hostname in the MCP configuration so TLS/SNI still matches.
+Do not configure the MCP URL as `https://localhost:...` or as a raw private IP.
+
 ## Validation checklist
 
 Complete these checks before running the skill.

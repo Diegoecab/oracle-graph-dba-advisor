@@ -57,6 +57,14 @@ For Private Endpoint databases:
 https://<hostname_prefix>.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>
 ```
 
+`hostname_prefix` comes from the ADB Private Endpoint URL shown in the OCI
+Console. The machine running the MCP client must resolve and reach that private
+hostname through the VCN or a connected network path such as VPN, FastConnect,
+OCI Bastion/SOCKS, or an OCI Compute runner in the same VCN. Keep the private
+hostname in the MCP URL so TLS/SNI still matches; do not replace it with
+`localhost`, a raw private IP, or a proxy hostname. The path
+`/adb/mcp/v1/databases/<database-ocid>` stays the same.
+
 ### Step 2: Register the Read-Only SQL Tool Contract
 
 > **Note:** We use `DBMS_CLOUD_AI_AGENT.CREATE_TOOL` only as the **tool registration mechanism** for the ADB MCP server. The advisor does NOT use Select AI's NL2SQL capability — the LLM generates SQL directly using the sql-templates and SYSTEM_PROMPT knowledge. The `CREATE_TOOL` API simply exposes PL/SQL functions as MCP-callable tools.
