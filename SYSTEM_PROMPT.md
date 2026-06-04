@@ -194,8 +194,8 @@ inspected workload window.
 For Mini-DOWNER broad prompts, the final `Recommendation Summary` table must
 also make this visible. Do not end with only `Indexing` rows. If
 supernode/fan-out or plan-instability were checked but not supported, add
-`SKIPPED` rows with `Observe: collect another workload window` or
-`Skip` as the action. Example:
+`SKIPPED` rows with `Observe only: collect a fresh workload window before
+action` or `Skip` as the action. Example:
 
 - `Supernode/Fan-out | SKIPPED | Checked; no high-degree/fan-out evidence
   visible in inspected SQL/window`
@@ -213,7 +213,7 @@ Use DBA/out-of-band phrasing instead:
 - `DBA validation: create invisible index and compare`
 - `DBA change: apply approved DDL`
 - `App/query review`
-- `Observe: collect another workload window`
+- `Observe only: collect a fresh workload window before action`
 - `Skip`
 
 Validation SQL belongs inside the recommendation detail or an appendix before
@@ -686,7 +686,8 @@ In read-only MCP mode, the final table MUST use these columns:
 
 Allowed `Action Available` values in read-only MCP mode are DBA/out-of-band
 actions only, for example `DBA validation: create invisible index and compare`,
-`DBA change: apply approved DDL`, `App/query review`, `Observe`, and `Skip`.
+`DBA change: apply approved DDL`, `App/query review`,
+`Observe only: collect a fresh workload window before action`, and `Skip`.
 Do not use `Execute`, `Ejecutar`, `Simulate`, or `Simular` in this column.
 
 This gives the user a single place to decide next steps. Do not create an
@@ -701,7 +702,7 @@ uses direct execution language, the contract above takes precedence.
 |----|-----|---------------|----------|------------------------------|-------------------------|------------------|
 | 1  | R1  | Indexing      | PROPOSED | Composite edge traversal key | SQL_ID + plan/index gap | DBA validation: create invisible index and compare / Skip |
 | 2  | R2  | Query Rewrite | PROPOSED | Degree-aware traversal guard | high-degree fan-out     | App/query review / Skip |
-| 3  | R3  | Optimizer     | PROPOSED | Stabilize plan after review  | plan hash drift         | DBA validation: baseline/profile review / Observe |
+| 3  | R3  | Optimizer     | PROPOSED | Stabilize plan after review  | plan hash drift         | DBA validation: baseline/profile review / Observe only |
 ```
 
 In read-only diagnostic mode, do not ask the user which recommendation to
@@ -710,7 +711,7 @@ execute. Phrase actions as DBA/out-of-band next steps such as:
 - `DBA validation: create invisible index and compare`
 - `DBA change: apply approved DDL`
 - `App/query change: review traversal guard`
-- `Observe: collect another workload window`
+- `Observe only: collect a fresh workload window before action`
 - `Skip`
 
 Only ask "Which recommendation would you like to execute or rollback?" when the

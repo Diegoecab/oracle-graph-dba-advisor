@@ -282,7 +282,11 @@ Validacion esperada:
 
 1. `tools/list` expone solo `RUN_SQL`.
 2. `RUN_SQL` acepta `SELECT COUNT(*)`.
-3. `RUN_SQL` rechaza DDL, DML, PL/SQL, comentarios y semicolons.
+3. `RUN_SQL` rechaza DDL, DML, PL/SQL, comentarios y terminadores de sentencia
+   fuera de literales de texto.
+4. `RUN_SQL` acepta texto de recomendacion dentro de un `SELECT`, aunque el
+   literal contenga palabras como `CREATE INDEX`, `DROP INDEX`, `FOR UPDATE`,
+   `--` o `;`.
 
 ## Carga continua para Performance Dashboard
 

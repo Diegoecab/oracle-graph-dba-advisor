@@ -58,7 +58,7 @@ flowchart TB
         endpoint["ADB Native MCP endpoint<br/>one endpoint per target database"]
         auth["OAuth or bearer token<br/>dedicated technical user"]
         tool["RUN_SQL<br/>read-only SELECT/WITH only"]
-        guardrails["Database-side guardrails<br/>block DDL, DML, PL/SQL, comments, semicolons"]
+        guardrails["Database-side guardrails<br/>literal-aware DDL/DML/comment blocking"]
     end
 
     subgraph database["Oracle Database 23ai / 26ai"]
@@ -99,8 +99,11 @@ flowchart TB
 
 For ADB Serverless Diagnostic Mode, the runtime should expose a minimal MCP tool
 surface. The recommended tool contract is `RUN_SQL`; it must accept only
-read-only diagnostic SQL and reject DDL, DML, PL/SQL, comments, semicolons,
-client commands, side-effect packages, and `SELECT FOR UPDATE`.
+read-only diagnostic SQL and reject DDL, DML, PL/SQL, comments, statement
+terminators, client commands, side-effect packages, and `SELECT FOR UPDATE`
+when those tokens appear outside string literals. Returned recommendation text
+may safely contain words such as `CREATE INDEX`, `DROP INDEX`, or `FOR UPDATE`
+inside string literals.
 
 SQLcl MCP remains a compatibility path when ADB Native MCP is not the target.
 It should not be required for the production ADB Serverless diagnostic skill.

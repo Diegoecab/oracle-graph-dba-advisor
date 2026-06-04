@@ -70,10 +70,14 @@ this repo, prefer the hardened setup script:
 @clients/adb-native-run-sql-readonly.sql
 ```
 
-The function rejects non-`SELECT`/`WITH` statements, comments, semicolons, DDL,
-DML, PL/SQL, SQLcl commands, `SELECT FOR UPDATE`, and known side-effect
-packages. The simplified example below illustrates the contract only; do not use
-it unchanged for a customer-facing deployment.
+The function rejects non-`SELECT`/`WITH` statements, comments, statement
+terminators, DDL, DML, PL/SQL, SQLcl commands, `SELECT FOR UPDATE`, and known
+side-effect packages when those tokens appear outside string literals. It masks
+single-quoted and `q'[...]'` literals before applying the blocklist, so
+recommendation text returned by a `SELECT` can safely include words such as
+`CREATE INDEX`, `DROP INDEX`, or `FOR UPDATE`. The simplified example below
+illustrates the contract only; do not use it unchanged for a customer-facing
+deployment.
 
 `CREATE PROCEDURE` is not a runtime privilege. Prefer a DBA/installer-managed
 lifecycle to create or replace the backing PL/SQL function in the diagnostic

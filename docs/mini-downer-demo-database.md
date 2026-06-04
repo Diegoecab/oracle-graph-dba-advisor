@@ -2,6 +2,10 @@
 
 Last verified: 2026-06-04
 
+Runtime update verified: 2026-06-04. `RUN_SQL` was replaced with the
+literal-aware guard from `clients/adb-native-run-sql-readonly.sql` and validated
+directly in the ADB.
+
 ## OCI target
 
 - Tenancy: `latinoamerica`
@@ -85,6 +89,17 @@ Code, run `/mcp`, and authenticate with `GRAPH_DIAG_USER`.
 - Graph Studio role for the owner schema: `GRAPH_DEVELOPER`
 - Graph Studio proxy grant:
   `ALTER USER DOWNER_DEMO GRANT CONNECT THROUGH GRAPH$PROXY_USER`
+- `RUN_SQL` runtime: literal-aware read-only guard. It blocks DDL, DML,
+  PL/SQL, comments, statement terminators, `SELECT FOR UPDATE`, and
+  side-effect packages outside string literals, while allowing recommendation
+  text literals that contain words such as `CREATE INDEX` or `DROP INDEX`.
+
+Validation evidence from 2026-06-04:
+
+- accepted `SELECT` returning a text literal containing `CREATE INDEX`,
+  `DROP INDEX`, `SELECT FOR UPDATE`, `--`, and `;`
+- rejected real `CREATE TABLE`
+- rejected `--` comment outside a string literal
 
 Do not store database passwords, wallet passwords, bearer tokens, or wallet ZIPs
 in the repo.
