@@ -54,6 +54,16 @@ immediately before a live demo if using Codex or any static bearer-token client.
 Claude Code OAuth/no-bearer mode avoids manual token refresh by running the
 browser authorization flow.
 
+If Claude Code reports new credentials but rejects them on reconnect, verify the
+MCP entry has no stale bearer header:
+
+```powershell
+claude mcp get graph-mini-fraud-downer-26ai
+```
+
+For OAuth/no-bearer mode, the output should not include `Authorization`. If it
+does, remove and re-add the MCP with the Claude Code command above.
+
 ## Runtime users
 
 - Demo owner schema: `DOWNER_DEMO`

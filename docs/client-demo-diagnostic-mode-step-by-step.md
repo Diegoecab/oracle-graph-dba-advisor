@@ -411,6 +411,26 @@ su emision. Generarlo justo antes de la demo, actualizar `ADB_MCP_TOKEN` y
 reiniciar o reconectar el cliente MCP. Si durante la demo el MCP empieza a
 fallar por autenticacion, asumir primero token expirado.
 
+Si Claude Code muestra `Got new credentials, but ... rejected them on reconnect`,
+validar que la entrada no haya quedado mezclando OAuth con un header bearer
+viejo:
+
+```powershell
+claude mcp get graph-mini-fraud-downer-26ai
+```
+
+Si aparece `Authorization: Bearer ...`, limpiar y re-agregar sin header:
+
+```powershell
+claude mcp remove graph-mini-fraud-downer-26ai --scope user
+claude mcp add --transport http --scope user `
+  graph-mini-fraud-downer-26ai `
+  "https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa"
+```
+
+Despues reiniciar Claude Code, ejecutar `/mcp` y autenticar nuevamente con
+`GRAPH_DIAG_USER`.
+
 No confundir el skill con el MCP: el skill aporta metodologia; el MCP aporta el
 tool `RUN_SQL` que permite consultar la ADB.
 

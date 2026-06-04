@@ -560,6 +560,21 @@ Troubleshooting:
 - If Claude Code asks to open an authorization URL, open it, authenticate with
   `GRAPH_DIAG_USER`, and return to the terminal after the localhost callback
   completes.
+- If Claude Code says `Got new credentials, but ... rejected them on reconnect`,
+  check whether the MCP entry still has a static `Authorization: Bearer ...`
+  header from an earlier setup. OAuth and static bearer mode should not be mixed
+  on the same MCP entry. Reset it with:
+
+  ```powershell
+  claude mcp remove graph-mini-fraud-downer-26ai --scope user
+  claude mcp add --transport http --scope user `
+    graph-mini-fraud-downer-26ai `
+    "https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa"
+  claude mcp get graph-mini-fraud-downer-26ai
+  ```
+
+  The `get` output should show URL and type only. It should not show an
+  `Authorization` header when using OAuth/no-bearer mode.
 - If `/mcp` shows the server still connecting, retry the authorization flow or
   remove and re-add the MCP server.
 - If using bearer mode and authentication starts failing after a while, assume
