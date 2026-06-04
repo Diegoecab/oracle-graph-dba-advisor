@@ -335,11 +335,33 @@ Knowledge files include version metadata such as `verified_version` and
 
 | Client | Primary Diagnostic Mode path | Notes |
 |---|---|---|
-| Codex | ADB Native MCP endpoint | Use one named MCP server per target ADB. |
-| Claude Desktop | ADB Native MCP via remote MCP bridge | Load `SYSTEM_PROMPT.md` as project instructions. |
+| Codex | ADB Native MCP endpoint with bearer token env var | Use one named MCP server per target ADB. |
+| Claude Code | ADB Native MCP endpoint with OAuth/no-bearer | Use `/mcp` to authenticate after adding the server. |
+| Claude Desktop | ADB Native MCP via remote connector or `mcp-remote` | Load the skill and attach the database connector separately. |
 | VS Code + Copilot | ADB Native MCP or SQLcl MCP | Uses `.github/copilot-instructions.md` when configured. |
 | Cline | ADB Native MCP or SQLcl MCP | Uses `.clinerules`. |
 | Cursor | ADB Native MCP or SQLcl MCP | Uses `.cursor/rules/oracle-graph-dba.mdc`. |
+
+### Installation Model
+
+There are two separate layers:
+
+1. **Install the advisor skill/plugin** so the AI client knows the diagnostic
+   methodology.
+2. **Add the database MCP server** so the client has a read-only SQL tool,
+   normally `RUN_SQL`.
+
+Do not put database passwords in plugin manifests, skill files, or committed
+MCP configs. Authentication belongs to the MCP client flow:
+
+- **Codex**: current verified CLI help supports streamable HTTP MCP via `--url`
+  and bearer token injection via `--bearer-token-env-var`. Use a short-lived
+  `ADB_MCP_TOKEN` environment variable.
+- **Claude Code**: current verified CLI help supports HTTP MCP and OAuth.
+  Preferred ADB mode is OAuth/no-bearer: add the MCP URL with no
+  `Authorization` header, then authenticate through `/mcp`.
+- **Claude Desktop / claude.ai**: the uploaded skill gives methodology only.
+  The ADB MCP connector must also be added and enabled in the chat.
 
 ### Install in Codex
 
@@ -429,14 +451,20 @@ of requiring a copied token.
 
 #### Add the ADB Native MCP server in Codex
 
-Configure one MCP server per target ADB. For the Mini-DOWNER demo, replace the
-ADB OCID and use the token generated above:
+Configure one MCP server per target ADB. Codex uses a streamable HTTP MCP URL
+and reads the bearer token from an environment variable. For Mini-DOWNER:
 
 ```powershell
-codex mcp add graph-advisor-downer `
+$env:ADB_REGION = "sa-saopaulo-1"
+$env:ADB_OCID = "ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa"
+
+codex mcp add graph-mini-fraud-downer-26ai `
   --url "https://dataaccess.adb.$env:ADB_REGION.oraclecloudapps.com/adb/mcp/v1/databases/$env:ADB_OCID" `
   --bearer-token-env-var ADB_MCP_TOKEN
 ```
+
+Use this only after generating `ADB_MCP_TOKEN`. The token is valid for 1 hour,
+so refresh it before each live demo or long diagnostic session.
 
 Ask Codex to use the `oracle-graph-dba-advisor` skill. The runtime MCP surface
 should expose only `RUN_SQL`.
@@ -444,7 +472,7 @@ should expose only `RUN_SQL`.
 Mini-DOWNER starter prompt:
 
 ```text
-Usa el skill oracle-graph-dba-advisor y exclusivamente el MCP graph-advisor-downer.
+Usa el skill oracle-graph-dba-advisor y exclusivamente el MCP graph-mini-fraud-downer-26ai.
 
 Estoy viendo lentitud en Mini-DOWNER y Performance Hub muestra carga constante. Primero confirma el contexto de conexion con DB_NAME, SERVICE_NAME, SESSION_USER y grafos disponibles. Si corresponde a Mini-DOWNER, continua con el diagnostico read-only: identifica el SQL mas relevante, explicame en simple la causa principal, que evidencia la sostiene y que recomendacion concreta le pasarias al DBA. No ejecutes cambios.
 
@@ -527,16 +555,24 @@ for graph workload diagnostics.
 #### Add the ADB Native MCP server in Claude Code
 
 Configure the ADB Native MCP server separately. Recommended OAuth/no-bearer
-mode for Mini-DOWNER:
+mode for Mini-DOWNER. Do not include `--header "Authorization: Bearer ..."` in
+this mode:
 
 ```powershell
+claude mcp remove graph-mini-fraud-downer-26ai --scope user
+
 claude mcp add --transport http --scope user `
   graph-mini-fraud-downer-26ai `
   "https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa"
+
+claude mcp get graph-mini-fraud-downer-26ai
 ```
 
-Then start Claude Code, run `/mcp`, and follow the browser authorization URL.
-Log in with the dedicated diagnostic database user, normally
+The `get` output should show URL and type only. It should not show an
+`Authorization` header.
+
+Then restart Claude Code, run `/mcp`, and follow the browser authorization
+URL. Log in with the dedicated diagnostic database user, normally
 `GRAPH_DIAG_USER`, and its database password. If Claude prints a long
 `/authorize?...redirect_uri=http://localhost:<port>/callback...` URL, that is
 the expected OAuth flow. Copy the full URL into a browser if it is line-wrapped
