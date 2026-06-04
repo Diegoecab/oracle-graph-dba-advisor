@@ -20,6 +20,8 @@ Files:
 - `08-dml-overhead-visible-sql-fallback.sql`: fallback when
   `DBA_TAB_MODIFICATIONS` is not visible; reports table stats, current index
   count, proposed index count, and visible INSERT SQL from `V$SQL`.
+- `09-display-cursor-latest-child.sql`: displays the latest child cursor plan
+  for the selected `SQL_ID` with `ALLSTATS LAST`.
 
 Template placeholders:
 
@@ -42,6 +44,11 @@ Runtime rule:
   setup, invisible index DDL, `optimizer_use_invisible_indexes`, target SQL,
   `V$SQL` or `DBMS_XPLAN` comparison query, promotion command, and rollback.
   Do not leave the user with only "create invisible indexes and compare".
+- Do not output `:sqlid`, `:child`, `TARGET_SQL_ID`, or similar placeholders in
+  the user-facing DBA runbook when the SQL_ID or child cursor is known. Use the
+  selected SQL_ID as a literal. Use the observed child cursor as a numeric
+  literal, or use `09-display-cursor-latest-child.sql` when the post-validation
+  latest child must be resolved from `V$SQL`.
 - Before proposing visible indexes, run `07-dml-overhead-evidence.sql` when the
   required views are available. Include the insert/DML rate and current index
   count in the evidence. If `DBA_TAB_MODIFICATIONS` is not visible, run

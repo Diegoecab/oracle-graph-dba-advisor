@@ -72,6 +72,10 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   commands before the final summary. Do not stop at generic text such as
   "create invisible indexes and compare"; include schema, DDL, session settings,
   validation query, measurement query, promotion, and rollback.
+- Do not leave `:sqlid`, `:child`, `TARGET_SQL_ID`, or similar placeholders in
+  user-facing validation SQL when the diagnosis has already identified the
+  SQL_ID or child cursor. Use literal values, or include an exact child-resolver
+  query and then the `DBMS_XPLAN.DISPLAY_CURSOR` command.
 - Before recommending permanent indexes, collect visible DML/write-rate evidence
   yourself when the read-only grants allow it; do not merely tell the user to
   confirm INSERT rate. If the evidence is not visible, state that limitation.

@@ -771,6 +771,18 @@ inspected window`, `Not evaluated`, or `Blocked by missing read-only access`.
      when available, and buffer gets
    - exact promotion command, rollback command, or exit criteria
 
+   User-facing runbooks must not leave bind-style placeholders such as
+   `:sqlid`, `:child`, `TARGET_SQL_ID`, or `<child>` for values already
+   discovered during the diagnosis. If the hot `SQL_ID` is known, print it as a
+   string literal in every validation command. If the relevant child cursor is
+   known from `V$SQL`, `V$SQL_PLAN`, or pack output, print that `CHILD_NUMBER`
+   as a numeric literal. If the child cursor is not known, include an exact
+   resolver query ordered by `LAST_ACTIVE_TIME DESC NULLS LAST, CHILD_NUMBER
+   DESC`, then use either the resolved literal child or the packaged
+   `09-display-cursor-latest-child.sql` pattern. For post-change validation,
+   prefer the latest child produced by the validation execution, not an old
+   child from the before snapshot.
+
    For index validations, measure elapsed time and CPU time as primary outcome
    metrics. Use buffer gets as secondary evidence. Do not use optimizer cost as
    the primary success metric. If the original hot SQL_ID is known, include a
