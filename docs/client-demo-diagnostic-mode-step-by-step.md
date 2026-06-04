@@ -423,6 +423,14 @@ El skill debe hacer broad triage por defecto y reportar cobertura para
 missing-index, supernode/fan-out y plan-instability aunque solo una causa tenga
 evidencia en la ventana inspeccionada.
 
+El `Recommendation Summary` final debe usar categorias estables en todos los
+clientes: `Indexing`, `Supernode/Fan-out`, `Plan Stability`,
+`Statistics & Optimizer`, `Query Rewriting`, `Graph Design / Modeling`,
+`Schema & Architecture`, `Resource / Health` y `Auto Indexing`. Las filas
+`PROPOSED` o `DONE` van primero. Las categorias sin evidencia se incluyen como
+`SKIPPED`, con una evidencia corta que explique por que no aplican o que dato
+no estuvo visible.
+
 ### Troubleshooting MCP en Claude
 
 Si Claude Code muestra una URL de autorizacion como:

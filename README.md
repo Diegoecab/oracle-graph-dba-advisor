@@ -544,6 +544,14 @@ servers are configured and the prompt does not name one exactly, the advisor
 must list the visible database candidates and ask the user to choose one before
 executing SQL.
 
+The final `Recommendation Summary` uses stable categories across clients:
+`Indexing`, `Supernode/Fan-out`, `Plan Stability`,
+`Statistics & Optimizer`, `Query Rewriting`, `Graph Design / Modeling`,
+`Schema & Architecture`, `Resource / Health`, and `Auto Indexing`. Actionable
+rows appear first. Categories checked without supporting evidence appear as
+concise `SKIPPED` rows so the user can see what was ruled out without losing
+focus on the real finding.
+
 Mini-DOWNER stale-context check: the current live demo database is documented
 in [docs/mini-downer-demo-database.md](docs/mini-downer-demo-database.md). If a
 client or prior session says Mini-DOWNER is `GADVDOWNERAF`, `us-ashburn-1`, or

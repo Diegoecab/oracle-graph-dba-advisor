@@ -196,6 +196,14 @@ The current demo runbook supports three positive issue classes:
   and optimizer environment; DBA-controlled SQL Plan Management is reserved for
   cases where a single better plan is proven.
 
+The final advisor `Recommendation Summary` should still show the broader
+category coverage tail. In this Mini-DOWNER database, the positive rows should
+come from `Indexing`, `Supernode/Fan-out`, and `Plan Stability` when the
+coexistence workload is visible. Other categories such as
+`Statistics & Optimizer`, `Query Rewriting`, `Graph Design / Modeling`,
+`Schema & Architecture`, `Resource / Health`, and `Auto Indexing` should appear
+as concise `SKIPPED` rows unless their own evidence is visible.
+
 Use `workload/downer/16_start_dashboard_load_before_long.sql` to start a
 120-minute bad-state workload for a live dashboard session.
 

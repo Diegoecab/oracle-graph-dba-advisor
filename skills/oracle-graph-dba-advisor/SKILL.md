@@ -53,7 +53,10 @@ Use the `../../SYSTEM_PROMPT.md` output contract exactly in every client:
 connected context, workload scope, top SQL classification, findings,
 diagnostic coverage, recommendations, and a final `Recommendation Summary`
 table. Do not omit diagnostic coverage just because only one finding is
-detected.
+detected. In the final table, use the canonical category names from
+`../../SYSTEM_PROMPT.md`; put actionable rows first and include concise
+`SKIPPED` coverage rows for supported categories that were checked but not
+evidenced.
 
 Keep the runtime read-only. The diagnostic MCP surface should expose only an
 approved SQL read tool such as `RUN_SQL`. Generate DDL recommendations as text

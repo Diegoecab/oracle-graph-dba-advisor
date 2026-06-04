@@ -668,10 +668,14 @@ inspected window`, `Not evaluated`, or `Blocked by missing read-only access`.
 ### 6. Recommendations
    Organized by priority (P1 first, then P2, etc.):
    - Indexing
-   - Graph Design
-   - Query Rewriting
-   - Schema & Architecture
+   - Supernode/Fan-out
+   - Plan Stability
    - Statistics & Optimizer
+   - Query Rewriting
+   - Graph Design / Modeling
+   - Schema & Architecture
+   - Resource / Health
+   - Auto Indexing
 
    For every recommendation include:
    - Action: [DDL, query rewrite, graph/modeling change, stats action, observe]
@@ -680,7 +684,8 @@ inspected window`, `Not evaluated`, or `Blocked by missing read-only access`.
    - Rollback/Exit: [DROP INDEX, revert query, remove threshold, observe only]
 
 ### 7. Recommendation Summary (ALWAYS LAST)
-   Table listing ALL recommendations with status and safe next action.
+   Table listing ALL recommendations and category coverage rows with status
+   and safe next action.
    No content after this table.
 ```
 
@@ -710,7 +715,8 @@ When reporting optimization impact, use ONE ROW per query with columns for both 
 
 ### Recommendation Summary (Interactive — ALWAYS at the end)
 
-The report MUST end with a numbered summary table of ALL recommendations, including:
+The report MUST end with a numbered summary table of ALL recommendations and
+category coverage rows, including:
 - Status: `DONE`, `PROPOSED`, `SKIPPED`
 - Action available: what the user can request safely
 
@@ -728,6 +734,32 @@ This gives the user a single place to decide next steps. Do not create an
 earlier intermediate recommendation summary. Do not append validation SQL or
 closing prose after this table.
 
+For broad graph-performance prompts, the final table MUST include a stable
+coverage tail for the canonical categories below. Put actionable rows first
+(`PROPOSED` or `DONE`), then concise `SKIPPED` rows for categories that were
+checked but not supported by the visible evidence. Do not bold, highlight, or
+over-explain `SKIPPED` rows. The positive rows should remain the clear focus.
+
+Canonical `Category` values for the final table:
+
+- `Indexing`
+- `Supernode/Fan-out`
+- `Plan Stability`
+- `Statistics & Optimizer`
+- `Query Rewriting`
+- `Graph Design / Modeling`
+- `Schema & Architecture`
+- `Resource / Health`
+- `Auto Indexing`
+
+Use these exact category names unless the user explicitly asks for a custom
+format. If a category could not be evaluated because the required views or
+workload window were not visible, keep the final `Status` as `SKIPPED` and put
+the reason in `Evidence`, for example `AWR/ASH not visible through current
+grants` or `No fresh workload window`. Use `NOT_VISIBLE` or
+`BLOCKED_BY_ACCESS` in the Diagnostic Coverage section, not as final
+recommendation statuses.
+
 If any older example table in this repository lacks the `Evidence` column or
 uses direct execution language, the contract above takes precedence.
 
@@ -735,8 +767,9 @@ uses direct execution language, the contract above takes precedence.
 | #  | Rec | Category      | Status   | Description                  | Evidence                | Action Available |
 |----|-----|---------------|----------|------------------------------|-------------------------|------------------|
 | 1  | R1  | Indexing      | PROPOSED | Composite edge traversal key | SQL_ID + plan/index gap | DBA validation: create invisible index and compare / Skip |
-| 2  | R2  | Query Rewrite | PROPOSED | Degree-aware traversal guard | high-degree fan-out     | App/query review / Skip |
-| 3  | R3  | Optimizer     | PROPOSED | Stabilize plan after review  | plan hash drift         | DBA validation: baseline/profile review / Observe only |
+| 2  | R2  | Supernode/Fan-out | PROPOSED | Degree-aware traversal guard | high-degree fan-out | App/query review / Skip |
+| 3  | R3  | Plan Stability | PROPOSED | Stabilize plan after review | plan hash drift | DBA validation: baseline/profile review / Observe only |
+| 4  | R4  | Query Rewriting | SKIPPED | No rewrite supported by current evidence | No unbounded traversal or predicate-pushdown issue observed | Skip |
 ```
 
 In read-only diagnostic mode, do not ask the user which recommendation to
@@ -757,6 +790,25 @@ guard allows writes.
 ## RECOMMENDATION CATEGORIES
 
 Recommendations are not limited to indexes. Evaluate and present findings across all applicable categories:
+
+For the final `Recommendation Summary`, use the canonical `Category` values
+defined in the output contract:
+
+- `Indexing`
+- `Supernode/Fan-out`
+- `Plan Stability`
+- `Statistics & Optimizer`
+- `Query Rewriting`
+- `Graph Design / Modeling`
+- `Schema & Architecture`
+- `Resource / Health`
+- `Auto Indexing`
+
+The detailed categories below are explanatory guidance. Map them to the
+canonical names in the final table. For example, `Graph Design` maps to
+`Graph Design / Modeling`, plan baselines and child cursor drift map to
+`Plan Stability`, and CPU/I/O/temp/session pressure maps to
+`Resource / Health`.
 
 ### Category 1: Indexing
 See GRAPH-SPECIFIC INDEX STRATEGIES above. Covers FK indexes, filtered indexes, composite indexes, vertex property indexes, and temporal indexes.
@@ -797,6 +849,20 @@ Ensure the optimizer has accurate information:
 - **Extended statistics**: For composite predicates (e.g., `WHERE src = :id AND end_date IS NULL`), create column group statistics: `DBMS_STATS.CREATE_EXTENDED_STATS(USER, 'E_USES_DEVICE', '(SRC, END_DATE)')`.
 - **SQL Plan Baselines**: For critical graph queries, capture and fix good plans with `DBMS_SPM` to prevent plan regression after stats refresh or index changes.
 - **Adaptive plans**: Oracle 23ai adaptive plans may switch between nested loops and hash joins at runtime. Monitor with `V$SQL_PLAN` `IS_BIND_AWARE` and `IS_SHAREABLE` columns.
+
+### Additional canonical categories for final reporting
+
+- **Plan Stability**: child cursor churn, multiple `PLAN_HASH_VALUE` values for
+  the same logical SQL, bind sensitivity, invalidations, optimizer environment
+  mismatch, and elapsed-time deviation across children or plans.
+- **Resource / Health**: CPU saturation, active-session pressure, I/O latency,
+  physical read pressure, PGA/temp pressure, tablespace/temp capacity risk, or
+  wait events that explain elapsed time independently of graph design.
+- **Auto Indexing**: whether ADB Auto Indexing is enabled, whether it already
+  produced relevant indexes, whether auto indexes overlap with manual
+  recommendations, and whether enabling or changing Auto Indexing should be
+  proposed as a DBA-approved configuration decision. Never enable or
+  reconfigure Auto Indexing through the read-only diagnostic channel.
 
 ---
 
