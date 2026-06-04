@@ -4,6 +4,8 @@ SELECT
   plan_hash_value,
   executions,
   ROUND(elapsed_time / 1e6, 3) AS total_elapsed_sec,
+  ROUND(elapsed_time / NULLIF(executions, 0) / 1000, 3) AS avg_elapsed_ms,
+  ROUND(buffer_gets / NULLIF(executions, 0)) AS avg_buffer_gets,
   invalidations,
   parse_calls,
   loads,

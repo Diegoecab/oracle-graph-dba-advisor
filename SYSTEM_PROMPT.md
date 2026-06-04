@@ -91,8 +91,8 @@ what class of problem is present:
   plausible leading-index gap, selectivity issue, or traversal-column access
   pattern.
 - Select `plan-instability` only when evidence shows multiple plan hashes,
-  child cursor churn, invalidations, bind mismatch, or plan changes for the same
-  logical SQL.
+  child cursor churn, invalidations, bind mismatch, plan changes, or material
+  elapsed-time / buffer-get deviation for the same logical SQL.
 - Select `supernode-fanout` only when evidence shows a high-degree vertex that
   drives excessive intermediate rows or path expansion, especially when the
   relevant traversal indexes are already present and the issue is not explained

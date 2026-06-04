@@ -15,10 +15,10 @@ WITH candidate_sql AS (
     last_active_time,
     SUBSTR(REPLACE(REPLACE(sql_text, CHR(10), ' '), CHR(13), ' '), 1, 140) AS sql_preview
   FROM v$sql
-  WHERE parsing_schema_name = SYS_CONTEXT('USERENV','CURRENT_SCHEMA')
-    AND UPPER(sql_text) LIKE '%__PLAN_TAG__%'
+  WHERE UPPER(sql_text) LIKE '%__PLAN_TAG__%'
     AND UPPER(sql_text) NOT LIKE '%V$SQL%'
     AND UPPER(sql_text) NOT LIKE '%EXPLAIN PLAN%'
+    AND NVL(executions, 0) > 0
 )
 SELECT
   sql_id,
@@ -27,6 +27,11 @@ SELECT
   SUM(executions) AS total_executions,
   SUM(invalidations) AS total_invalidations,
   SUM(parse_calls) AS total_parse_calls,
+  ROUND(SUM(elapsed_time) / NULLIF(SUM(executions), 0) / 1000, 3) AS avg_elapsed_ms,
+  ROUND(MIN(elapsed_time / NULLIF(executions, 0)) / 1000, 3) AS min_child_avg_elapsed_ms,
+  ROUND(MAX(elapsed_time / NULLIF(executions, 0)) / 1000, 3) AS max_child_avg_elapsed_ms,
+  ROUND(MAX(elapsed_time / NULLIF(executions, 0)) / NULLIF(MIN(elapsed_time / NULLIF(executions, 0)), 0), 2) AS child_elapsed_ratio,
+  ROUND(SUM(buffer_gets) / NULLIF(SUM(executions), 0)) AS avg_buffer_gets,
   MAX(CASE WHEN is_bind_sensitive = 'Y' THEN 'Y' ELSE 'N' END) AS bind_sensitive,
   MAX(CASE WHEN is_bind_aware = 'Y' THEN 'Y' ELSE 'N' END) AS bind_aware,
   MAX(CASE WHEN is_shareable = 'N' THEN 'Y' ELSE 'N' END) AS has_nonshareable_child,

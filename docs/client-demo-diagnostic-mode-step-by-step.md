@@ -111,6 +111,13 @@ El skill no debe elegir ese pack solamente porque el caso se llama
 Mini-DOWNER. Si la evidencia indicara otra causa, debe seguir el camino
 diagnostico correspondiente.
 
+La misma base tambien puede preparar escenarios secundarios. Para una consulta
+especifica con planes cambiantes y desviacion de tiempo, usar `DOWNER_PI_Q01`.
+Ese caso debe llevar al pack `sql-templates/packs/plan-instability/` solo si el
+skill observa multiple child cursors, distintos `PLAN_HASH_VALUE`,
+invalidaciones, bind mismatch, o spread relevante de elapsed/buffer gets para
+el mismo SQL.
+
 ## Arquitectura operativa del skill
 
 Para el cliente, el flujo es:
@@ -199,6 +206,33 @@ Para aplicar el tag MCP sobre una ADB ya visible:
 ```powershell
 .\lab\provision_downer_adb_always_free.ps1 -ExecuteMcpTag
 ```
+
+Para incluir tambien el escenario secundario de plan instability durante el
+setup automatizado:
+
+```powershell
+.\lab\setup_downer_demo_database.ps1 `
+  -AutonomousDatabaseId "<adb_ocid>" `
+  -AdminPassword "<admin_password>" `
+  -DownerPassword "<downer_password>" `
+  -GraphDiagPassword "<graph_diag_password>" `
+  -SetupPlanInstability
+```
+
+Para arrancar directamente la senal de dashboard de plan instability en vez de
+la senal de missing-index:
+
+```powershell
+.\lab\setup_downer_demo_database.ps1 `
+  -AutonomousDatabaseId "<adb_ocid>" `
+  -AdminPassword "<admin_password>" `
+  -DownerPassword "<downer_password>" `
+  -GraphDiagPassword "<graph_diag_password>" `
+  -StartPlanInstabilityDashboardLoad
+```
+
+No combinar `-StartDashboardLoad` y `-StartPlanInstabilityDashboardLoad`; el
+loader de dashboard usa una senal activa por vez.
 
 ## Setup de schema y workload
 
@@ -510,18 +544,52 @@ conclusion util para acelerar troubleshooting y escalar con mejor contexto.
 
 ## Anexo interno - Plan instability
 
-El caso previo de `plan instability` queda como demo secundaria.
+El caso `plan instability` queda como demo secundaria dentro de Mini-DOWNER.
 
 Assets:
 
-- `workload/newfraud/08_setup_plan_instability_lab.sql`
-- `workload/newfraud/08_plan_instability_demo.sh`
-- `workload/newfraud/08_grant_plan_instability_lab_extras.sql`
+- `workload/downer/21_grant_plan_instability_extras.sql`
+- `workload/downer/22_setup_plan_instability.sql`
+- `workload/downer/23_run_plan_instability_workload.sql`
+- `workload/downer/24_start_dashboard_load_plan_instability.sql`
+- `workload/downer/25_plan_instability_mcp_demo.sh`
 - `sql-templates/packs/plan-instability/`
 
 Usarlo cuando el mensaje que se quiera mostrar sea cursor churn, child cursors,
-plan hash drift e invalidaciones. Para la demo DOWNER, el caso principal es
-`missing-index`.
+plan hash drift, invalidaciones y desviacion de elapsed time para una SQL
+especifica.
+
+Ejecutar como `ADMIN`:
+
+```sql
+@workload/downer/21_grant_plan_instability_extras.sql
+```
+
+Ejecutar como `DOWNER_DEMO`:
+
+```sql
+@workload/downer/22_setup_plan_instability.sql
+@workload/downer/23_run_plan_instability_workload.sql
+```
+
+Para Performance Dashboard:
+
+```sql
+@workload/downer/24_start_dashboard_load_plan_instability.sql
+```
+
+Nota: el loader de dashboard mantiene una senal activa por vez. Al iniciar este
+caso se detienen los workers `DDASH_%` existentes, por lo que conviene usarlo
+despues de capturar la evidencia del caso missing-index.
+
+Tags esperados:
+
+- `DOWNER_PI_Q01`
+- `DOWNER_PI_Q01_DASH`
+
+El diagnostico correcto debe seleccionar este pack solo si la evidencia muestra
+inestabilidad para el mismo SQL. No debe seleccionarlo por el nombre del
+workload.
 
 ## Anexo interno - Supernode / fan-out
 

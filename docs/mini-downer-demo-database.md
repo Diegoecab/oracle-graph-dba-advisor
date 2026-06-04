@@ -63,6 +63,7 @@ The Mini-DOWNER setup creates:
 - node tables `N_USER`, `N_DEVICE`, `N_BANK_ACCOUNT`, `N_CARD`, `N_IP`
 - edge tables `E_USES_DEVICE`, `E_WITHDRAWAL_BANK_ACCOUNT`, `E_USES_CARD`, `E_USES_IP`
 - deliberate missing leading indexes on `E_USES_DEVICE.SRC` and `E_USES_DEVICE.DST`
+- optional plan-instability case `DOWNER_PI_Q01` using `PLAN_INSTABILITY_DEMO`
 - dashboard workload procedures and scheduler workers
 
 Use `workload/downer/16_start_dashboard_load_before_long.sql` to start a
@@ -80,3 +81,26 @@ Current run as of 2026-06-04:
 - status: `RUNNING`
 - workers: `4`
 - expected end: `2026-06-09 04:32:15 UTC`
+
+## Optional plan-instability signal
+
+The demo can also seed a query-specific plan-instability case:
+
+- setup scripts: `workload/downer/21_grant_plan_instability_extras.sql`,
+  `22_setup_plan_instability.sql`
+- workload script: `workload/downer/23_run_plan_instability_workload.sql`
+- dashboard script: `workload/downer/24_start_dashboard_load_plan_instability.sql`
+- read-only pack runner: `workload/downer/25_plan_instability_mcp_demo.sh`
+- SQL tag: `DOWNER_PI_Q01`
+- dashboard tag: `DOWNER_PI_Q01_DASH`
+
+Use this after capturing the missing-index evidence if the demo narrative needs
+to show one SQL with child cursor churn, plan hash drift, and elapsed-time
+deviation. The diagnostic path must select `plan-instability` only after seeing
+evidence of multiple child cursors, multiple plan hashes, invalidations, bind
+mismatch, or elapsed spread for the same SQL.
+
+Do not start `DOWNER_PI_Q01_DASH` while preserving the current
+`DOWNER_MI_Q01_DASH_BEFORE` dashboard signal. The shared dashboard loader stops
+existing `DDASH_%` workers when a new signal starts, so use these scenarios
+sequentially.

@@ -315,6 +315,8 @@ The advisor selects and parameterizes templates from `sql-templates/`.
 | `04-selectivity-and-simulate.sql` | Selectivity and approved simulation |
 | `05-utilities.sql` | Utility queries |
 | `packs/missing-index/` | Evidence-selected missing-index diagnostic pack |
+| `packs/plan-instability/` | Evidence-selected plan drift and child cursor diagnostic pack |
+| `packs/supernode-fanout/` | Evidence-selected high-degree fan-out diagnostic pack |
 
 ## Knowledge base
 
@@ -615,7 +617,7 @@ per-database client files.
 |---|---|
 | `workload/fraud/` | Fraud detection graph workload |
 | `workload/newfraud/` | Updated fraud workload and Native MCP validation scripts |
-| `workload/downer/` | Mini-DOWNER missing-index diagnostic demo |
+| `workload/downer/` | Mini-DOWNER missing-index, supernode fan-out, and plan-instability diagnostic demo |
 | `workload/catalog_compat/` | Catalog compatibility test workload |
 
 ## Project structure
@@ -664,6 +666,8 @@ Runtime source-of-truth model:
 | Persistent memory | Planned | Schema snapshots, recommendation history, and learned patterns. |
 | Centralized memory | Planned | ADB-backed memory with vector search, tenancy boundaries, and audit trail. |
 | Autonomous agent workflows | Planned | Scheduled health checks and post-deploy analysis. |
+| Automated diagnostic reports | Planned | Scheduled read-only Diagnostic Mode reports for recurring workload reviews and post-deploy checks. |
+| Governed mitigation workflows | Future/Research | Controlled non-production mitigation flows with approvals, audit trail, and prod/non-prod separation. |
 | Agent Factory governance spike | Pending | Evaluate Private Agent Factory for RBAC, prompt guardrails, read-only tool allowlisting, audit trails, evaluation, and controlled endpoint exposure. |
 
 ## Disclaimer

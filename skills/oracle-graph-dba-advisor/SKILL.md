@@ -28,8 +28,9 @@ For Mini-DOWNER setup, reproduction, or out-of-band validation requests,
 context. Do not use those files as diagnostic evidence during normal workload
 analysis unless the user explicitly asks for setup or validation commands.
 
-Do not choose `missing-index` from the Mini-DOWNER name alone. Run the general
-triage path first and select the pack only if the SQL, plan, wait, and
+Do not choose `missing-index`, `supernode-fanout`, `plan-instability`, or any
+other specialized pack from the Mini-DOWNER name or SQL tag alone. Run the
+general triage path first and select the pack only if the SQL, plan, wait, and
 object/index evidence support that diagnosis. During diagnosis, treat the
 connected workload as a real incident and avoid demo/lab backstage language.
 

@@ -18,6 +18,11 @@ It prepares `D00000001` as a high-degree shared fingerprint and uses indexed
 traversal paths so the dominant problem is path expansion, not a simple missing
 index.
 
+The third induced issue is `DOWNER_PI_Q01`, a plan-instability scenario. It uses
+a skewed Mini-DOWNER risk lookup query with one stable SQL text and controlled
+optimizer environments so the same logical query can show child cursor churn,
+plan hash drift, and elapsed-time deviation.
+
 Execution order:
 
 1. Run `00_create_users.sql` as `ADMIN`, passing strong lab passwords:
@@ -38,8 +43,19 @@ Execution order:
     For a longer customer demo window, use `16_start_dashboard_load_before_long.sql`.
     To keep the dashboard signal alive across several days, use `17_start_dashboard_load_before_5_days.sql`.
 14. For the supernode dashboard signal, run `20_start_dashboard_load_supernode.sql`.
-15. After the advisor recommendation, run `14_apply_visible_index_fix.sql`, then `12_start_dashboard_load_after.sql`.
-16. Stop or clean up with `13_stop_dashboard_load.sql` and `15_rollback_visible_index_fix.sql`.
+15. To prepare the plan-instability scenario, run
+    `21_grant_plan_instability_extras.sql` as `ADMIN`, then
+    `22_setup_plan_instability.sql` and `23_run_plan_instability_workload.sql`
+    as `DOWNER_DEMO`.
+16. For the plan-instability dashboard signal, run
+    `24_start_dashboard_load_plan_instability.sql`.
+17. After the advisor recommendation, run `14_apply_visible_index_fix.sql`, then `12_start_dashboard_load_after.sql`.
+18. Stop or clean up with `13_stop_dashboard_load.sql` and `15_rollback_visible_index_fix.sql`.
+
+The PowerShell helper can include the plan-instability setup with
+`-SetupPlanInstability`. Use `-StartPlanInstabilityDashboardLoad` only when the
+dashboard should focus on `DOWNER_PI_Q01_DASH` instead of the missing-index
+signal.
 
 `03_generate_data.sql` seeds `DBMS_RANDOM` for reproducible data and uses a
 compact default volume: 12k users, 1.2k devices, and about 155k total edges.
@@ -154,3 +170,49 @@ The corresponding read-only diagnostic templates are in
 "add another index" by default. The advisor should first verify index coverage
 and then focus on degree-aware query guards, traversal constraints, precomputed
 features, or identifier/model cleanup.
+
+## Plan-instability scenario
+
+Prepare the setup-only privilege and skewed lookup table:
+
+```sql
+@workload/downer/21_grant_plan_instability_extras.sql
+@workload/downer/22_setup_plan_instability.sql
+```
+
+Seed the SQL cache:
+
+```sql
+@workload/downer/23_run_plan_instability_workload.sql
+```
+
+Dashboard run:
+
+```sql
+@workload/downer/24_start_dashboard_load_plan_instability.sql
+```
+
+Only one dashboard signal is active by default. Starting this script calls the
+same loader used by the other scenarios and stops any existing `DDASH_%`
+workers before launching the plan-instability workers.
+
+Optional read-only MCP runner:
+
+```bash
+workload/downer/25_plan_instability_mcp_demo.sh
+```
+
+Dashboard filters/signals:
+
+- Module: `MINI_DOWNER_PLAN_INSTABILITY`
+- SQL text tag: `DOWNER_PI_Q01` or `DOWNER_PI_Q01_DASH`
+- Expected symptom: one logical SQL shows multiple child cursors, potentially
+  multiple plan hashes, and a large spread between child-cursor average elapsed
+  time or buffer gets.
+
+The corresponding read-only diagnostic templates are in
+`sql-templates/packs/plan-instability/`. The expected recommendation is not an
+immediate index. The advisor should identify the unstable SQL, quantify plan
+and elapsed deviation, explain the child-cursor or optimizer-environment
+signal, and recommend DBA-controlled stabilization such as bind discipline,
+stats review, SQL Plan Management, or query shape hardening.

@@ -10,10 +10,12 @@ Files:
 - `03-child-detail.sql`: shows child cursor-level execution and plan metrics.
 - `04-shared-cursor.sql`: shows why child cursors were not shared.
 - `05-plan-hash.sql`: summarizes parent cursor plan-hash history.
+- `06-elapsed-deviation.sql`: quantifies elapsed-time and buffer-get spread
+  across child cursors and plan hashes.
 
 Template placeholders:
 
-- `__PLAN_TAG__`: SQL comment tag used to isolate one packaged scenario, for example `PLAN_INSTABILITY_Q03`.
+- `__PLAN_TAG__`: SQL comment tag used to isolate one packaged scenario, for example `PLAN_INSTABILITY_Q03` or `DOWNER_PI_Q01`.
 - `__SQL_ID__`: SQL ID selected during drill-down.
 
 Intended use:

@@ -11,7 +11,9 @@ param(
   [string]$GraphDiagPassword,
   [string]$WalletPassword = "MiniDowner#2026Wallet!",
   [switch]$ResetAdminPassword,
-  [switch]$StartDashboardLoad
+  [switch]$StartDashboardLoad,
+  [switch]$SetupPlanInstability,
+  [switch]$StartPlanInstabilityDashboardLoad
 )
 
 $ErrorActionPreference = "Stop"
@@ -19,6 +21,14 @@ Set-StrictMode -Version Latest
 
 $env:OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING = "True"
 $env:SUPPRESS_LABEL_WARNING = "True"
+
+if ($StartDashboardLoad -and $StartPlanInstabilityDashboardLoad) {
+  throw "Choose either -StartDashboardLoad or -StartPlanInstabilityDashboardLoad. The dashboard loader runs one signal at a time."
+}
+
+if ($StartPlanInstabilityDashboardLoad) {
+  $SetupPlanInstability = $true
+}
 
 function Invoke-OciJson {
   param([string[]]$OciArgs)
@@ -160,6 +170,10 @@ $scripts = @{
   runSql = ConvertTo-SqlclScriptRef (Join-Path $repoRoot "clients/adb-native-run-sql-readonly.sql")
   dashSetup = ConvertTo-SqlclScriptRef (Join-Path $repoRoot "workload/downer/10_dashboard_load_setup.sql")
   dashStart = ConvertTo-SqlclScriptRef (Join-Path $repoRoot "workload/downer/11_start_dashboard_load_before.sql")
+  planInstabilityGrant = ConvertTo-SqlclScriptRef (Join-Path $repoRoot "workload/downer/21_grant_plan_instability_extras.sql")
+  planInstabilitySetup = ConvertTo-SqlclScriptRef (Join-Path $repoRoot "workload/downer/22_setup_plan_instability.sql")
+  planInstabilityWorkload = ConvertTo-SqlclScriptRef (Join-Path $repoRoot "workload/downer/23_run_plan_instability_workload.sql")
+  planInstabilityDashStart = ConvertTo-SqlclScriptRef (Join-Path $repoRoot "workload/downer/24_start_dashboard_load_plan_instability.sql")
 }
 
 $sqlLines = @(
@@ -189,6 +203,20 @@ if ($StartDashboardLoad) {
   $sqlLines += "$($scripts.dashStart)"
 }
 
+if ($SetupPlanInstability) {
+  $sqlLines += @(
+    "CONNECT ADMIN/`"$adminPasswordSql`"@$connectAlias",
+    "$($scripts.planInstabilityGrant)",
+    "CONNECT DOWNER_DEMO/`"$downerPasswordSql`"@$connectAlias",
+    "$($scripts.planInstabilitySetup)",
+    "$($scripts.planInstabilityWorkload)"
+  )
+}
+
+if ($StartPlanInstabilityDashboardLoad) {
+  $sqlLines += "$($scripts.planInstabilityDashStart)"
+}
+
 $sqlLines += @(
   "EXIT"
 )
@@ -209,4 +237,6 @@ $mcpEndpoint = "https://dataaccess.adb.$Region.oraclecloudapps.com/adb/mcp/v1/da
   downer_user = "DOWNER_DEMO"
   graph_diag_user = "GRAPH_DIAG_USER"
   dashboard_load_started = [bool]$StartDashboardLoad
+  plan_instability_setup = [bool]$SetupPlanInstability
+  plan_instability_dashboard_load_started = [bool]$StartPlanInstabilityDashboardLoad
 } | ConvertTo-Json -Depth 4

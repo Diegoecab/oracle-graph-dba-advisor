@@ -180,6 +180,7 @@ CREATE OR REPLACE PROCEDURE downer_dashboard_load_worker (
   v_anchor_id    VARCHAR2(64);
   v_result_count NUMBER;
   v_executions   NUMBER := 0;
+  v_optimizer_mode VARCHAR2(30);
   v_error_message VARCHAR2(4000);
 BEGIN
   v_end_at := TO_TIMESTAMP_TZ(p_end_at_text, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM');
@@ -226,7 +227,29 @@ BEGIN
       END IF;
     END IF;
 
-    downer_dashboard_execute_once(p_sql_tag, v_anchor_id, v_result_count);
+    IF UPPER(p_sql_tag) LIKE 'DOWNER_PI_Q01%' THEN
+      IF v_anchor_mode = 'HOT' THEN
+        v_anchor_id := 'HOT';
+      ELSIF v_anchor_mode = 'COLD' THEN
+        v_anchor_id := 'COLD';
+      ELSIF MOD(v_executions, 4) = 0 THEN
+        v_anchor_id := 'COLD';
+      ELSE
+        v_anchor_id := 'HOT';
+      END IF;
+
+      v_optimizer_mode := CASE WHEN v_anchor_id = 'COLD' THEN 'FIRST_ROWS_1' ELSE 'ALL_ROWS' END;
+
+      EXECUTE IMMEDIATE
+        'BEGIN run_downer_plan_instability_workload(:cycles, :sql_tag, :optimizer_mode, NULL, :key_mode); END;'
+        USING 1,
+              p_sql_tag,
+              v_optimizer_mode,
+              v_anchor_id;
+      v_result_count := 1;
+    ELSE
+      downer_dashboard_execute_once(p_sql_tag, v_anchor_id, v_result_count);
+    END IF;
     v_executions := v_executions + 1;
 
     IF MOD(v_executions, 5) = 0 THEN
@@ -306,8 +329,10 @@ BEGIN
   stop_downer_dashboard_load;
 
   v_sql_tag := REGEXP_REPLACE(UPPER(SUBSTR(p_sql_tag, 1, 60)), '[^A-Z0-9_]', '_');
-  IF v_sql_tag NOT LIKE 'DOWNER_MI_Q01%' AND v_sql_tag NOT LIKE 'DOWNER_SN_Q01%' THEN
-    RAISE_APPLICATION_ERROR(-20000, 'SQL tag must start with DOWNER_MI_Q01 or DOWNER_SN_Q01');
+  IF v_sql_tag NOT LIKE 'DOWNER_MI_Q01%' AND
+     v_sql_tag NOT LIKE 'DOWNER_SN_Q01%' AND
+     v_sql_tag NOT LIKE 'DOWNER_PI_Q01%' THEN
+    RAISE_APPLICATION_ERROR(-20000, 'SQL tag must start with DOWNER_MI_Q01, DOWNER_SN_Q01, or DOWNER_PI_Q01');
   END IF;
 
   v_anchor_mode := UPPER(SUBSTR(p_anchor_mode, 1, 16));
@@ -415,3 +440,4 @@ GRANT SELECT ON downer_dashboard_load_workers TO graph_diag_user;
 PROMPT Dashboard load support installed.
 PROMPT Use 11_start_dashboard_load_before.sql for 12 minutes, 16_start_dashboard_load_before_long.sql for 120 minutes, or 17_start_dashboard_load_before_5_days.sql for five days.
 PROMPT Use 12_start_dashboard_load_after.sql after applying the fix, and 13_stop_dashboard_load.sql to stop active load.
+PROMPT Use 24_start_dashboard_load_plan_instability.sql after 22_setup_plan_instability.sql for the plan-instability signal.

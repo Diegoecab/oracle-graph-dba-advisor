@@ -9,8 +9,12 @@ This directory has two different layers on purpose:
 
 Current runtime packs:
 
+- `packs/missing-index/`:
+  packaged SQL set for edge traversal access-path and leading-index gaps
 - `packs/plan-instability/`:
   packaged SQL set for the cursor and plan-instability diagnostic playbook
+- `packs/supernode-fanout/`:
+  packaged SQL set for high-degree vertex and fan-out diagnostics
 
 Rule of thumb:
 
