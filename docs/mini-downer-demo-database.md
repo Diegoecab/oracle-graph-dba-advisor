@@ -65,5 +65,18 @@ The Mini-DOWNER setup creates:
 - deliberate missing leading indexes on `E_USES_DEVICE.SRC` and `E_USES_DEVICE.DST`
 - dashboard workload procedures and scheduler workers
 
-Use `workload/downer/16_start_dashboard_load_before_long.sql` to start the
-bad-state workload for a live dashboard session.
+Use `workload/downer/16_start_dashboard_load_before_long.sql` to start a
+120-minute bad-state workload for a live dashboard session.
+
+Use `workload/downer/17_start_dashboard_load_before_5_days.sql` when the demo is
+scheduled for a later day and the Performance Hub signal should stay alive for
+five consecutive days. This run keeps four database sessions active and can
+consume Developer Tier compute while running.
+
+Current run as of 2026-06-04:
+
+- run_id: `5`
+- SQL tag: `DOWNER_MI_Q01_DASH_BEFORE`
+- status: `RUNNING`
+- workers: `4`
+- expected end: `2026-06-09 04:32:15 UTC`

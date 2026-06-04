@@ -263,13 +263,25 @@ Para una demo en vivo mas larga, arrancar la misma carga durante 120 minutos:
 @workload/downer/16_start_dashboard_load_before_long.sql
 ```
 
+Si la demo queda para el dia siguiente o se quiere preservar la senal durante
+varios dias, usar el script de 5 dias:
+
+```sql
+@workload/downer/17_start_dashboard_load_before_5_days.sql
+```
+
 Defaults:
 
 1. 4 workers.
-2. 12 minutos en el script corto, 120 minutos en el script largo.
+2. 12 minutos en el script corto, 120 minutos en el script largo, 7200 minutos
+   en el script de 5 dias.
 3. `anchor_mode = MIXED`.
 4. SQL tag: `DOWNER_MI_Q01_DASH_BEFORE`.
 5. Module: `MINI_DOWNER_DASHBOARD_LOAD`.
+
+Nota operativa: el script de 5 dias es solo para laboratorio o demo. Mantiene
+4 sesiones activas y puede consumir compute mientras corre, especialmente en la
+ADB Developer Tier de Sao Paulo.
 
 Durante la demo, abrir Performance Dashboard y mostrar:
 
@@ -316,8 +328,15 @@ corriendo `DOWNER_MI_Q01_DASH_BEFORE` mientras se presenta el problema.
 Prompt sugerido:
 
 ```text
-Estoy viendo lentitud en Mini-DOWNER. Podrias revisar que esta pasando y decirme cual parece ser la causa principal, con evidencia y una recomendacion concreta?
+Usa el skill oracle-graph-dba-advisor y exclusivamente el MCP graph-advisor-downer.
+
+Estoy viendo lentitud en Mini-DOWNER y Performance Hub muestra carga constante. Primero confirma el contexto de conexion con DB_NAME, SERVICE_NAME, SESSION_USER y grafos disponibles. Si corresponde a Mini-DOWNER, continua con el diagnostico read-only: identifica el SQL mas relevante, explicame en simple la causa principal, que evidencia la sostiene y que recomendacion concreta le pasarias al DBA. No ejecutes cambios.
 ```
+
+Buena practica: el primer mensaje tecnico del skill debe mostrar el contexto de
+conexion antes de leer performance. Esto evita diagnosticar otra ADB si el
+usuario tiene varios MCPs configurados. Si el contexto no coincide con
+Mini-DOWNER, el skill debe detenerse y pedir confirmacion.
 
 ### Paso 2 - Ejecutar el pack diagnostico
 

@@ -29,6 +29,7 @@ Execution order:
 11. Optionally run `09_invisible_index_validation.sql` as `DOWNER_DEMO` for lab-only remediation proof.
 12. For a live ADB Performance Dashboard demo, run `10_dashboard_load_setup.sql`, then `11_start_dashboard_load_before.sql`.
     For a longer customer demo window, use `16_start_dashboard_load_before_long.sql`.
+    To keep the dashboard signal alive across several days, use `17_start_dashboard_load_before_5_days.sql`.
 13. After the advisor recommendation, run `14_apply_visible_index_fix.sql`, then `12_start_dashboard_load_after.sql`.
 14. Stop or clean up with `13_stop_dashboard_load.sql` and `15_rollback_visible_index_fix.sql`.
 
@@ -41,9 +42,10 @@ sample.
 
 The dashboard workload uses `DBMS_SCHEDULER` jobs inside ADB, with a conservative
 default of 4 workers for 12 minutes. For a live customer demo, the long-run
-script starts the same workload for 120 minutes. This keeps the demo under the
-Always Free session limit while producing active SQL load that can appear in
-Performance Dashboard, Performance Hub, ASH, and `V$SQL`.
+script starts the same workload for 120 minutes. For next-day prep, the five-day
+script keeps the same bad-state signal running for 7200 minutes. This keeps the
+demo under the Always Free session limit while producing active SQL load that
+can appear in Performance Dashboard, Performance Hub, ASH, and `V$SQL`.
 
 If `DOWNER_DEMO` was created before `00_create_users.sql` included scheduler
 privileges, run this once as `ADMIN`:
@@ -69,6 +71,15 @@ Start a longer bad-state load for a live dashboard session:
 ```sql
 @workload/downer/16_start_dashboard_load_before_long.sql
 ```
+
+Start a five-day bad-state load when the demo is scheduled for a later day:
+
+```sql
+@workload/downer/17_start_dashboard_load_before_5_days.sql
+```
+
+The five-day run is useful only for lab/demo environments. It keeps four
+database sessions active and can consume Developer Tier compute while running.
 
 Dashboard filters/signals:
 

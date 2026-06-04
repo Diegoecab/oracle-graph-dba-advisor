@@ -16,6 +16,13 @@ Before running diagnostics, read the packaged methodology:
 - `../../knowledge/`
 - `../../phases/`
 
+Before any workload diagnosis, confirm the active database context with a
+read-only query for `DB_NAME`, `SERVICE_NAME`, `SESSION_USER`, `CURRENT_USER`,
+and `CURRENT_SCHEMA`. If multiple MCP database servers are available, use only
+the one explicitly named by the user. If the connected context does not match
+the requested database/schema/workload, stop and ask the user to confirm the
+target before continuing.
+
 For the Mini-DOWNER demo, use:
 
 - `../../workload/downer/`

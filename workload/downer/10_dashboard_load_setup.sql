@@ -269,7 +269,7 @@ CREATE OR REPLACE PROCEDURE start_downer_dashboard_load (
 ) AS
   v_run_id      NUMBER;
   v_workers     NUMBER := LEAST(GREATEST(TRUNC(p_workers), 1), 12);
-  v_minutes     NUMBER := LEAST(GREATEST(p_minutes, 1), 240);
+  v_minutes     NUMBER := LEAST(GREATEST(p_minutes, 1), 7200);
   v_sql_tag     VARCHAR2(64);
   v_anchor_mode VARCHAR2(16);
   v_ends_at     TIMESTAMP WITH TIME ZONE;
@@ -386,4 +386,5 @@ GRANT SELECT ON downer_dashboard_load_runs TO graph_diag_user;
 GRANT SELECT ON downer_dashboard_load_workers TO graph_diag_user;
 
 PROMPT Dashboard load support installed.
-PROMPT Use 11_start_dashboard_load_before.sql, 12_start_dashboard_load_after.sql, and 13_stop_dashboard_load.sql.
+PROMPT Use 11_start_dashboard_load_before.sql for 12 minutes, 16_start_dashboard_load_before_long.sql for 120 minutes, or 17_start_dashboard_load_before_5_days.sql for five days.
+PROMPT Use 12_start_dashboard_load_after.sql after applying the fix, and 13_stop_dashboard_load.sql to stop active load.

@@ -434,8 +434,38 @@ should expose only `RUN_SQL`.
 Mini-DOWNER starter prompt:
 
 ```text
-Estoy viendo lentitud en Mini-DOWNER. Puedes revisar que esta pasando y decirme cual parece ser la causa principal, con evidencia y una recomendacion concreta?
+Usa el skill oracle-graph-dba-advisor y exclusivamente el MCP graph-advisor-downer.
+
+Estoy viendo lentitud en Mini-DOWNER y Performance Hub muestra carga constante. Primero confirma el contexto de conexion con DB_NAME, SERVICE_NAME, SESSION_USER y grafos disponibles. Si corresponde a Mini-DOWNER, continua con el diagnostico read-only: identifica el SQL mas relevante, explicame en simple la causa principal, que evidencia la sostiene y que recomendacion concreta le pasarias al DBA. No ejecutes cambios.
 ```
+
+The skill treats this context check as a mandatory connection gate. If multiple
+ADB MCP servers are configured, always name the intended MCP server in the user
+prompt and require the first diagnostic response to show the connected database
+context.
+
+#### Update the Codex plugin or local skill
+
+For the marketplace path, refresh the configured marketplace and restart Codex:
+
+```powershell
+codex plugin marketplace upgrade oracle-graph-dba-advisor
+```
+
+This Codex CLI build exposes marketplace `add`, `upgrade`, and `remove`, but not
+a separate `codex plugin list` or `codex plugin update` command. To know a new
+version is available, use the repository release/tag or the plugin manifest
+version in `.codex-plugin/plugin.json`, then run `marketplace upgrade`.
+
+If the skill was installed by cloning the repository into the local skills
+directory, update it with Git:
+
+```powershell
+git -C "$env:USERPROFILE\.agents\skills\oracle-graph-dba-advisor" pull --ff-only
+```
+
+If the skill was installed with `degit`, reinstall from the marketplace path or
+replace the local skill directory from a fresh checkout, then restart Codex.
 
 ### Install in Claude
 
@@ -487,6 +517,32 @@ claude mcp add --transport http --scope user `
 
 Use `/mcp` inside Claude Code to verify that the server is connected and that
 only the approved read-only tool, normally `RUN_SQL`, is available.
+
+#### Update the Claude Code plugin
+
+Refresh the marketplace metadata, update the installed plugin, then restart
+Claude Code so the new skill instructions are loaded:
+
+```powershell
+claude plugin marketplace update oracle-graph-dba-advisor
+claude plugin update oracle-graph-dba-advisor@oracle-graph-dba-advisor --scope user
+claude plugin list --json
+```
+
+To check whether a newer plugin version is available in Claude Code, compare the
+installed version with the available marketplace entry:
+
+```powershell
+$plugins = claude plugin list --available --json | ConvertFrom-Json
+$plugins.installed | Where-Object { $_.id -eq "oracle-graph-dba-advisor@oracle-graph-dba-advisor" } |
+  Select-Object id, version, lastUpdated
+$plugins.available | Where-Object { $_.pluginId -eq "oracle-graph-dba-advisor@oracle-graph-dba-advisor" -or $_.name -eq "oracle-graph-dba-advisor" } |
+  Select-Object pluginId, version, marketplaceName
+```
+
+Claude Code also exposes `claude plugin details oracle-graph-dba-advisor` for a
+component inventory, but `plugin list --available --json` is the practical
+version-check command.
 
 #### Claude Desktop / claude.ai skill
 

@@ -39,6 +39,15 @@ Also reviews graph design decisions (modeling, key choices, edge/vertex granular
 | `disconnect` | Optional, SQLcl only | Close database connection |
 | File read/write | MCP client (filesystem) | Persistent memory (optional) |
 
+## Mandatory Connection Gate
+
+Before any diagnostic phase, confirm the active database context with a
+read-only query for `DB_NAME`, `SERVICE_NAME`, `SESSION_USER`, `CURRENT_USER`,
+and `CURRENT_SCHEMA`. If more than one database MCP server or SQL connection is
+available, use only the target explicitly named by the user. If the connected
+context does not match the requested database/schema/workload, stop and ask the
+user to confirm the target before continuing.
+
 ## Required Infrastructure
 
 **Default — SQLcl MCP (canonical distribution):**
