@@ -313,7 +313,7 @@ The advisor selects and parameterizes templates from `sql-templates/`.
 | `03-analyze.sql` | Plan deep dive |
 | `04-selectivity-and-simulate.sql` | Selectivity and approved simulation |
 | `05-utilities.sql` | Utility queries |
-| `packs/missing-index/` | Demo-ready missing-index diagnostic pack |
+| `packs/missing-index/` | Evidence-selected missing-index diagnostic pack |
 
 ## Knowledge base
 
@@ -437,6 +437,8 @@ Mini-DOWNER starter prompt:
 Usa el skill oracle-graph-dba-advisor y exclusivamente el MCP graph-advisor-downer.
 
 Estoy viendo lentitud en Mini-DOWNER y Performance Hub muestra carga constante. Primero confirma el contexto de conexion con DB_NAME, SERVICE_NAME, SESSION_USER y grafos disponibles. Si corresponde a Mini-DOWNER, continua con el diagnostico read-only: identifica el SQL mas relevante, explicame en simple la causa principal, que evidencia la sostiene y que recomendacion concreta le pasarias al DBA. No ejecutes cambios.
+
+No asumas la causa por el nombre Mini-DOWNER: selecciona el camino diagnostico o pack correcto solo despues de ver evidencia de SQL, plan, waits y metadata de objetos.
 ```
 
 The skill treats this context check as a mandatory connection gate. If multiple
@@ -626,6 +628,7 @@ oracle-graph-dba-advisor/
 |-- .claude-plugin/
 |   |-- marketplace.json
 |   `-- plugin.json
+|-- AGENTS.md
 |-- SYSTEM_PROMPT.md
 |-- SKILL.md
 |-- CLAUDE.md
@@ -644,6 +647,13 @@ oracle-graph-dba-advisor/
 |-- memory/
 `-- workload/
 ```
+
+Runtime source-of-truth model:
+
+1. `SYSTEM_PROMPT.md` contains the full diagnostic methodology and safety gates.
+2. `SKILL.md`, `CLAUDE.md`, and `skills/oracle-graph-dba-advisor/SKILL.md` are
+   lightweight loaders.
+3. `AGENTS.md` captures repository maintenance rules for future coding agents.
 
 ## Roadmap
 

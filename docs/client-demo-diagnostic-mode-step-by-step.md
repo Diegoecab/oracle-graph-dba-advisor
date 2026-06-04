@@ -94,16 +94,22 @@ El skill no genera SQL diagnostico improvisado en el momento.
 
 Trabaja con un playbook prearmado y versionado:
 
-1. Selecciona el pack diagnostico correcto para el sintoma detectado.
-2. Ejecuta consultas read-only predefinidas sobre la base via Native MCP.
-3. Identifica la SQL candidata principal.
-4. Hace drill-down tecnico sobre esa SQL.
-5. Resume el hallazgo en lenguaje natural con evidencia.
-6. Propone proximos pasos operativos.
+1. Hace triage general del contexto, catalogo, SQL candidato, plan, waits y
+   metadata de objetos.
+2. Selecciona el pack diagnostico correcto solo si la evidencia lo justifica.
+3. Ejecuta consultas read-only predefinidas sobre la base via Native MCP.
+4. Identifica la SQL candidata principal.
+5. Hace drill-down tecnico sobre esa SQL.
+6. Resume el hallazgo en lenguaje natural con evidencia.
+7. Propone proximos pasos operativos.
 
-En este caso, el pack usado es:
+En la ejecucion esperada de este laboratorio, la evidencia termina justificando:
 
 - `sql-templates/packs/missing-index/`
+
+El skill no debe elegir ese pack solamente porque el caso se llama
+Mini-DOWNER. Si la evidencia indicara otra causa, debe seguir el camino
+diagnostico correspondiente.
 
 ## Arquitectura operativa del skill
 
@@ -331,6 +337,8 @@ Prompt sugerido:
 Usa el skill oracle-graph-dba-advisor y exclusivamente el MCP graph-advisor-downer.
 
 Estoy viendo lentitud en Mini-DOWNER y Performance Hub muestra carga constante. Primero confirma el contexto de conexion con DB_NAME, SERVICE_NAME, SESSION_USER y grafos disponibles. Si corresponde a Mini-DOWNER, continua con el diagnostico read-only: identifica el SQL mas relevante, explicame en simple la causa principal, que evidencia la sostiene y que recomendacion concreta le pasarias al DBA. No ejecutes cambios.
+
+No asumas la causa por el nombre Mini-DOWNER: selecciona el camino diagnostico o pack correcto solo despues de ver evidencia de SQL, plan, waits y metadata de objetos.
 ```
 
 Buena practica: el primer mensaje tecnico del skill debe mostrar el contexto de
@@ -338,9 +346,11 @@ conexion antes de leer performance. Esto evita diagnosticar otra ADB si el
 usuario tiene varios MCPs configurados. Si el contexto no coincide con
 Mini-DOWNER, el skill debe detenerse y pedir confirmacion.
 
-### Paso 2 - Ejecutar el pack diagnostico
+### Paso 2 - Ejecutar el camino diagnostico
 
-El runner MCP read-only es:
+Durante la demo conversacional, el skill debe seleccionar el camino con base en
+la evidencia. Para validar el laboratorio de missing-index de forma directa, el
+runner MCP read-only es:
 
 ```bash
 workload/downer/08_missing_index_mcp_demo.sh

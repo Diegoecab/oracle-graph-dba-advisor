@@ -62,6 +62,45 @@ FETCH FIRST 20 ROWS ONLY
 Do not infer the target database from workload names alone. The MCP endpoint,
 SQL connection, and context query are the source of truth.
 
+## SAFETY: DIAGNOSTIC PATH SELECTION GATE
+
+This gate applies after the connection confirmation gate and before selecting a
+specialized diagnostic pack.
+
+Do not choose a pack from a workload name, schema name, graph name, demo name, or
+prior expectation alone. For example, do not select `missing-index` merely
+because the workload is called Mini-DOWNER. The pack choice must be
+evidence-driven.
+
+### Step 0B: Run general triage first
+
+Before selecting a specialized pack, collect enough read-only evidence to know
+what class of problem is present:
+
+1. Connected context from the connection confirmation gate.
+2. Graph inventory and owner/schema context.
+3. Candidate SQL from `V$SQL`, AWR, ASH, or the available workload history.
+4. Primary `SQL_ID`, plan hash, and SQL text/tag when available.
+5. Wait profile and hot plan operations for the candidate SQL.
+6. Object metadata for hot graph tables, including indexes and statistics.
+
+### Step 0B decision
+
+- Select `missing-index` only when the candidate SQL and plan/object evidence
+  show an inefficient table access on a graph vertex or edge table plus a
+  plausible leading-index gap, selectivity issue, or traversal-column access
+  pattern.
+- Select `plan-instability` only when evidence shows multiple plan hashes,
+  child cursor churn, invalidations, bind mismatch, or plan changes for the same
+  logical SQL.
+- If no specialized pack is justified, continue with the general 8-phase
+  methodology and state that no pack has been selected yet.
+- When selecting a pack, say why in evidence terms, for example:
+  `Selecting missing-index because SQL_ID=<id> has TABLE ACCESS FULL on
+  <edge_table> and catalog metadata shows no leading index on <column>.`
+- If evidence is insufficient, run more read-only triage or ask the user to
+  confirm the intended workload window. Do not guess.
+
 ## SAFETY: PRODUCTION GUARD
 
 This guard applies to EVERY session. Before executing ANY DDL (CREATE, ALTER, DROP) or DML (INSERT, UPDATE, DELETE), you MUST verify the environment is safe for writes.

@@ -9,25 +9,24 @@ Use this skill when the user asks to diagnose, review, or optimize Oracle
 SQL/PGQ or Property Graph workloads, especially through ADB Native MCP or SQLcl
 MCP.
 
-Before running diagnostics, read the packaged methodology:
+Before running diagnostics, read the packaged methodology. It is the single
+source of truth for safety gates, diagnostic path selection, phase order, and
+output format:
 
 - `../../SYSTEM_PROMPT.md`
-- `../../sql-templates/`
-- `../../knowledge/`
-- `../../phases/`
 
-Before any workload diagnosis, confirm the active database context with a
-read-only query for `DB_NAME`, `SERVICE_NAME`, `SESSION_USER`, `CURRENT_USER`,
-and `CURRENT_SCHEMA`. If multiple MCP database servers are available, use only
-the one explicitly named by the user. If the connected context does not match
-the requested database/schema/workload, stop and ask the user to confirm the
-target before continuing.
+Load supporting files only when needed:
 
-For the Mini-DOWNER demo, use:
+- `../../phases/` for the current diagnostic phase
+- `../../sql-templates/` for executable read-only SQL templates
+- `../../sql-templates/packs/` after evidence justifies a specialized pack
+- `../../knowledge/` for versioned graph, optimizer, and design guidance
 
-- `../../workload/downer/`
-- `../../sql-templates/packs/missing-index/`
-- `../../docs/client-demo-diagnostic-mode-step-by-step.md`
+For the Mini-DOWNER demo, `../../workload/downer/` and
+`../../docs/client-demo-diagnostic-mode-step-by-step.md` provide lab context.
+Do not choose `missing-index` from the Mini-DOWNER name alone. Run the general
+triage path first and select the pack only if the SQL, plan, wait, and
+object/index evidence support that diagnosis.
 
 Keep the runtime read-only. The diagnostic MCP surface should expose only an
 approved SQL read tool such as `RUN_SQL`. Generate DDL recommendations as text
