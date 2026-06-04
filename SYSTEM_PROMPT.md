@@ -685,7 +685,8 @@ inspected window`, `Not evaluated`, or `Blocked by missing read-only access`.
    - BLOCKED_BY_ACCESS
 
 ### 6. Recommendations
-   Organized by priority (P1 first, then P2, etc.):
+   Organized by customer action priority, using stable recommendation IDs
+   `R1`, `R2`, `R3`, etc.:
    - Indexing
    - Supernode/Fan-out
    - Plan Stability
@@ -697,10 +698,33 @@ inspected window`, `Not evaluated`, or `Blocked by missing read-only access`.
    - Auto Indexing
 
    For every recommendation include:
+   - Rec ID: [R1, R2, R3; must match the final summary table]
    - Action: [DDL, query rewrite, graph/modeling change, stats action, observe]
    - Evidence: [specific evidence that justifies it]
    - Validation: [exact read-only comparison SQL or exact DBA validation runbook]
    - Rollback/Exit: [exact DROP/ALTER/revert/observe command or decision]
+
+   Do not label customer-facing recommendations as `P1`, `P2`, etc. The
+   `P0`-`P4` labels are reserved only for the internal graph index strategy
+   hierarchy. In user-visible reports, use `R1` / `R2` / `R3` plus the
+   `Priority` column (`High`, `Medium`, `Low`, `Skip`).
+
+   Before recommending permanent indexes, quantify write-side risk from visible
+   evidence. Use packaged DML/write-rate templates when available, such as
+   `sql-templates/packs/missing-index/07-dml-overhead-evidence.sql`, to report:
+   - current index count on the target edge table
+   - proposed new index count
+   - inserts, updates, deletes, and total DML visible since last stats
+   - approximate inserts per hour when last-analyzed timing is available
+   - visible INSERT SQL from `V$SQL` when present
+   - whether write overhead appears low, moderate, high, not visible, or
+     requires DBA workload review
+
+   Do not merely tell the user to confirm INSERT rate. If the required views are
+   available through the read-only MCP grants, collect and report that evidence
+   yourself. If write-rate evidence is not visible, state that as a limitation
+   and make DBA workload confirmation an explicit prerequisite before a visible
+   index change.
 
    If a recommendation requires an out-of-band DBA validation because the MCP
    channel is read-only, do not provide only a generic instruction such as
@@ -724,6 +748,21 @@ inspected window`, `Not evaluated`, or `Blocked by missing read-only access`.
    the primary success metric. If the original hot SQL_ID is known, include a
    read-only snapshot query for that SQL_ID and also provide controlled tagged
    validation SQL when comparing before/after in the DBA session.
+
+   For supernode/fan-out recommendations, do not stop at "add a guard" or
+   "rewrite the query". Provide at least one concrete `AS-IS` query pattern and
+   one concrete `TO-BE` option. Valid `TO-BE` examples include:
+   - a degree guard that excludes or routes known high-degree identifiers
+   - a `FETCH FIRST N ROWS ONLY` or bounded time-window pattern when business
+     semantics allow it
+   - a feature/materialized table pattern that precomputes high-degree
+     identifier features and uses online lookup for hot anchors
+   - a model-cleanup option when the high-degree identifier is NAT/proxy/shared
+     infrastructure rather than a fraud signal
+
+   Include rollback or exit criteria for each supernode option: remove the
+   predicate/threshold, disable the feature lookup, drop the feature table, or
+   route only normal-degree identifiers through the online traversal.
 
 ### 7. Recommendation Summary (ALWAYS LAST)
    Table listing ALL recommendations and category coverage rows with status
@@ -813,6 +852,11 @@ Do not use `Execute`, `Ejecutar`, `Simulate`, or `Simular` in this column.
 This gives the user a single place to decide next steps. Do not create an
 earlier intermediate recommendation summary. Do not append validation SQL or
 closing prose after this table.
+
+The `Rec` values in this final table must match the detailed recommendation
+headings exactly. If the detailed section says `R1 - Indexing`, the final
+summary row must also use `R1`. Do not mix detailed labels such as `P1` with
+summary labels such as `R1`.
 
 For broad graph-performance prompts, the final table MUST include a stable
 coverage tail for the canonical categories below. Put actionable rows first

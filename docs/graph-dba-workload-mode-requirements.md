@@ -80,6 +80,7 @@ GRANT SELECT ON DBA_INDEXES TO graph_diag_user;
 GRANT SELECT ON DBA_IND_COLUMNS TO graph_diag_user;
 GRANT SELECT ON DBA_TAB_STATISTICS TO graph_diag_user;
 GRANT SELECT ON DBA_TAB_COL_STATISTICS TO graph_diag_user;
+GRANT SELECT ON DBA_TAB_MODIFICATIONS TO graph_diag_user;
 ```
 
 ### Recommended for fuller health-check / advisor mode
@@ -219,6 +220,7 @@ With this layer, the skill can already:
 - detect plan changes and cursor instability
 - review waits and DB pressure
 - propose changes
+- quantify visible DML overhead before recommending new indexes
 
 ## Recommended for full Graph DBA mode
 
@@ -237,12 +239,15 @@ GRANT SELECT ON DBA_INDEXES TO graph_diag_user;
 GRANT SELECT ON DBA_IND_COLUMNS TO graph_diag_user;
 GRANT SELECT ON DBA_TAB_STATISTICS TO graph_diag_user;
 GRANT SELECT ON DBA_TAB_COL_STATISTICS TO graph_diag_user;
+GRANT SELECT ON DBA_TAB_MODIFICATIONS TO graph_diag_user;
 ```
 
 This enables the first DBA step:
 
 - what graphs exist
 - who owns them
+- whether target edge tables show visible insert/update/delete activity before
+  proposing additional indexes
 - which vertex tables and edge tables they use
 - row counts
 - stats freshness

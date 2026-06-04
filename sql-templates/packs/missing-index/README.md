@@ -15,6 +15,7 @@ Files:
 - `04-edge-fk-leading-index-gap.sql`: checks missing leading indexes on graph edge FK columns.
 - `05-degree-selectivity.sql`: quantifies degree distribution and active-edge selectivity.
 - `06-recommendations.sql`: returns diagnostic recommendation text as SELECT rows.
+- `07-dml-overhead-evidence.sql`: estimates write/DML overhead risk before recommending new indexes.
 
 Template placeholders:
 
@@ -23,6 +24,8 @@ Template placeholders:
 - `__GRAPH_OWNER__`: graph/table owner, normally `DOWNER_DEMO`.
 - `__GRAPH_NAME__`: graph name, normally `DOWNER_GRAPH`.
 - `__EDGE_TABLE__`: target edge table, normally `E_USES_DEVICE`.
+- `__PROPOSED_INDEX_COUNT__`: number of proposed new indexes, normally `2`
+  for Mini-DOWNER missing-index validation.
 
 Runtime rule:
 
@@ -33,3 +36,8 @@ Runtime rule:
   setup, invisible index DDL, `optimizer_use_invisible_indexes`, target SQL,
   `V$SQL` or `DBMS_XPLAN` comparison query, promotion command, and rollback.
   Do not leave the user with only "create invisible indexes and compare".
+- Before proposing visible indexes, run `07-dml-overhead-evidence.sql` when the
+  required views are available. Include the insert/DML rate and current index
+  count in the evidence. If the view is not visible, say that write-rate
+  evidence was not visible and make DBA workload confirmation an explicit
+  prerequisite.

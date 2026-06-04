@@ -29,7 +29,14 @@ UNION ALL
 SELECT
   50,
   'VALIDATION',
-  'Before any visible change, provide an exact DBA runbook with CURRENT_SCHEMA, CREATE INDEX INVISIBLE, optimizer_use_invisible_indexes TRUE, target SQL, V$SQL elapsed and buffer comparison, promote commands, and DROP INDEX rollback',
+  'Before any visible change, provide an exact DBA runbook with CURRENT_SCHEMA, CREATE INDEX INVISIBLE, optimizer_use_invisible_indexes TRUE, target SQL, V$SQL elapsed and buffer comparison, ALTER INDEX visible commands, and every DROP INDEX rollback command',
   '01-candidate-sql.sql'
+FROM dual
+UNION ALL
+SELECT
+  60,
+  'DML_OVERHEAD',
+  'Before proposing permanent indexes, run the DML overhead evidence template for __GRAPH_OWNER__.__EDGE_TABLE__ and report inserts per hour, visible INSERT SQL, current index count, proposed index count, and whether write overhead requires DBA review',
+  '07-dml-overhead-evidence.sql'
 FROM dual
 ORDER BY priority_order

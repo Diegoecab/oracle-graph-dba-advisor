@@ -674,6 +674,72 @@ FROM v$sql
 WHERE sql_id = 'gbqr5nn5muh7j'
 ORDER BY child_number, last_active_time DESC;
 
+WITH target_table AS (
+  SELECT owner, table_name, num_rows, last_analyzed
+  FROM dba_tables
+  WHERE owner = 'DOWNER_DEMO'
+    AND table_name = 'E_USES_DEVICE'
+),
+modifications AS (
+  SELECT
+    table_owner AS owner,
+    table_name,
+    SUM(inserts) AS inserts_since_stats,
+    SUM(updates) AS updates_since_stats,
+    SUM(deletes) AS deletes_since_stats,
+    MAX(timestamp) AS last_modification_sample_time
+  FROM dba_tab_modifications
+  WHERE table_owner = 'DOWNER_DEMO'
+    AND table_name = 'E_USES_DEVICE'
+  GROUP BY table_owner, table_name
+),
+index_count AS (
+  SELECT table_owner AS owner, table_name, COUNT(*) AS current_index_count
+  FROM dba_indexes
+  WHERE table_owner = 'DOWNER_DEMO'
+    AND table_name = 'E_USES_DEVICE'
+  GROUP BY table_owner, table_name
+),
+visible_insert_sql AS (
+  SELECT
+    COUNT(DISTINCT sql_id) AS visible_insert_sql_count,
+    NVL(SUM(executions), 0) AS visible_insert_executions,
+    NVL(SUM(rows_processed), 0) AS visible_insert_rows_processed,
+    MAX(last_active_time) AS last_visible_insert_time
+  FROM v$sql
+  WHERE command_type = 2
+    AND UPPER(sql_text) LIKE '%E_USES_DEVICE%'
+    AND UPPER(sql_text) NOT LIKE '%V$SQL%'
+    AND UPPER(sql_text) NOT LIKE '%DBA_TAB_MODIFICATIONS%'
+)
+SELECT
+  t.owner,
+  t.table_name,
+  t.num_rows,
+  t.last_analyzed,
+  NVL(m.inserts_since_stats, 0) AS inserts_since_stats,
+  NVL(m.updates_since_stats, 0) AS updates_since_stats,
+  NVL(m.deletes_since_stats, 0) AS deletes_since_stats,
+  NVL(m.inserts_since_stats, 0) + NVL(m.updates_since_stats, 0) + NVL(m.deletes_since_stats, 0) AS total_dml_since_stats,
+  CASE
+    WHEN t.last_analyzed IS NOT NULL AND SYSDATE > t.last_analyzed THEN ROUND(NVL(m.inserts_since_stats, 0) / GREATEST((SYSDATE - t.last_analyzed) * 24, 1 / 60), 2)
+    ELSE NULL
+  END AS approx_inserts_per_hour_since_stats,
+  NVL(i.current_index_count, 0) AS current_index_count,
+  2 AS proposed_new_index_count,
+  v.visible_insert_sql_count,
+  v.visible_insert_executions,
+  v.visible_insert_rows_processed,
+  v.last_visible_insert_time
+FROM target_table t
+LEFT JOIN modifications m
+  ON m.owner = t.owner
+ AND m.table_name = t.table_name
+LEFT JOIN index_count i
+  ON i.owner = t.owner
+ AND i.table_name = t.table_name
+CROSS JOIN visible_insert_sql v;
+
 CREATE INDEX idx_e_uses_device_src_ed_dst
   ON e_uses_device (src, end_date, dst)
   INVISIBLE;
@@ -792,15 +858,15 @@ ORDER BY run_type, last_active_time DESC;
 Promocion si el resultado mejora y el DBA aprueba el cambio:
 
 ```sql
-ALTER INDEX idx_e_uses_device_src_ed_dst VISIBLE;
-ALTER INDEX idx_e_uses_device_dst_ed_src VISIBLE;
+ALTER INDEX downer_demo.idx_e_uses_device_src_ed_dst VISIBLE;
+ALTER INDEX downer_demo.idx_e_uses_device_dst_ed_src VISIBLE;
 ```
 
 Rollback:
 
 ```sql
-DROP INDEX idx_e_uses_device_src_ed_dst;
-DROP INDEX idx_e_uses_device_dst_ed_src;
+DROP INDEX downer_demo.idx_e_uses_device_src_ed_dst;
+DROP INDEX downer_demo.idx_e_uses_device_dst_ed_src;
 ```
 
 ## Que demuestra especificamente esta demo
@@ -948,3 +1014,94 @@ Validacion lab-only de remediacion:
 La mitigacion demostrada es enrutar identificadores de grado extremo a una
 feature precomputada (`DOWNER_IP_FANOUT_FEATURES`) y conservar traversal online
 para identificadores de grado normal.
+
+El skill debe dar ejemplos concretos, no solo decir "agregar guard". Ejemplo
+`AS-IS`:
+
+```sql
+SELECT /* DOWNER_SN_Q01_AS_IS */
+       COUNT(*) AS suspicious_bank_accounts
+FROM (
+  SELECT
+    bank_account_id,
+    COUNT(DISTINCT user_id) AS users_on_bank
+  FROM GRAPH_TABLE (downer_graph
+    MATCH (ipn IS ip) <-[ei IS uses_ip]- (u IS user_account)
+                       -[wb IS withdrawal_bank_account]-> (b IS bank_account)
+    WHERE ipn.id = 'IP00000001'
+      AND ei.end_date IS NULL
+      AND wb.end_date IS NULL
+    COLUMNS (
+      u.id AS user_id,
+      b.id AS bank_account_id
+    )
+  )
+  GROUP BY bank_account_id
+  HAVING COUNT(DISTINCT user_id) >= 2
+);
+```
+
+Ejemplo `TO-BE` con guard de grado:
+
+```sql
+WITH ip_degree AS (
+  SELECT dst AS ip_id, COUNT(*) AS active_user_count
+  FROM e_uses_ip
+  WHERE end_date IS NULL
+  GROUP BY dst
+)
+SELECT /* DOWNER_SN_Q01_TO_BE_GUARD */
+       COUNT(*) AS suspicious_bank_accounts
+FROM (
+  SELECT
+    bank_account_id,
+    COUNT(DISTINCT user_id) AS users_on_bank
+  FROM GRAPH_TABLE (downer_graph
+    MATCH (ipn IS ip) <-[ei IS uses_ip]- (u IS user_account)
+                       -[wb IS withdrawal_bank_account]-> (b IS bank_account)
+    WHERE ipn.id = 'IP00000001'
+      AND ei.end_date IS NULL
+      AND wb.end_date IS NULL
+    COLUMNS (
+      ipn.id AS ip_id,
+      u.id AS user_id,
+      b.id AS bank_account_id
+    )
+  ) gt
+  JOIN ip_degree d
+    ON d.ip_id = gt.ip_id
+  WHERE d.active_user_count < 1000
+  GROUP BY bank_account_id
+  HAVING COUNT(DISTINCT user_id) >= 2
+);
+```
+
+Ejemplo `TO-BE` con feature precomputada:
+
+```sql
+CREATE TABLE downer_ip_fanout_features (
+  ip_id                    VARCHAR2(64) PRIMARY KEY,
+  active_user_count        NUMBER NOT NULL,
+  estimated_bank_paths     NUMBER NOT NULL,
+  suspicious_bank_accounts NUMBER NOT NULL,
+  risk_tier                VARCHAR2(16) NOT NULL,
+  computed_at              TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP NOT NULL
+);
+
+SELECT /* DOWNER_SN_Q01_TO_BE_FEATURE */
+       suspicious_bank_accounts
+FROM downer_ip_fanout_features
+WHERE ip_id = 'IP00000001'
+  AND risk_tier IN ('HIGH', 'SUPERHIGH');
+```
+
+Rollback/exit para validacion:
+
+```sql
+DROP TABLE downer_ip_fanout_features PURGE;
+```
+
+Si `IP00000001` representa NAT, proxy, VPN corporativa, infraestructura
+compartida o un artefacto de calidad de datos, la recomendacion correcta puede
+ser excluirlo del patron de fraude online y tratarlo como feature contextual,
+no seguir expandiendolo como senal transaccional normal.

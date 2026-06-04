@@ -189,6 +189,7 @@ GRANT SELECT ON DBA_INDEXES TO graph_diag_user;
 GRANT SELECT ON DBA_IND_COLUMNS TO graph_diag_user;
 GRANT SELECT ON DBA_TAB_STATISTICS TO graph_diag_user;
 GRANT SELECT ON DBA_TAB_COL_STATISTICS TO graph_diag_user;
+GRANT SELECT ON DBA_TAB_MODIFICATIONS TO graph_diag_user;
 ```
 
 Health, AWR, ASH, and Auto Indexing:
@@ -624,6 +625,19 @@ schema/session setup, validation DDL such as `CREATE INDEX ... INVISIBLE`,
 `DBMS_XPLAN` comparison query, and promote/rollback commands. The final summary
 keeps the short action label; the executable runbook belongs in the detailed
 recommendation section before it.
+
+For index recommendations, the advisor should collect visible DML/write-rate
+evidence itself before asking the DBA to accept extra index overhead. The
+missing-index pack includes a DML evidence template that checks
+`DBA_TAB_MODIFICATIONS`, `V$SQL` INSERT visibility, current index count, and
+proposed new index count. If the required view is not granted, the report must
+say that DML overhead evidence was not visible and require DBA workload
+confirmation before a visible index change.
+
+For supernode/fan-out recommendations, the advisor should include concrete
+`AS-IS` and `TO-BE` examples, such as a degree guard, bounded traversal, or
+feature-table lookup, plus rollback or exit criteria. Do not leave
+Supernode/Fan-out as a generic app-review note.
 
 Mini-DOWNER stale-context check: the current live demo database is documented
 in [docs/mini-downer-demo-database.md](docs/mini-downer-demo-database.md). If a

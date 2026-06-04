@@ -174,5 +174,5 @@ ORDER BY run_type, last_active_time DESC;
 PROMPT
 PROMPT Lab validation complete. Invisible indexes remain invisible.
 PROMPT To remove them manually:
-PROMPT   DROP INDEX idx_e_uses_device_src_ed_dst;
-PROMPT   DROP INDEX idx_e_uses_device_dst_ed_src;
+PROMPT   DROP INDEX DOWNER_DEMO.IDX_E_USES_DEVICE_SRC_ED_DST;
+PROMPT   DROP INDEX DOWNER_DEMO.IDX_E_USES_DEVICE_DST_ED_SRC;

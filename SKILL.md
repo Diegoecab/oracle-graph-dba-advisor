@@ -64,6 +64,13 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   commands before the final summary. Do not stop at generic text such as
   "create invisible indexes and compare"; include schema, DDL, session settings,
   validation query, measurement query, promotion, and rollback.
+- Before recommending permanent indexes, collect visible DML/write-rate evidence
+  yourself when the read-only grants allow it; do not merely tell the user to
+  confirm INSERT rate. If the evidence is not visible, state that limitation.
+- Use `R1`, `R2`, etc. consistently in detailed recommendations and the final
+  table. Do not use `P1/P2` for user-facing recommendations.
+- For supernode/fan-out findings, provide concrete `AS-IS` and `TO-BE` query or
+  feature-table examples, plus rollback/exit criteria.
 - During diagnosis, treat the connected workload as a real incident. Do not call
   it a demo/lab or reference repository runbooks unless the user explicitly asks
   for setup or out-of-band validation commands.

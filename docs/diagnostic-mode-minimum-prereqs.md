@@ -167,7 +167,13 @@ GRANT SELECT ON DBA_INDEXES TO graph_diag_user;
 GRANT SELECT ON DBA_IND_COLUMNS TO graph_diag_user;
 GRANT SELECT ON DBA_TAB_STATISTICS TO graph_diag_user;
 GRANT SELECT ON DBA_TAB_COL_STATISTICS TO graph_diag_user;
+GRANT SELECT ON DBA_TAB_MODIFICATIONS TO graph_diag_user;
 ```
+
+`DBA_TAB_MODIFICATIONS` lets the advisor report visible insert/update/delete
+activity before recommending new indexes on edge tables. If the grant is not
+approved, index recommendations must state that DML overhead evidence was not
+visible and require DBA workload confirmation before any visible index change.
 
 ### Health, AWR, ASH, and Auto Indexing
 

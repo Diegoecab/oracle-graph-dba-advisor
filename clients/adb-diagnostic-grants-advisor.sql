@@ -72,6 +72,7 @@ GRANT SELECT ON DBA_INDEXES TO &&diag_user;
 GRANT SELECT ON DBA_IND_COLUMNS TO &&diag_user;
 GRANT SELECT ON DBA_TAB_STATISTICS TO &&diag_user;
 GRANT SELECT ON DBA_TAB_COL_STATISTICS TO &&diag_user;
+GRANT SELECT ON DBA_TAB_MODIFICATIONS TO &&diag_user;
 
 --------------------------------------------------------------------------------
 -- Health-check views used by current templates

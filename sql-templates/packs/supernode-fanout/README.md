@@ -32,3 +32,7 @@ Runtime rule:
 - Do not treat a supernode finding as an index-only remediation. Validate index
   coverage, then focus recommendations on degree-aware query constraints,
   high-degree handling, precomputed features, or model cleanup.
+- The recommendation detail must include concrete `AS-IS` and `TO-BE` examples:
+  a bounded or degree-aware traversal, a feature/materialized lookup pattern, or
+  a model-cleanup path for NAT/proxy/shared infrastructure. Include rollback or
+  exit criteria for the chosen option.

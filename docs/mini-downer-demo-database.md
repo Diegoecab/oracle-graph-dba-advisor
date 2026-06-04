@@ -6,6 +6,14 @@ Runtime update verified: 2026-06-04. `RUN_SQL` was replaced with the
 literal-aware guard from `clients/adb-native-run-sql-readonly.sql` and validated
 directly in the ADB.
 
+Skill `0.2.20` adds DML/write-rate evidence before permanent index
+recommendations. If this has not yet been applied in the live demo ADB, run as
+`ADMIN`:
+
+```sql
+GRANT SELECT ON DBA_TAB_MODIFICATIONS TO GRAPH_DIAG_USER;
+```
+
 This file is the operational source of truth for Mini-DOWNER. If another agent,
 memory note, or local MCP config says the Mini-DOWNER target is `GADVDOWNERAF`,
 `us-ashburn-1`, `graph-advisor-newfraud`, or an Ashburn OCID, that information

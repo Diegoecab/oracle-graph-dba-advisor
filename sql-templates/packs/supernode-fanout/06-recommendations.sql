@@ -9,7 +9,7 @@ UNION ALL
 SELECT
   2,
   'ADD_DEGREE_AWARE_QUERY_GUARD',
-  'Add a degree-aware predicate or guardrail for very high-degree identifiers, for example excluding known shared fingerprints, IPs, cards, or devices from deep traversals or routing them through a separate risk feature path.',
+  'Provide an AS-IS online traversal and a TO-BE degree-aware query example. The TO-BE should exclude or route very high-degree identifiers such as __ANCHOR_ID__ through a separate feature path instead of expanding every connected user online.',
   'Compare anchor active in-degree against P95/P99 and confirm the high-degree node dominates result expansion.',
   'Remove the predicate or threshold change if business recall is harmed.'
 FROM dual
@@ -25,9 +25,9 @@ UNION ALL
 SELECT
   4,
   'PRECOMPUTE_HIGH_DEGREE_FEATURES',
-  'For recurring fraud scoring, precompute high-degree identifier features and join to the feature table instead of traversing a supernode online for every request.',
+  'For recurring fraud scoring, provide DDL and query examples for a precomputed feature table keyed by the high-degree identifier, then use a direct lookup for hot anchors instead of the online graph traversal.',
   'Validate that online SQL elapsed time drops while the feature refresh job remains bounded.',
-  'Disable or roll back the feature lookup and return to the prior query path.'
+  'Disable the feature lookup, drop the feature table if it is validation-only, and return to the prior query path.'
 FROM dual
 UNION ALL
 SELECT
