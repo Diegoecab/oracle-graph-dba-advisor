@@ -6,8 +6,9 @@
 - Do not duplicate long diagnostic logic in `SKILL.md`, `CLAUDE.md`, or client-specific entrypoints.
 - Keep entrypoints as lightweight loaders that tell the agent when to read `SYSTEM_PROMPT.md` and which supporting folders may be needed.
 - `README.md` is user-facing install and operation documentation, not runtime policy.
-- For Mini-DOWNER, `docs/mini-downer-demo-database.md` is the operational source of truth. If older memory, local MCP files, or prior notes mention `GADVDOWNERAF`, `us-ashburn-1`, `graph-advisor-newfraud`, or an Ashburn OCID for Mini-DOWNER, treat that as stale unless the demo database doc has been updated to match it.
-- The current Mini-DOWNER MCP name is `graph-mini-fraud-downer-26ai`; use that explicit server name when multiple ADB MCP servers are configured.
+- Demo and lab database details belong in `docs/` and `workload/` runbooks,
+  not in the runtime skill. Use them only when the user explicitly asks for
+  setup, reproduction, or out-of-band validation.
 - Keep `SYSTEM_PROMPT.md` as the cross-client runtime contract, not a catch-all
   notebook. Put universal safety, phase-order, target-selection, and report
   format rules there. Put path-specific SQL, long examples, setup steps, and
@@ -34,16 +35,18 @@
 - Preserve the MCP target selection gate before the connection confirmation gate. If multiple database MCP servers are visible and the user did not name an exact alias, the skill must list candidates and ask for an explicit choice before executing SQL.
 - Treat unauthenticated ADB Native MCP aliases that expose only `authenticate` or `authorize` as database candidates with status `needs authentication`; do not filter them out and auto-select another ready alias unless the user named it exactly.
 - Always preserve the connection confirmation gate before any workload analysis.
-- Do not infer the target database from workload names, schema names, graph names, or demo names alone.
-- Do not choose a specialized diagnostic pack from the demo name alone.
+- Do not infer the target database from workload names, schema names, graph
+  names, application labels, demo names, or prior local notes alone.
+- Do not choose a specialized diagnostic pack from a workload, schema, graph,
+  SQL tag, demo label, or prior expectation alone.
 - Select a pack only after evidence exists from the general triage path: connected context, graph inventory, candidate SQL, plan or wait evidence, and object/index metadata.
 - For vague workload-performance prompts, require broad incident triage: inspect multiple relevant SQL statements and report coverage across missing-index, supernode/fan-out, plan-instability, and any other supported classes instead of stopping at the first plausible finding.
-- For Mini-DOWNER, `missing-index` is the expected lab conclusion only when evidence shows a hot graph SQL, full scan or inefficient access on the edge table, and missing leading indexes on traversal columns.
 - Preserve the cross-client output contract in `SYSTEM_PROMPT.md`: final diagnostic answers must keep the same section order and must end with `Recommendation Summary`, with no text after the table.
 - Preserve the canonical final-summary category coverage in `SYSTEM_PROMPT.md`: actionable rows first, then concise `SKIPPED` rows for checked categories without supporting evidence.
-- For Mini-DOWNER supernode/fan-out, `supernode-fanout` is justified only when evidence shows a high-degree vertex driving excessive intermediate rows or path expansion, not merely because the workload is tagged `DOWNER_SN_Q01`.
-- For Mini-DOWNER plan instability, `plan-instability` is justified only when evidence shows multiple child cursors, multiple plan hashes, invalidations, bind mismatch, or elapsed-time deviation for the same SQL, not merely because the workload is tagged `DOWNER_PI_Q01`.
-- During customer-facing diagnosis, treat Mini-DOWNER as a real operational workload. Do not use demo/lab language or cite `workload/` scripts unless the user asks for setup, reproduction, or out-of-band validation runbooks.
+- During customer-facing diagnosis, treat the connected workload as a real
+  operational incident. Do not use demo/lab language or cite `workload/`
+  scripts unless the user asks for setup, reproduction, or out-of-band
+  validation runbooks.
 - During Phase 0, keep health checks on the `HEALTH-*` template allowlist. Do not add ad hoc dynamic performance view probes to runtime instructions unless a template gap is being intentionally closed.
 - Do not run `OPTIONAL-*` health probes such as `OPTIONAL-02C` / `V$SYS_TIME_MODEL` by default; these are opt-in or explicitly granted metrics only.
 

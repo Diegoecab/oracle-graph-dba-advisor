@@ -114,9 +114,8 @@ SQL connection, and context query are the source of truth.
 This gate applies after the MCP target selection and connection confirmation
 gate and before selecting a specialized diagnostic pack.
 
-Do not choose a pack from a workload name, schema name, graph name, demo name, or
-prior expectation alone. For example, do not select `missing-index` merely
-because the workload is called Mini-DOWNER. The pack choice must be
+Do not choose a pack from a workload name, schema name, graph name, application
+label, demo label, or prior expectation alone. The pack choice must be
 evidence-driven.
 
 ### Step 0B: Run general triage first
@@ -155,10 +154,10 @@ what class of problem is present:
 
 ### Default behavior for vague performance prompts
 
-Most users will ask broad questions such as "this graph is slow",
-"Mini-DOWNER is slow", or "Performance Hub shows load" without specifying
-SQL_IDs, packs, or evidence requirements. Treat these as requests for a broad
-incident triage, not as permission to pick the first plausible pack.
+Most users will ask broad questions such as "this graph is slow", "the fraud
+workload is slow", or "Performance Hub shows load" without specifying SQL_IDs,
+packs, or evidence requirements. Treat these as requests for a broad incident
+triage, not as permission to pick the first plausible pack.
 
 For vague workload-performance prompts:
 
@@ -198,18 +197,17 @@ For vague workload-performance prompts:
    which could not be evaluated because the required workload evidence was not
    present or visible.
 
-For packaged demo workloads such as Mini-DOWNER, demo-specific SQL tags are
-fixtures used to make the evidence repeatable. Treat them as examples of the
-generic workload-linkage rule above, not as customer heuristics. In real
-customer workloads, infer the equivalent scope from the customer's graph
-schema, modules, SQL tags, application names, procedures, backing tables,
-AWR/ASH window, or the user's stated incident context.
+SQL tags, module names, action names, job names, service names, and procedure
+names are workload-scoping signals only. Treat them as evidence that a SQL
+statement belongs to the scoped workload, not as proof of a root cause. Infer
+the workload scope from the connected database evidence and the user's stated
+incident context.
 
 Only report a class as a finding when the evidence is present in the connected
-database. If the database currently exposes only `DOWNER_MI_Q01`, say that the
-current evidence supports missing-index and that no visible supernode or
-plan-instability evidence was found in the inspected window. Do not invent the
-other two findings from repository knowledge.
+database. If the inspected window exposes only one supported issue class, say
+that the current evidence supports that class and that no other supported class
+was visible or evidenced in the inspected window. Do not invent findings from
+repository knowledge, demo knowledge, naming conventions, or prior runs.
 
 ## SAFETY: CROSS-CLIENT PROCESS AND REPORT CONTRACT
 
@@ -240,17 +238,11 @@ coverage section must state:
 - issue classes not evaluated because data was not visible through the
   read-only MCP grants
 
-When the workload has documented expected issue classes, include coverage rows
-for each of those classes. For example, the packaged Mini-DOWNER demo documents
-coverage for:
-
-- missing-index
-- supernode/fan-out
-- plan-instability
-
-If the evidence only supports one class, the report can recommend only that
-class, but it must explicitly say which documented classes were checked and
-were not visible or not supported in the inspected workload window.
+When the user, runbook, service owner, incident notes, or visible workload
+metadata define expected issue classes, include coverage rows for those
+classes. If the evidence only supports one class, the report can recommend only
+that class, but it must explicitly say which documented classes were checked
+and were not visible or not supported in the inspected workload window.
 
 For broad prompts, the final `Recommendation Summary` table must also make
 documented coverage visible. Do not end with only one category when other
@@ -283,12 +275,11 @@ do not append extra SQL, commentary, or next-step prose after that table.
 
 ## SAFETY: INCIDENT-FACING LANGUAGE
 
-Treat the connected database workload as a real operational incident by default,
-even when this repository also contains demo setup assets for the same workload.
+Treat the connected database workload as a real operational incident by default.
 
 - Do not tell the user "this is a demo", "the demo script", "lab script", or
-  similar backstage language unless the user explicitly asks about demo setup,
-  lab setup, or repository runbooks.
+  similar backstage language unless the user explicitly asks about setup,
+  reproduction, lab setup, or repository runbooks.
 - During diagnosis, explain only what the database evidence shows: connected
   context, graph catalog, SQL_IDs, waits, execution plans, object metadata,
   index gaps, and recommendations.
@@ -298,9 +289,9 @@ even when this repository also contains demo setup assets for the same workload.
   MCP channel by an approved DBA or in an approved non-production validation
   session. Provide generic DDL, validation SQL, and rollback text unless the
   user explicitly asks for repository-specific runbook commands.
-- If the user explicitly asks how to reproduce, set up, or validate the
-  Mini-DOWNER scenario, then it is acceptable to reference `workload/downer/`
-  as a runbook.
+- If the user explicitly asks how to reproduce, set up, or validate a packaged
+  workload scenario from this repository, then it is acceptable to reference
+  the relevant `workload/` runbook.
 
 ## SAFETY: TEMPLATE DISCIPLINE AND OPTIONAL VIEWS
 

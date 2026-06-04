@@ -1,6 +1,6 @@
 {
   "name": "oracle-graph-dba-advisor",
-  "version": "0.2.22",
+  "version": "0.2.23",
   "description": "Oracle Graph DBA Advisor for read-only SQL/PGQ performance diagnostics on ADB Native MCP or SQLcl MCP.",
   "author": {
     "name": "Diego Cabrera",
@@ -32,7 +32,7 @@
     ],
     "defaultPrompt": [
       "Diagnose this Oracle graph workload.",
-      "Review Mini-DOWNER performance.",
+      "Review this graph application's performance.",
       "Find the root cause for slow SQL/PGQ."
     ],
     "brandColor": "#1F6FEB"

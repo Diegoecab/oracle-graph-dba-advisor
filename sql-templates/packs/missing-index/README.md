@@ -1,6 +1,7 @@
 # Missing Index Query Pack
 
-Prebuilt diagnostic SQL pack for the Mini-DOWNER graph traversal scenario.
+Prebuilt diagnostic SQL pack for graph traversal workloads with suspected
+missing or incomplete leading indexes on vertex or edge access columns.
 
 The pack is designed for ADB Native MCP `RUN_SQL` guardrails. SQL templates are
 plain `SELECT` or `WITH` statements, with no SQL comments and no trailing
@@ -19,13 +20,15 @@ Files:
 
 Template placeholders:
 
-- `__SQL_TAG__`: workload tag, normally `DOWNER_MI_Q01`.
+- `__SQL_TAG__`: workload tag, module/action fragment, or SQL text marker used
+  to scope candidate SQL.
 - `__SQL_ID__`: selected SQL ID.
-- `__GRAPH_OWNER__`: graph/table owner, normally `DOWNER_DEMO`.
-- `__GRAPH_NAME__`: graph name, normally `DOWNER_GRAPH`.
-- `__EDGE_TABLE__`: target edge table, normally `E_USES_DEVICE`.
-- `__PROPOSED_INDEX_COUNT__`: number of proposed new indexes, normally `2`
-  for Mini-DOWNER missing-index validation.
+- `__GRAPH_OWNER__`: graph or backing-table owner.
+- `__GRAPH_NAME__`: property graph name.
+- `__EDGE_TABLE__`: target vertex or edge table identified from the hot plan
+  operation and graph catalog.
+- `__PROPOSED_INDEX_COUNT__`: number of proposed new indexes for DML overhead
+  estimation.
 
 Runtime rule:
 

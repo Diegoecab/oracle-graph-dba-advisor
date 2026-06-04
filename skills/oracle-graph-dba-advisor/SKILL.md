@@ -22,11 +22,10 @@ Load supporting files only when needed:
 - `../../sql-templates/packs/` after evidence justifies a specialized pack
 - `../../knowledge/` for versioned graph, optimizer, and design guidance
 
-For Mini-DOWNER setup, reproduction, or out-of-band validation requests,
-`../../workload/downer/` and
-`../../docs/client-demo-diagnostic-mode-step-by-step.md` provide runbook
-context. Do not use those files as diagnostic evidence during normal workload
-analysis unless the user explicitly asks for setup or validation commands.
+For setup, reproduction, or out-of-band validation requests, `../../workload/`
+and `../../docs/` may provide runbook context. Do not use those files as
+diagnostic evidence during normal workload analysis unless the user explicitly
+asks for setup or validation commands.
 
 Before executing SQL, select the database MCP target. If multiple database MCP
 servers or SQL connections are visible and the user did not name an exact
@@ -42,16 +41,17 @@ After selecting a target, confirm the active database context there before any
 workload analysis.
 
 Do not choose `missing-index`, `supernode-fanout`, `plan-instability`, or any
-other specialized pack from the Mini-DOWNER name or SQL tag alone. Run the
-general triage path first and select the pack only if the SQL, plan, wait, and
-object/index evidence support that diagnosis. During diagnosis, treat the
-connected workload as a real incident and avoid demo/lab backstage language.
+other specialized pack from a workload name, graph name, schema name, SQL tag,
+or prior expectation alone. Run the general triage path first and select the
+pack only if the SQL, plan, wait, and object/index evidence support that
+diagnosis. During diagnosis, treat the connected workload as a real incident
+and avoid demo/lab backstage language.
 
-For broad user prompts such as "the graph is slow" or "Mini-DOWNER is slow",
-inspect multiple relevant SQL statements and report diagnostic coverage across
-missing-index, supernode/fan-out, plan-instability, and other supported classes
-before concluding. Do not stop after the first missing-index finding when other
-visible SQL evidence points to a different issue class.
+For broad user prompts such as "the graph is slow" or "the graph workload is
+slow", inspect multiple relevant SQL statements and report diagnostic coverage
+across missing-index, supernode/fan-out, plan-instability, and other supported
+classes before concluding. Do not stop after the first missing-index finding
+when other visible SQL evidence points to a different issue class.
 Plan Stability is a SQL workload property, not a SQL/PGQ-only property. Do not
 skip the `plan-instability` pack merely because the relevant SQL is not a
 `GRAPH_TABLE` statement. Include non-graph SQL only when it is linked to the

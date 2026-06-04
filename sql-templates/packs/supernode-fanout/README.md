@@ -19,12 +19,15 @@ Files:
 
 Template placeholders:
 
-- `__SQL_TAG__`: workload tag, normally `DOWNER_SN_Q01`.
+- `__SQL_TAG__`: workload tag, module/action fragment, or SQL text marker used
+  to scope candidate SQL.
 - `__SQL_ID__`: selected SQL ID.
-- `__GRAPH_OWNER__`: graph/table owner, normally `DOWNER_DEMO`.
-- `__EDGE_TABLE__`: first-hop edge table, normally `E_USES_IP` for the coexistence Mini-DOWNER demo.
-- `__SECOND_EDGE_TABLE__`: secondary edge table, normally `E_WITHDRAWAL_BANK_ACCOUNT`.
-- `__ANCHOR_ID__`: high-degree destination vertex, normally `IP00000001`.
+- `__GRAPH_OWNER__`: graph or backing-table owner.
+- `__EDGE_TABLE__`: first-hop edge table involved in the high-degree expansion.
+- `__SECOND_EDGE_TABLE__`: optional secondary edge table used to quantify path
+  expansion beyond the first hop.
+- `__ANCHOR_ID__`: high-degree source or destination vertex identified from
+  workload evidence.
 
 Runtime rule:
 

@@ -17,7 +17,9 @@ Files:
 
 Template placeholders:
 
-- `__PLAN_TAG__`: SQL comment tag used to isolate one packaged scenario, for example `PLAN_INSTABILITY_Q03` or `DOWNER_PI_Q01`.
+- `__PLAN_TAG__`: SQL comment tag, module/action fragment, application query
+  family, incident label, or other workload marker used to isolate one logical
+  statement family.
 - `__SQL_ID__`: SQL ID selected during drill-down.
 
 Intended use:
@@ -26,15 +28,11 @@ Intended use:
 - no ad hoc SQL generation during diagnosis
 - stable, versioned query assets per diagnostic playbook
 - choose `__PLAN_TAG__` from the customer's visible workload scope: SQL comment
-  tag, module/action, named application query family, incident label, or a
-  packaged demo tag
+  tag, module/action, named application query family, incident label, service,
+  job, or procedure name
 - do not require the tagged SQL to contain `GRAPH_TABLE`; this pack diagnoses
   SQL workload plan stability, child cursor churn, plan-hash drift, and elapsed
   deviation for the same logical statement
 - include non-`GRAPH_TABLE` SQL only when it is linked to the graph workload by
   backing tables, module/action, schema, SQL tag, procedure, AWR/ASH window, or
   user-provided scope
-
-Example: in the Mini-DOWNER demo, `__PLAN_TAG__ = DOWNER_PI_Q01` covers both
-`DOWNER_PI_Q01` and `DOWNER_PI_Q01_DASH`. This is a demo fixture, not a generic
-customer heuristic.
