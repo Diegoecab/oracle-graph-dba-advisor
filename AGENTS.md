@@ -6,6 +6,8 @@
 - Do not duplicate long diagnostic logic in `SKILL.md`, `CLAUDE.md`, or client-specific entrypoints.
 - Keep entrypoints as lightweight loaders that tell the agent when to read `SYSTEM_PROMPT.md` and which supporting folders may be needed.
 - `README.md` is user-facing install and operation documentation, not runtime policy.
+- For Mini-DOWNER, `docs/mini-downer-demo-database.md` is the operational source of truth. If older memory, local MCP files, or prior notes mention `GADVDOWNERAF`, `us-ashburn-1`, `graph-advisor-newfraud`, or an Ashburn OCID for Mini-DOWNER, treat that as stale unless the demo database doc has been updated to match it.
+- The current Mini-DOWNER MCP name is `graph-mini-fraud-downer-26ai`; use that explicit server name when multiple ADB MCP servers are configured.
 
 ## Skill Packaging
 

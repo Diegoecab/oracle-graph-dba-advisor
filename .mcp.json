@@ -1,5 +1,13 @@
 {
   "mcpServers": {
+    "graph-mini-fraud-downer-26ai": {
+      "type": "streamableHttp",
+      "url": "https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa",
+      "headers": {
+        "Authorization": "Bearer ${ADB_MCP_TOKEN}"
+      },
+      "timeout": 300
+    },
     "sqlcl": {
       "command": "/mnt/c/DC/Soft/sqlcl-latest/sqlcl/bin/sql",
       "args": [

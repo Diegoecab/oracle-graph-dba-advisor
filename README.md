@@ -526,6 +526,13 @@ for SQL_IDs, issue classes, or report sections explicitly. If multiple ADB MCP
 servers are configured, name the intended MCP server in the user prompt so the
 advisor can bind the diagnostic session to the correct database.
 
+Mini-DOWNER stale-context check: the current live demo database is documented
+in [docs/mini-downer-demo-database.md](docs/mini-downer-demo-database.md). If a
+client or prior session says Mini-DOWNER is `GADVDOWNERAF`, `us-ashburn-1`, or
+`graph-advisor-newfraud`, that context is stale. Use
+`graph-mini-fraud-downer-26ai` in `sa-saopaulo-1` unless the demo database doc
+has been intentionally updated.
+
 #### Update the Codex plugin or local skill
 
 For the marketplace path, refresh the configured marketplace and restart Codex:

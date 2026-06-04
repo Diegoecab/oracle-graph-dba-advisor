@@ -6,6 +6,11 @@ Runtime update verified: 2026-06-04. `RUN_SQL` was replaced with the
 literal-aware guard from `clients/adb-native-run-sql-readonly.sql` and validated
 directly in the ADB.
 
+This file is the operational source of truth for Mini-DOWNER. If another agent,
+memory note, or local MCP config says the Mini-DOWNER target is `GADVDOWNERAF`,
+`us-ashburn-1`, `graph-advisor-newfraud`, or an Ashburn OCID, that information
+is stale unless this file has been intentionally updated to match it.
+
 ## OCI target
 
 - Tenancy: `latinoamerica`

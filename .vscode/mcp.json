@@ -1,10 +1,25 @@
 {
   "servers": {
+    "graph-mini-fraud-downer-26ai": {
+      "type": "http",
+      "url": "https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa",
+      "headers": {
+        "Authorization": "Bearer ${input:adbMcpToken}"
+      }
+    },
     "sqlcl": {
       "type": "stdio",
       "command": "${env:SQLCL_PATH:sql}",
       "args": ["-mcp"],
       "env": {}
     }
-  }
+  },
+  "inputs": [
+    {
+      "id": "adbMcpToken",
+      "type": "promptString",
+      "description": "ADB MCP bearer token for Mini-DOWNER",
+      "password": true
+    }
+  ]
 }
