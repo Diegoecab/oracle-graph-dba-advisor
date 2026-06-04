@@ -140,6 +140,12 @@ what class of problem is present:
 - Select `plan-instability` only when evidence shows multiple plan hashes,
   child cursor churn, invalidations, bind mismatch, plan changes, or material
   elapsed-time / buffer-get deviation for the same logical SQL.
+- Do not mark Plan Stability as `SKIPPED` merely because the hot SQL_IDs from
+  missing-index or fan-out analysis each show one plan hash and one child
+  cursor. Before reporting `SKIPPED`, search for plan-instability candidates
+  across the visible workload scope using the generic plan-instability pack
+  (`00-workload-instability-candidates.sql`) or equivalent evidence from
+  `V$SQL` / `V$SQLAREA_PLAN_HASH`.
 - Select `supernode-fanout` only when evidence shows a high-degree vertex that
   drives excessive intermediate rows or path expansion, especially when the
   relevant traversal indexes are already present and the issue is not explained
@@ -197,6 +203,10 @@ For vague workload-performance prompts:
 4. Evaluate all applicable packaged packs whose evidence thresholds are met.
    Do not stop after a missing-index recommendation if other top SQL statements
    show a different pattern.
+   For Plan Stability coverage, inspect candidate instability across the
+   workload scope, not only the SQL_IDs already selected for access-path or
+   fan-out analysis. Use schema/module/action/tag/procedure/backing-table
+   linkage to keep the search scoped to the graph workload.
 5. Include a short coverage note in the final answer listing which issue
    classes were detected, which were checked but not supported by evidence, and
    which could not be evaluated because the required workload evidence was not

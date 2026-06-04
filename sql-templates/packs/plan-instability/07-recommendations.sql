@@ -2,7 +2,7 @@ SELECT
   1 AS recommendation_order,
   'CONFIRM_PLAN_DRIFT' AS recommendation_type,
   'Confirm that SQL_ID __SQL_ID__ has multiple child cursors, multiple plan hashes, or material elapsed-time deviation before proposing any optimizer stabilization change.' AS recommendation_text,
-  'Use 01-instability-summary.sql, 03-child-detail.sql, 05-plan-hash.sql, and 06-elapsed-deviation.sql for evidence.' AS validation_text,
+  'Use 00-workload-instability-candidates.sql or 01-instability-summary.sql, then 03-child-detail.sql, 05-plan-hash.sql, and 06-elapsed-deviation.sql for evidence.' AS validation_text,
   'No rollback required for this diagnostic step.' AS rollback_text
 FROM dual
 UNION ALL

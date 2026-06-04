@@ -57,6 +57,10 @@ skip the `plan-instability` pack merely because the relevant SQL is not a
 `GRAPH_TABLE` statement. Include non-graph SQL only when it is linked to the
 graph workload by backing tables, module/action, SQL tag, procedure, schema,
 incident window, or user-provided workload scope.
+Do not mark Plan Stability as `SKIPPED` based only on the hot SQL_IDs already
+selected for indexing or fan-out findings. First run the generic workload
+instability candidate search from `../../sql-templates/packs/plan-instability/`
+across the discovered workload scope.
 
 Use the `../../SYSTEM_PROMPT.md` output contract exactly in every client:
 connected context, workload scope, top SQL classification, findings,
