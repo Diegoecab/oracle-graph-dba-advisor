@@ -474,15 +474,14 @@ Mini-DOWNER starter prompt:
 ```text
 Usa el skill oracle-graph-dba-advisor y exclusivamente el MCP graph-mini-fraud-downer-26ai.
 
-Estoy viendo lentitud en Mini-DOWNER y Performance Hub muestra carga constante. Primero confirma el contexto de conexion con DB_NAME, SERVICE_NAME, SESSION_USER y grafos disponibles. Si corresponde a Mini-DOWNER, continua con el diagnostico read-only: identifica el SQL mas relevante, explicame en simple la causa principal, que evidencia la sostiene y que recomendacion concreta le pasarias al DBA. No ejecutes cambios.
-
-No asumas la causa por el nombre Mini-DOWNER: selecciona el camino diagnostico o pack correcto solo despues de ver evidencia de SQL, plan, waits y metadata de objetos.
+Estoy viendo lentitud en el grafo Mini-DOWNER y Performance Hub muestra carga constante. Ayudame a entender que esta pasando y que recomendacion concreta le pasarias al DBA. No ejecutes cambios.
 ```
 
-The skill treats this context check as a mandatory connection gate. If multiple
-ADB MCP servers are configured, always name the intended MCP server in the user
-prompt and require the first diagnostic response to show the connected database
-context.
+The skill treats the connection check, broad triage, multi-cause coverage, and
+report structure as mandatory internal behavior. The user does not need to ask
+for SQL_IDs, issue classes, or report sections explicitly. If multiple ADB MCP
+servers are configured, name the intended MCP server in the user prompt so the
+advisor can bind the diagnostic session to the correct database.
 
 #### Update the Codex plugin or local skill
 
@@ -496,6 +495,9 @@ This Codex CLI build exposes marketplace `add`, `upgrade`, and `remove`, but not
 a separate `codex plugin list` or `codex plugin update` command. To know a new
 version is available, use the repository release/tag or the plugin manifest
 version in `.codex-plugin/plugin.json`, then run `marketplace upgrade`.
+Do not rely on an automatic in-client plugin update notification in Codex CLI;
+publish a GitHub release/tag and communicate the version bump as the canonical
+update signal.
 
 If Codex reports `No configured Git marketplaces to upgrade`, add the GitHub
 marketplace again, restart Codex, and select the plugin from the plugin
@@ -642,6 +644,9 @@ $plugins.available | Where-Object { $_.pluginId -eq "oracle-graph-dba-advisor@or
 Claude Code also exposes `claude plugin details oracle-graph-dba-advisor` for a
 component inventory, but `plugin list --available --json` is the practical
 version-check command.
+Do not rely only on an automatic prompt for plugin updates. Use the marketplace
+update plus `plugin list --available --json` before important demos, then run
+`claude plugin update ...` and restart Claude Code.
 
 #### Claude Desktop / claude.ai skill
 

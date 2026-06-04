@@ -145,6 +145,60 @@ current evidence supports missing-index and that no visible supernode or
 plan-instability evidence was found in the inspected window. Do not invent the
 other two findings from repository knowledge.
 
+## SAFETY: CROSS-CLIENT PROCESS AND REPORT CONTRACT
+
+This skill must behave consistently across Claude Code, Claude Desktop/IDE,
+Codex, and any other MCP client. The user should not need to write a structured
+diagnostic prompt. A normal prompt such as "the graph is slow" is enough.
+
+Use the same process and final report shape in every client:
+
+1. Connection confirmation gate.
+2. Broad workload triage.
+3. Candidate SQL ranking and pattern classification.
+4. Evidence-driven pack selection, if any pack is justified.
+5. Findings across every supported issue class with visible evidence.
+6. Final report using the `OUTPUT FORMAT` section below.
+
+Do not adapt the diagnostic structure to the UI surface. Claude terminal,
+Claude IDE, Claude Desktop, and Codex may show tool calls differently, but the
+assistant response must preserve the same section order and the same final
+recommendation table.
+
+For broad or vague performance prompts, the final report must include a
+`Diagnostic Coverage` section even when only one root cause is found. The
+coverage section must state:
+
+- issue classes detected
+- issue classes checked but not supported by current evidence
+- issue classes not evaluated because data was not visible through the
+  read-only MCP grants
+
+For Mini-DOWNER, always include coverage rows for at least:
+
+- missing-index
+- supernode/fan-out
+- plan-instability
+
+If the evidence only supports missing-index, the report can recommend only
+indexes, but it must explicitly say that supernode/fan-out and
+plan-instability were checked and were not visible or not supported in the
+inspected workload window.
+
+In read-only MCP mode, recommendation actions must never be phrased as direct
+execution choices such as `Execute`, `Ejecutar`, `Simulate`, or `Simular`.
+Use DBA/out-of-band phrasing instead:
+
+- `DBA validation: create invisible index and compare`
+- `DBA change: apply approved DDL`
+- `App/query review`
+- `Observe: collect another workload window`
+- `Skip`
+
+Validation SQL belongs inside the recommendation detail or an appendix before
+the final summary. The final visible section must be `Recommendation Summary`;
+do not append extra SQL, commentary, or next-step prose after that table.
+
 ## SAFETY: INCIDENT-FACING LANGUAGE
 
 Treat the connected database workload as a real operational incident by default,
@@ -517,30 +571,46 @@ EXECUTE IMMEDIATE '
 
 ## OUTPUT FORMAT
 
-When presenting findings to the user, use this structure:
+When presenting findings to the user, use this structure. This outline is
+mandatory for customer-facing diagnostic responses, including short responses.
+If a section has no evidence, keep the section and state `Not visible in the
+inspected window`, `Not evaluated`, or `Blocked by missing read-only access`.
 
 ```
 ## Graph Workload Analysis Report
 ### Database: [name] | Date: [timestamp]
 
-### 1. Graph Topology Summary
-   [tables, row counts, edge density, existing indexes]
+### 1. Connected Context
+   Connected context confirmed: DB_NAME=[db], SERVICE_NAME=[service],
+   SESSION_USER=[user], CURRENT_SCHEMA=[schema].
+   Target MCP/server: [name if known].
+   Graphs visible: [owner.graph_name rows or "not visible"].
 
-### 2. Top Expensive Graph Queries
-   [ranked by total elapsed time, classified by pattern type]
+### 2. Workload Scope
+   [time window, graph/schema, evidence sources used, optional views skipped]
 
-### 3. Findings
+### 3. Top Graph SQL and Pattern Classification
+   Table, up to 5 rows:
+   | Rank | SQL_ID | Tag/Module | Main Evidence | Issue Class | Pack Decision |
+
+### 4. Findings
    For each finding:
    - What: [the problem]
    - Where: [specific query + plan operation]
+   - Evidence: [elapsed time, CPU, buffer gets, waits, rows, plan, metadata]
    - Why: [root cause in graph terms]
-   - Impact: [quantified — elapsed time, CPU, I/O]
+   - Confidence: [High/Medium/Low and why]
 
-### 3B. Diagnostic Coverage
-   [issue classes checked, evidence found, evidence not found, and any
-   restricted/optional views that limited confidence]
+### 5. Diagnostic Coverage
+   Table:
+   | Issue Class | Checked Evidence | Status | SQL_ID/Tag | Decision |
+   Status values:
+   - DETECTED
+   - CHECKED_NOT_SUPPORTED
+   - NOT_VISIBLE
+   - BLOCKED_BY_ACCESS
 
-### 4. Recommendations (by priority)
+### 6. Recommendations
    Organized by priority (P1 first, then P2, etc.):
    - Indexing
    - Graph Design
@@ -548,16 +618,15 @@ When presenting findings to the user, use this structure:
    - Schema & Architecture
    - Statistics & Optimizer
 
-   **Recommendation Summary:**
-   - P1 (FK indexes): [count] indexes — essential for any graph traversal
-   - P2 (filter indexes): [count] indexes — justified by measured selectivity
-   - P3+ (advanced): [count] indexes — justified by specific plan evidence
+   For every recommendation include:
+   - Action: [DDL, query rewrite, graph/modeling change, stats action, observe]
+   - Evidence: [specific evidence that justifies it]
+   - Validation: [read-only comparison query or DBA validation step]
+   - Rollback/Exit: [DROP INDEX, revert query, remove threshold, observe only]
 
-   If no P2+ recommendations: "Your graph only needs the FK indexes above. Auto Indexing will handle additional filter indexes as your workload evolves. No further manual indexing is needed at this time."
-
-### 5. Recommendation Summary (ALWAYS LAST)
+### 7. Recommendation Summary (ALWAYS LAST)
    Table listing ALL recommendations with status and safe next action.
-   (See Recommendation Summary format below)
+   No content after this table.
 ```
 
 ### Before/After Comparison Tables
@@ -590,18 +659,28 @@ The report MUST end with a numbered summary table of ALL recommendations, includ
 - Status: `DONE`, `PROPOSED`, `SKIPPED`
 - Action available: what the user can request safely
 
-This gives the user a single place to decide next steps.
+In read-only MCP mode, the final table MUST use these columns:
+
+`# | Rec | Category | Status | Description | Evidence | Action Available`
+
+Allowed `Action Available` values in read-only MCP mode are DBA/out-of-band
+actions only, for example `DBA validation: create invisible index and compare`,
+`DBA change: apply approved DDL`, `App/query review`, `Observe`, and `Skip`.
+Do not use `Execute`, `Ejecutar`, `Simulate`, or `Simular` in this column.
+
+This gives the user a single place to decide next steps. Do not create an
+earlier intermediate recommendation summary. Do not append validation SQL or
+closing prose after this table.
+
+If any older example table in this repository lacks the `Evidence` column or
+uses direct execution language, the contract above takes precedence.
 
 ```
-| #  | Rec  | Category          | Status   | Description                          | Action Available        |
-|----|------|-------------------|----------|--------------------------------------|-------------------------|
-| 1  | R1   | Indexing           | DONE     | SRC indexes on 11 edge tables        | Rollback: DROP INDEX    |
-| 2  | R2   | Indexing           | DONE     | DST indexes on 11 edge tables        | Rollback: DROP INDEX    |
-| 3  | R3   | Indexing           | PROPOSED | Composite (SRC,END_DATE,DST)         | DBA validation / Skip   |
-| 4  | R4   | Graph Design       | PROPOSED | Consolidate 11 → 5 edge tables       | Design review / Skip    |
-| 5  | R5   | Graph Design       | PROPOSED | Supernode degree cap                  | App change / Skip       |
-| 6  | R6   | Query Rewriting    | PROPOSED | Anchor predicate on Q13               | Query review / Skip     |
-| 7  | R11  | Statistics         | DONE     | SQL Plan Baselines fixed              | Rollback: unfix/drop    |
+| #  | Rec | Category      | Status   | Description                  | Evidence                | Action Available |
+|----|-----|---------------|----------|------------------------------|-------------------------|------------------|
+| 1  | R1  | Indexing      | PROPOSED | Composite edge traversal key | SQL_ID + plan/index gap | DBA validation: create invisible index and compare / Skip |
+| 2  | R2  | Query Rewrite | PROPOSED | Degree-aware traversal guard | high-degree fan-out     | App/query review / Skip |
+| 3  | R3  | Optimizer     | PROPOSED | Stabilize plan after review  | plan hash drift         | DBA validation: baseline/profile review / Observe |
 ```
 
 In read-only diagnostic mode, do not ask the user which recommendation to
@@ -616,7 +695,6 @@ execute. Phrase actions as DBA/out-of-band next steps such as:
 Only ask "Which recommendation would you like to execute or rollback?" when the
 user explicitly put the session in an approved write mode and the production
 guard allows writes.
-```
 
 ---
 

@@ -40,6 +40,12 @@ missing-index, supernode/fan-out, plan-instability, and other supported classes
 before concluding. Do not stop after the first missing-index finding when other
 visible SQL evidence points to a different issue class.
 
+Use the `../../SYSTEM_PROMPT.md` output contract exactly in every client:
+connected context, workload scope, top SQL classification, findings,
+diagnostic coverage, recommendations, and a final `Recommendation Summary`
+table. Do not omit diagnostic coverage just because only one finding is
+detected.
+
 Keep the runtime read-only. The diagnostic MCP surface should expose only an
 approved SQL read tool such as `RUN_SQL`. Generate DDL recommendations as text
 with validation and rollback steps; do not execute DDL/DML through the

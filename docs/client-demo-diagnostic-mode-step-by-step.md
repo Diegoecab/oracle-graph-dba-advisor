@@ -368,17 +368,20 @@ corriendo `DOWNER_MI_Q01_DASH_BEFORE` mientras se presenta el problema.
 Prompt sugerido:
 
 ```text
-Usa el skill oracle-graph-dba-advisor y exclusivamente el MCP graph-advisor-downer.
+Usa el skill oracle-graph-dba-advisor y exclusivamente el MCP graph-mini-fraud-downer-26ai.
 
-Estoy viendo lentitud en Mini-DOWNER y Performance Hub muestra carga constante. Primero confirma el contexto de conexion con DB_NAME, SERVICE_NAME, SESSION_USER y grafos disponibles. Si corresponde a Mini-DOWNER, continua con el diagnostico read-only: identifica el SQL mas relevante, explicame en simple la causa principal, que evidencia la sostiene y que recomendacion concreta le pasarias al DBA. No ejecutes cambios.
-
-No asumas la causa por el nombre Mini-DOWNER: selecciona el camino diagnostico o pack correcto solo despues de ver evidencia de SQL, plan, waits y metadata de objetos.
+Estoy viendo lentitud en el grafo Mini-DOWNER y Performance Hub muestra carga constante. Ayudame a entender que esta pasando y que recomendacion concreta le pasarias al DBA. No ejecutes cambios.
 ```
 
 Buena practica: el primer mensaje tecnico del skill debe mostrar el contexto de
 conexion antes de leer performance. Esto evita diagnosticar otra ADB si el
 usuario tiene varios MCPs configurados. Si el contexto no coincide con
 Mini-DOWNER, el skill debe detenerse y pedir confirmacion.
+
+El usuario no necesita pedir SQL_IDs, clases de problema ni formato de reporte.
+El skill debe hacer broad triage por defecto y reportar cobertura para
+missing-index, supernode/fan-out y plan-instability aunque solo una causa tenga
+evidencia en la ventana inspeccionada.
 
 ### Troubleshooting MCP en Claude
 

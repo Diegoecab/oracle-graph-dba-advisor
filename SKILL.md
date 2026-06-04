@@ -40,6 +40,10 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   inspect multiple relevant SQL statements and report diagnostic coverage
   across missing-index, supernode/fan-out, plan-instability, and any other
   supported classes before concluding.
+- Use the `SYSTEM_PROMPT.md` output contract exactly in every client: connected
+  context, workload scope, top SQL classification, findings, diagnostic
+  coverage, recommendations, and a final `Recommendation Summary` table. Do not
+  omit diagnostic coverage just because only one finding is detected.
 - During diagnosis, treat the connected workload as a real incident. Do not call
   it a demo/lab or reference repository runbooks unless the user explicitly asks
   for setup or out-of-band validation commands.

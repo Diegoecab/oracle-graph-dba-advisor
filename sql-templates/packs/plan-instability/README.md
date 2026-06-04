@@ -12,6 +12,8 @@ Files:
 - `05-plan-hash.sql`: summarizes parent cursor plan-hash history.
 - `06-elapsed-deviation.sql`: quantifies elapsed-time and buffer-get spread
   across child cursors and plan hashes.
+- `07-recommendations.sql`: returns read-only recommendation text for
+  DBA/out-of-band plan-stability validation.
 
 Template placeholders:
 

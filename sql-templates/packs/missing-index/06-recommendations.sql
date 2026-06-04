@@ -15,7 +15,7 @@ UNION ALL
 SELECT
   30,
   'INDEX_GAP',
-  'For graph __GRAPH_OWNER__.__GRAPH_NAME__, add visible leading btree coverage for missing SOURCE_FK and DESTINATION_FK rows reported on __EDGE_TABLE__',
+  'For graph __GRAPH_OWNER__.__GRAPH_NAME__, propose DBA validation of leading btree coverage for missing SOURCE_FK and DESTINATION_FK rows reported on __EDGE_TABLE__, then validate with invisible indexes before any approved visible change',
   '04-edge-fk-leading-index-gap.sql'
 FROM dual
 UNION ALL
