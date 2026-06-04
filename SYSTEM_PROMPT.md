@@ -735,6 +735,15 @@ inspected window`, `Not evaluated`, or `Blocked by missing read-only access`.
    and make DBA workload confirmation an explicit prerequisite before a visible
    index change.
 
+   If `07-dml-overhead-evidence.sql` fails with ORA-00942 or ORA-01031 for
+   `DBA_TAB_MODIFICATIONS`, do not stop the diagnosis. Run
+   `sql-templates/packs/missing-index/08-dml-overhead-visible-sql-fallback.sql`
+   to collect target row count, current index count, proposed index count, and
+   visible INSERT SQL from `V$SQL`. In the recommendation, state that
+   dictionary modification counters were not visible and include the optional
+   DBA grant required for stronger write-rate evidence:
+   `GRANT SELECT ON DBA_TAB_MODIFICATIONS TO <diag_user>`.
+
    If a recommendation requires an out-of-band DBA validation because the MCP
    channel is read-only, do not provide only a generic instruction such as
    "create invisible indexes and compare". Provide a numbered step-by-step

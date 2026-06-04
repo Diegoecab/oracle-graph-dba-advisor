@@ -71,6 +71,9 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
 - Before recommending permanent indexes, collect visible DML/write-rate evidence
   yourself when the read-only grants allow it; do not merely tell the user to
   confirm INSERT rate. If the evidence is not visible, state that limitation.
+- If the DML evidence template cannot access `DBA_TAB_MODIFICATIONS`, use the
+  packaged visible-SQL fallback instead of stopping the diagnosis, and make DBA
+  workload confirmation a prerequisite for a permanent visible index change.
 - Use `R1`, `R2`, etc. consistently in detailed recommendations and the final
   table. Do not use `P1/P2` for user-facing recommendations.
 - For supernode/fan-out findings, provide concrete `AS-IS` and `TO-BE` query or

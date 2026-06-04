@@ -17,6 +17,9 @@ Files:
 - `05-degree-selectivity.sql`: quantifies degree distribution and active-edge selectivity.
 - `06-recommendations.sql`: returns diagnostic recommendation text as SELECT rows.
 - `07-dml-overhead-evidence.sql`: estimates write/DML overhead risk before recommending new indexes.
+- `08-dml-overhead-visible-sql-fallback.sql`: fallback when
+  `DBA_TAB_MODIFICATIONS` is not visible; reports table stats, current index
+  count, proposed index count, and visible INSERT SQL from `V$SQL`.
 
 Template placeholders:
 
@@ -41,6 +44,7 @@ Runtime rule:
   Do not leave the user with only "create invisible indexes and compare".
 - Before proposing visible indexes, run `07-dml-overhead-evidence.sql` when the
   required views are available. Include the insert/DML rate and current index
-  count in the evidence. If the view is not visible, say that write-rate
-  evidence was not visible and make DBA workload confirmation an explicit
-  prerequisite.
+  count in the evidence. If `DBA_TAB_MODIFICATIONS` is not visible, run
+  `08-dml-overhead-visible-sql-fallback.sql`, say that dictionary modification
+  counters were not visible, and make DBA workload confirmation an explicit
+  prerequisite before a permanent visible index change.
