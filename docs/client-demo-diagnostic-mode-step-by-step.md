@@ -197,12 +197,81 @@ Validacion esperada:
 2. `RUN_SQL` acepta `SELECT COUNT(*)`.
 3. `RUN_SQL` rechaza DDL, DML, PL/SQL, comentarios y semicolons.
 
+## Carga continua para Performance Dashboard
+
+Para que la demo tenga senal visible en ADB Performance Dashboard o Performance
+Hub, levantar una carga constante desde la propia base usando `DBMS_SCHEDULER`.
+Esto evita depender de muchas terminales cliente y mantiene el control de
+sesiones dentro del limite Always Free.
+
+Si `DOWNER_DEMO` ya existia antes de agregar esta capacidad, ejecutar como
+`ADMIN`:
+
+```sql
+GRANT CREATE JOB TO DOWNER_DEMO;
+```
+
+Ejecutar una vez como `DOWNER_DEMO`:
+
+```sql
+@workload/downer/10_dashboard_load_setup.sql
+```
+
+Arrancar la carga en estado problematico:
+
+```sql
+@workload/downer/11_start_dashboard_load_before.sql
+```
+
+Defaults:
+
+1. 4 workers.
+2. 12 minutos.
+3. `anchor_mode = MIXED`.
+4. SQL tag: `DOWNER_MI_Q01_DASH_BEFORE`.
+5. Module: `MINI_DOWNER_DASHBOARD_LOAD`.
+
+Durante la demo, abrir Performance Dashboard y mostrar:
+
+1. carga activa mientras corren los scheduler jobs
+2. `DOWNER_MI_Q01_DASH_BEFORE` en Top SQL o SQL Activity
+3. elapsed time / buffer gets altos
+4. evidencia posterior del plan con full scans sobre `E_USES_DEVICE`
+
+Luego ejecutar el skill por MCP read-only. La remediacion se aplica fuera del
+canal MCP, como accion lab-only de DBA:
+
+```sql
+@workload/downer/14_apply_visible_index_fix.sql
+```
+
+Arrancar la carga post-fix:
+
+```sql
+@workload/downer/12_start_dashboard_load_after.sql
+```
+
+Senal esperada:
+
+1. `DOWNER_MI_Q01_DASH_AFTER` ejecuta con indices visibles.
+2. baja el elapsed time por ejecucion.
+3. bajan buffer gets por ejecucion.
+4. la SQL puede dejar de ser dominante en Top SQL porque ya no consume tanto.
+
+Stop y rollback:
+
+```sql
+@workload/downer/13_stop_dashboard_load.sql
+@workload/downer/15_rollback_visible_index_fix.sql
+```
+
 ## Secuencia sugerida para mostrar al cliente
 
 ### Paso 1 - Presentar el problema
 
 Explicar que se va a simular una consulta de grafo lenta por falta de indices
-fisicos sobre una tabla de aristas.
+fisicos sobre una tabla de aristas. Si se usa Performance Dashboard, dejar
+corriendo `DOWNER_MI_Q01_DASH_BEFORE` mientras se presenta el problema.
 
 Prompt sugerido:
 

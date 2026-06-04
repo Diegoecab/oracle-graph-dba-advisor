@@ -27,8 +27,69 @@ Execution order:
 9. Register `RUN_SQL` as `GRAPH_DIAG_USER` using `clients/adb-native-run-sql-readonly.sql`.
 10. Run `08_missing_index_mcp_demo.sh` from WSL/bash to exercise the read-only pack.
 11. Optionally run `09_invisible_index_validation.sql` as `DOWNER_DEMO` for lab-only remediation proof.
+12. For a live ADB Performance Dashboard demo, run `10_dashboard_load_setup.sql`, then `11_start_dashboard_load_before.sql`.
+13. After the advisor recommendation, run `14_apply_visible_index_fix.sql`, then `12_start_dashboard_load_after.sql`.
+14. Stop or clean up with `13_stop_dashboard_load.sql` and `15_rollback_visible_index_fix.sql`.
 
 `03_generate_data.sql` seeds `DBMS_RANDOM` for reproducible data and uses a
 compact default volume: 12k users, 1.2k devices, and about 155k total edges.
 Increase `scale_factor` only when the ADB has room for a larger diagnostic
 sample.
+
+## Performance Dashboard choreography
+
+The dashboard workload uses `DBMS_SCHEDULER` jobs inside ADB, with a conservative
+default of 4 workers for 12 minutes. This keeps the demo under the Always Free
+session limit while producing active SQL load that can appear in Performance
+Dashboard, Performance Hub, ASH, and `V$SQL`.
+
+If `DOWNER_DEMO` was created before `00_create_users.sql` included scheduler
+privileges, run this once as `ADMIN`:
+
+```sql
+GRANT CREATE JOB TO DOWNER_DEMO;
+```
+
+Run once as `DOWNER_DEMO`:
+
+```sql
+@workload/downer/10_dashboard_load_setup.sql
+```
+
+Start the bad-state load:
+
+```sql
+@workload/downer/11_start_dashboard_load_before.sql
+```
+
+Dashboard filters/signals:
+
+- Module: `MINI_DOWNER_DASHBOARD_LOAD`
+- SQL text tag: `DOWNER_MI_Q01_DASH_BEFORE`
+- Expected symptom: `E_USES_DEVICE` full scans, higher elapsed time and buffer gets
+
+After the skill identifies the missing leading indexes, apply the lab-only fix
+outside the MCP runtime:
+
+```sql
+@workload/downer/14_apply_visible_index_fix.sql
+@workload/downer/12_start_dashboard_load_after.sql
+```
+
+Dashboard after-fix tag:
+
+- SQL text tag: `DOWNER_MI_Q01_DASH_AFTER`
+- Expected signal: lower per-execution elapsed time and buffer gets; the SQL may
+  also become less visible in Top SQL because it is no longer the dominant load.
+
+Stop the load:
+
+```sql
+@workload/downer/13_stop_dashboard_load.sql
+```
+
+Rollback the lab-only visible indexes:
+
+```sql
+@workload/downer/15_rollback_visible_index_fix.sql
+```
