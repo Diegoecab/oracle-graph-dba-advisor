@@ -1,0 +1,3 @@
+-- Compatibility alias for clients that look for a semantic identify filename.
+-- The canonical analyst-facing catalog is sql-templates/02-identify.sql.
+-- Load and use sql-templates/02-identify.sql for expensive workload identification.

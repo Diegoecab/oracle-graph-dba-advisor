@@ -20,3 +20,5 @@ Rule of thumb:
 
 - if the skill executes it directly, it should live under `packs/`
 - if it is a broader human-readable template or analysis notebook, it should stay at the root level
+- `02-identify-queries.sql` is a compatibility alias for clients that search
+  for a semantic identify filename; the canonical file remains `02-identify.sql`

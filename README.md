@@ -344,6 +344,7 @@ The advisor selects and parameterizes templates from `sql-templates/`.
 | `01-discovery.sql` | Graph and object discovery |
 | `01b-graph-dba-catalog.sql` | Owner-aware DBA catalog discovery |
 | `02-identify.sql` | Expensive workload identification |
+| `02-identify-queries.sql` | Compatibility alias; points clients to `02-identify.sql` |
 | `02b-plan-instability.sql` | Plan instability and child cursor analysis |
 | `03-analyze.sql` | Plan deep dive |
 | `04-selectivity-and-simulate.sql` | Selectivity and approved simulation |
