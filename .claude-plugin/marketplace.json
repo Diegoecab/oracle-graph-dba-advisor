@@ -1,0 +1,22 @@
+{
+  "name": "oracle-graph-dba-advisor",
+  "owner": {
+    "name": "Diego Cabrera",
+    "url": "https://github.com/Diegoecab"
+  },
+  "metadata": {
+    "description": "Oracle Graph DBA Advisor plugin marketplace.",
+    "version": "0.2.0"
+  },
+  "plugins": [
+    {
+      "name": "oracle-graph-dba-advisor",
+      "description": "Read-only Oracle SQL/PGQ graph performance diagnostics with packaged templates and recommendations.",
+      "source": "./",
+      "strict": true,
+      "skills": [
+        "./skills/oracle-graph-dba-advisor"
+      ]
+    }
+  ]
+}

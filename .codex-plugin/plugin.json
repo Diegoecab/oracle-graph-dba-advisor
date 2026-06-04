@@ -1,0 +1,40 @@
+{
+  "name": "oracle-graph-dba-advisor",
+  "version": "0.2.0",
+  "description": "Oracle Graph DBA Advisor for read-only SQL/PGQ performance diagnostics on ADB Native MCP or SQLcl MCP.",
+  "author": {
+    "name": "Diego Cabrera",
+    "url": "https://github.com/Diegoecab"
+  },
+  "homepage": "https://github.com/Diegoecab/oracle-graph-dba-advisor",
+  "repository": "https://github.com/Diegoecab/oracle-graph-dba-advisor",
+  "license": "MIT",
+  "keywords": [
+    "oracle",
+    "adb",
+    "sql-pgq",
+    "property-graph",
+    "performance",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Oracle Graph DBA Advisor",
+    "shortDescription": "Diagnose Oracle SQL/PGQ graph performance with read-only SQL evidence.",
+    "longDescription": "A diagnostic skill for Oracle SQL/PGQ and Property Graph workloads. It uses packaged SQL templates, graph optimization rules, and ADB Native MCP or SQLcl MCP to identify expensive graph SQL, plan hot spots, missing edge indexes, selectivity evidence, and reversible recommendations.",
+    "developerName": "Diego Cabrera",
+    "category": "Productivity",
+    "capabilities": [
+      "Read-only diagnostics",
+      "Oracle SQL/PGQ",
+      "ADB Native MCP",
+      "SQLcl MCP"
+    ],
+    "defaultPrompt": [
+      "Diagnose this Oracle graph workload.",
+      "Review Mini-DOWNER performance.",
+      "Find the root cause for slow SQL/PGQ."
+    ],
+    "brandColor": "#1F6FEB"
+  }
+}

@@ -340,42 +340,48 @@ Knowledge files include version metadata such as `verified_version` and
 
 ### Install in Codex
 
-1. Install the skill files into the local Codex skills directory.
+Recommended professional path: add this repository as a Codex plugin
+marketplace, then install **Oracle Graph DBA Advisor** from the Codex plugin
+directory.
 
-   Windows PowerShell:
+```powershell
+codex plugin marketplace add Diegoecab/oracle-graph-dba-advisor
+```
 
-   ```powershell
-   npx --yes degit Diegoecab/oracle-graph-dba-advisor "$env:USERPROFILE\.agents\skills\oracle-graph-dba-advisor"
-   ```
+For local development or a quick one-user install, copy the skill files into
+the local Codex skills directory.
 
-   macOS/Linux:
+Windows PowerShell:
 
-   ```bash
-   npx --yes degit Diegoecab/oracle-graph-dba-advisor "$HOME/.agents/skills/oracle-graph-dba-advisor"
-   ```
+```powershell
+npx --yes degit Diegoecab/oracle-graph-dba-advisor "$env:USERPROFILE\.agents\skills\oracle-graph-dba-advisor"
+```
 
-   If Node.js is not available, use Git instead:
+macOS/Linux:
 
-   ```powershell
-   git clone --depth 1 https://github.com/Diegoecab/oracle-graph-dba-advisor.git "$env:USERPROFILE\.agents\skills\oracle-graph-dba-advisor"
-   ```
+```bash
+npx --yes degit Diegoecab/oracle-graph-dba-advisor "$HOME/.agents/skills/oracle-graph-dba-advisor"
+```
 
-2. Restart Codex so it loads the new skill.
-3. Configure one MCP server per target ADB. For the Mini-DOWNER demo, replace
-   the database OCID and token:
+If Node.js is not available, use Git instead:
 
-   ```powershell
-   $env:ADB_MCP_TOKEN = "<bearer-token>"
-   codex mcp add graph-advisor-downer `
-     --url "https://dataaccess.adb.us-ashburn-1.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>" `
-     --bearer-token-env-var ADB_MCP_TOKEN
-   ```
+```powershell
+git clone --depth 1 https://github.com/Diegoecab/oracle-graph-dba-advisor.git "$env:USERPROFILE\.agents\skills\oracle-graph-dba-advisor"
+```
 
-4. Ask Codex to use the `oracle-graph-dba-advisor` skill. The runtime MCP
-   surface should expose only `RUN_SQL`.
+Restart Codex after installing the marketplace plugin or local skill. Then
+configure one MCP server per target ADB. For the Mini-DOWNER demo, replace the
+database OCID and token:
 
-This is the local-skill install path. For repeatable team distribution, package
-the skill as a Codex plugin with a marketplace entry.
+```powershell
+$env:ADB_MCP_TOKEN = "<bearer-token>"
+codex mcp add graph-advisor-downer `
+  --url "https://dataaccess.adb.us-ashburn-1.oraclecloudapps.com/adb/mcp/v1/databases/<database-ocid>" `
+  --bearer-token-env-var ADB_MCP_TOKEN
+```
+
+Ask Codex to use the `oracle-graph-dba-advisor` skill. The runtime MCP surface
+should expose only `RUN_SQL`.
 
 Mini-DOWNER starter prompt:
 
@@ -385,7 +391,15 @@ Estoy viendo lentitud en Mini-DOWNER. Podés revisar qué está pasando y decirm
 
 ### Install in Claude
 
-Claude has two useful install paths:
+Recommended professional path for Claude Code: add this repository as a Claude
+plugin marketplace, then install the plugin.
+
+```powershell
+claude plugin marketplace add Diegoecab/oracle-graph-dba-advisor
+claude plugin install oracle-graph-dba-advisor@oracle-graph-dba-advisor
+```
+
+Claude also has two useful non-marketplace paths:
 
 - **Claude Code**: install this repository as a local skill.
 - **Claude Desktop / claude.ai**: package the repository as a skill ZIP and
@@ -488,9 +502,18 @@ per-database client files.
 
 ```text
 oracle-graph-dba-advisor/
+|-- .agents/
+|   `-- plugins/marketplace.json
+|-- .codex-plugin/
+|   `-- plugin.json
+|-- .claude-plugin/
+|   |-- marketplace.json
+|   `-- plugin.json
 |-- SYSTEM_PROMPT.md
 |-- SKILL.md
 |-- CLAUDE.md
+|-- skills/
+|   `-- oracle-graph-dba-advisor/
 |-- clients/
 |   |-- adb-mcp-setup.md
 |   |-- adb-native-run-sql-readonly.sql
