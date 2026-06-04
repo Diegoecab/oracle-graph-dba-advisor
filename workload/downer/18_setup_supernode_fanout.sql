@@ -16,8 +16,8 @@ SET SERVEROUTPUT ON
 SET TIMING ON
 
 DEFINE supernode_ip_id = IP00000001
-DEFINE supernode_users = 8000
-DEFINE bank_edges_per_user = 2
+DEFINE supernode_users = 12000
+DEFINE bank_edges_per_user = 8
 
 MERGE INTO e_uses_ip t
 USING (
@@ -135,5 +135,15 @@ WHERE end_date IS NULL
 GROUP BY dst
 ORDER BY active_in_degree DESC
 FETCH FIRST 10 ROWS ONLY;
+
+SELECT
+  COUNT(*) AS users_reached_from_supernode,
+  COUNT(w.id) AS estimated_bank_paths
+FROM e_uses_ip ip
+LEFT JOIN e_withdrawal_bank_account w
+  ON w.src = ip.src
+ AND w.end_date IS NULL
+WHERE ip.dst = '&&supernode_ip_id'
+  AND ip.end_date IS NULL;
 
 PROMPT Supernode fan-out scenario prepared. Run 19_run_supernode_workload.sql or 20_start_dashboard_load_supernode.sql next.

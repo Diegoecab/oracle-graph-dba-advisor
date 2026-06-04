@@ -87,18 +87,26 @@ BEGIN
     v_sql := '
       SELECT /* ' || p_sql_tag || ' */
              COUNT(*)
-      FROM GRAPH_TABLE (downer_graph
-        MATCH (ipn IS ip) <-[ei IS uses_ip]- (u IS user_account)
-                           -[wb IS withdrawal_bank_account]-> (b IS bank_account)
-        WHERE ipn.id = :anchor_id
-          AND ei.end_date IS NULL
-          AND wb.end_date IS NULL
-        COLUMNS (
-          ipn.id AS ip_id,
-          u.id AS user_id,
-          b.id AS bank_account_id,
-          ei.used_at_date AS ip_used_at_date
+      FROM (
+        SELECT
+          bank_account_id,
+          COUNT(DISTINCT user_id) AS users_on_bank,
+          MAX(ip_used_at_date) AS last_ip_seen
+        FROM GRAPH_TABLE (downer_graph
+          MATCH (ipn IS ip) <-[ei IS uses_ip]- (u IS user_account)
+                             -[wb IS withdrawal_bank_account]-> (b IS bank_account)
+          WHERE ipn.id = :anchor_id
+            AND ei.end_date IS NULL
+            AND wb.end_date IS NULL
+          COLUMNS (
+            ipn.id AS ip_id,
+            u.id AS user_id,
+            b.id AS bank_account_id,
+            ei.used_at_date AS ip_used_at_date
+          )
         )
+        GROUP BY bank_account_id
+        HAVING COUNT(DISTINCT user_id) >= 2
       )';
   ELSE
     v_sql := '
@@ -181,6 +189,7 @@ CREATE OR REPLACE PROCEDURE downer_dashboard_load_worker (
   v_result_count NUMBER;
   v_executions   NUMBER := 0;
   v_optimizer_mode VARCHAR2(30);
+  v_optimizer_index_cost_adj NUMBER;
   v_error_message VARCHAR2(4000);
 BEGIN
   v_end_at := TO_TIMESTAMP_TZ(p_end_at_text, 'YYYY-MM-DD"T"HH24:MI:SSTZH:TZM');
@@ -238,13 +247,23 @@ BEGIN
         v_anchor_id := 'HOT';
       END IF;
 
-      v_optimizer_mode := CASE WHEN v_anchor_id = 'COLD' THEN 'FIRST_ROWS_1' ELSE 'ALL_ROWS' END;
+      IF v_anchor_id = 'COLD' THEN
+        v_optimizer_mode := 'FIRST_ROWS_1';
+        v_optimizer_index_cost_adj := 1;
+      ELSIF MOD(v_executions, 2) = 0 THEN
+        v_optimizer_mode := 'ALL_ROWS';
+        v_optimizer_index_cost_adj := 10000;
+      ELSE
+        v_optimizer_mode := 'FIRST_ROWS_1';
+        v_optimizer_index_cost_adj := 1;
+      END IF;
 
       EXECUTE IMMEDIATE
-        'BEGIN run_downer_plan_instability_workload(:cycles, :sql_tag, :optimizer_mode, NULL, :key_mode); END;'
+        'BEGIN run_downer_plan_instability_workload(:cycles, :sql_tag, :optimizer_mode, :index_cost_adj, :key_mode); END;'
         USING 1,
               p_sql_tag,
               v_optimizer_mode,
+              v_optimizer_index_cost_adj,
               v_anchor_id;
       v_result_count := 1;
     ELSE
@@ -339,7 +358,7 @@ BEGIN
   END IF;
 
   v_anchor_mode := UPPER(SUBSTR(p_anchor_mode, 1, 16));
-  IF v_anchor_mode NOT IN ('HOT', 'RANDOM', 'MIXED') THEN
+  IF v_anchor_mode NOT IN ('HOT', 'COLD', 'RANDOM', 'MIXED') THEN
     v_anchor_mode := 'MIXED';
   END IF;
 

@@ -16,31 +16,35 @@ SET PAGESIZE 100
 
 BEGIN
   run_downer_plan_instability_workload(
-    p_cycles         => 20,
-    p_sql_tag        => 'DOWNER_PI_Q01',
-    p_optimizer_mode => 'ALL_ROWS',
-    p_key_mode       => 'HOT'
+    p_cycles                   => 40,
+    p_sql_tag                  => 'DOWNER_PI_Q01',
+    p_optimizer_mode           => 'ALL_ROWS',
+    p_optimizer_index_cost_adj => 10000,
+    p_key_mode                 => 'HOT'
   );
 
   run_downer_plan_instability_workload(
-    p_cycles         => 20,
-    p_sql_tag        => 'DOWNER_PI_Q01',
-    p_optimizer_mode => 'FIRST_ROWS_1',
-    p_key_mode       => 'COLD'
+    p_cycles                   => 40,
+    p_sql_tag                  => 'DOWNER_PI_Q01',
+    p_optimizer_mode           => 'FIRST_ROWS_1',
+    p_optimizer_index_cost_adj => 1,
+    p_key_mode                 => 'HOT'
   );
 
   run_downer_plan_instability_workload(
-    p_cycles         => 20,
-    p_sql_tag        => 'DOWNER_PI_Q01',
-    p_optimizer_mode => 'FIRST_ROWS_100',
-    p_key_mode       => 'MIXED'
+    p_cycles                   => 40,
+    p_sql_tag                  => 'DOWNER_PI_Q01',
+    p_optimizer_mode           => 'FIRST_ROWS_1',
+    p_optimizer_index_cost_adj => 1,
+    p_key_mode                 => 'COLD'
   );
 
   run_downer_plan_instability_workload(
-    p_cycles         => 20,
-    p_sql_tag        => 'DOWNER_PI_Q01',
-    p_optimizer_mode => 'ALL_ROWS',
-    p_key_mode       => 'MIXED'
+    p_cycles                   => 40,
+    p_sql_tag                  => 'DOWNER_PI_Q01',
+    p_optimizer_mode           => 'ALL_ROWS',
+    p_optimizer_index_cost_adj => 10000,
+    p_key_mode                 => 'MIXED'
   );
 END;
 /

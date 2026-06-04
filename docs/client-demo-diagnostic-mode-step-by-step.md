@@ -356,8 +356,11 @@ Durante la demo, abrir Performance Dashboard y mostrar:
 2. `DOWNER_MI_Q01_DASH_BEFORE`, `DOWNER_SN_Q01_DASH` y
    `DOWNER_PI_Q01_DASH` en Top SQL o SQL Activity si se usa el script
    coexistente
-3. elapsed time / buffer gets altos
-4. evidencia posterior del plan con full scans sobre `E_USES_DEVICE`
+3. elapsed time / buffer gets altos para missing-index
+4. fan-out de `DOWNER_SN_Q01_DASH` sobre `IP00000001`, con paths expandidos
+   aunque `E_USES_IP` este indexada
+5. child cursor / plan hash / elapsed-spread para `DOWNER_PI_Q01_DASH`
+6. evidencia posterior del plan con full scans sobre `E_USES_DEVICE`
 
 Luego ejecutar el skill por MCP read-only. La remediacion se aplica fuera del
 canal MCP, como accion lab-only de DBA:
@@ -575,11 +578,18 @@ Para probar impacto, ejecutar como `DOWNER_DEMO`:
 @workload/downer/09_invisible_index_validation.sql
 ```
 
+Para una version exacta y autocontenida del `EXPLAIN PLAN`, ejecutar:
+
+```sql
+@workload/downer/28_missing_index_exact_plan_validation.sql
+```
+
 Este script:
 
 1. crea indices invisibles sobre `E_USES_DEVICE`
 2. habilita `optimizer_use_invisible_indexes` solo en la sesion
-3. compara planes `DOWNER_MI_Q01_BASE` y `DOWNER_MI_Q01_INVISIBLE`
+3. compara planes `DOWNER_MI_Q01_BASE` / `DOWNER_MI_Q01_EXACT_BASE` y
+   `DOWNER_MI_Q01_INVISIBLE` / `DOWNER_MI_Q01_EXACT_INVISIBLE`
 4. compara elapsed time, buffer gets y plan hash entre
    `DOWNER_MI_Q01_BASE_RUN` y `DOWNER_MI_Q01_INVISIBLE_RUN`
 
@@ -682,6 +692,17 @@ El diagnostico correcto debe seleccionar este pack solo si la evidencia muestra
 inestabilidad para el mismo SQL. No debe seleccionarlo por el nombre del
 workload.
 
+Validacion lab-only de remediacion:
+
+```sql
+@workload/downer/30_plan_instability_stabilization_validation.sql
+```
+
+La mitigacion demostrada es estabilizar inputs y ambiente de optimizador para
+reducir child cursors, cambios de plan y dispersion de elapsed time. Si luego
+se prueba un unico plan mejor, la recomendacion puede escalar a revision DBA de
+SQL Plan Management.
+
 ## Anexo interno - Supernode / fan-out
 
 El segundo caso recomendado para Mini-DOWNER es `supernode/fan-out`.
@@ -726,3 +747,13 @@ Pack read-only:
 El diagnostico correcto debe seleccionar este pack solo si la evidencia muestra
 un nodo de alto grado, expansion excesiva de paths o filas intermedias altas.
 No debe seleccionarlo por el nombre del workload.
+
+Validacion lab-only de remediacion:
+
+```sql
+@workload/downer/29_supernode_feature_mitigation_validation.sql
+```
+
+La mitigacion demostrada es enrutar identificadores de grado extremo a una
+feature precomputada (`DOWNER_IP_FANOUT_FEATURES`) y conservar traversal online
+para identificadores de grado normal.

@@ -22,18 +22,26 @@ BEGIN
     EXECUTE IMMEDIATE q'[
       SELECT /* DOWNER_SN_Q01 */
              COUNT(*)
-      FROM GRAPH_TABLE (downer_graph
-        MATCH (ipn IS ip) <-[ei IS uses_ip]- (u IS user_account)
-                           -[wb IS withdrawal_bank_account]-> (b IS bank_account)
-        WHERE ipn.id = :ip_id
-          AND ei.end_date IS NULL
-          AND wb.end_date IS NULL
-        COLUMNS (
-          ipn.id AS ip_id,
-          u.id AS user_id,
-          b.id AS bank_account_id,
-          ei.used_at_date AS ip_used_at_date
+      FROM (
+        SELECT
+          bank_account_id,
+          COUNT(DISTINCT user_id) AS users_on_bank,
+          MAX(ip_used_at_date) AS last_ip_seen
+        FROM GRAPH_TABLE (downer_graph
+          MATCH (ipn IS ip) <-[ei IS uses_ip]- (u IS user_account)
+                             -[wb IS withdrawal_bank_account]-> (b IS bank_account)
+          WHERE ipn.id = :ip_id
+            AND ei.end_date IS NULL
+            AND wb.end_date IS NULL
+          COLUMNS (
+            ipn.id AS ip_id,
+            u.id AS user_id,
+            b.id AS bank_account_id,
+            ei.used_at_date AS ip_used_at_date
+          )
         )
+        GROUP BY bank_account_id
+        HAVING COUNT(DISTINCT user_id) >= 2
       )
     ]'
     INTO v_count
@@ -45,6 +53,6 @@ END;
 /
 
 BEGIN
-  run_downer_supernode_workload(p_cycles => 16, p_ip_id => 'IP00000001');
+  run_downer_supernode_workload(p_cycles => 24, p_ip_id => 'IP00000001');
 END;
 /

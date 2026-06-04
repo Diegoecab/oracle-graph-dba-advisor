@@ -50,12 +50,12 @@ INSERT /*+ APPEND */ INTO plan_instability_demo (
 SELECT
   LEVEL AS id,
   CASE
-    WHEN LEVEL <= 120000 THEN 1
+    WHEN LEVEL <= 240000 THEN 1
     ELSE LEVEL
   END AS skew_key,
   'U' || LPAD(MOD(LEVEL, 12000) + 1, 8, '0') AS user_id,
   CASE
-    WHEN LEVEL <= 120000 THEN 'D00000001'
+    WHEN LEVEL <= 240000 THEN 'D00000001'
     ELSE 'D' || LPAD(MOD(LEVEL, 1200) + 1, 8, '0')
   END AS device_id,
   MOD(LEVEL, 1000) AS risk_score,
@@ -67,7 +67,7 @@ SELECT
   TIMESTAMP '2026-06-03 00:00:00' - NUMTODSINTERVAL(MOD(LEVEL, 365), 'DAY') AS created_at,
   RPAD('risk-event', 120, 'x') AS padding
 FROM dual
-CONNECT BY LEVEL <= 160000;
+CONNECT BY LEVEL <= 300000;
 
 COMMIT;
 
@@ -113,11 +113,27 @@ BEGIN
     v_key_mode := 'MIXED';
   END IF;
 
-  EXECUTE IMMEDIATE 'ALTER SESSION SET optimizer_mode = ' || v_optimizer_mode;
+  BEGIN
+    EXECUTE IMMEDIATE 'ALTER SESSION SET optimizer_mode = ' || v_optimizer_mode;
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE != -1031 THEN
+        RAISE;
+      END IF;
+      DBMS_OUTPUT.PUT_LINE('ALTER SESSION optimizer_mode skipped: privilege not granted');
+  END;
 
   IF p_optimizer_index_cost_adj IS NOT NULL THEN
-    EXECUTE IMMEDIATE 'ALTER SESSION SET optimizer_index_cost_adj = ' ||
-      TO_CHAR(LEAST(GREATEST(TRUNC(p_optimizer_index_cost_adj), 1), 10000));
+    BEGIN
+      EXECUTE IMMEDIATE 'ALTER SESSION SET optimizer_index_cost_adj = ' ||
+        TO_CHAR(LEAST(GREATEST(TRUNC(p_optimizer_index_cost_adj), 1), 10000));
+    EXCEPTION
+      WHEN OTHERS THEN
+        IF SQLCODE != -1031 THEN
+          RAISE;
+        END IF;
+        DBMS_OUTPUT.PUT_LINE('ALTER SESSION optimizer_index_cost_adj skipped: privilege not granted');
+    END;
   END IF;
 
   DBMS_APPLICATION_INFO.SET_MODULE(
@@ -126,18 +142,19 @@ BEGIN
   );
 
   v_sql := '
-    SELECT /* ' || v_sql_tag || ' */
+    SELECT /* ' || v_sql_tag || ' BIND_AWARE */
            SUM(risk_score)
     FROM plan_instability_demo
-    WHERE skew_key = :b1';
+    WHERE skew_key = :b1
+      AND created_at >= TIMESTAMP ''2025-06-03 00:00:00''';
 
   FOR i IN 1 .. v_cycles LOOP
     IF v_key_mode = 'HOT' THEN
       v_key := 1;
     ELSIF v_key_mode = 'COLD' THEN
-      v_key := 120000 + MOD(i, 40000) + 1;
+      v_key := 240000 + MOD(i, 60000) + 1;
     ELSIF MOD(i, 4) = 0 THEN
-      v_key := 120000 + MOD(i, 40000) + 1;
+      v_key := 240000 + MOD(i, 60000) + 1;
     ELSE
       v_key := 1;
     END IF;

@@ -44,6 +44,8 @@ is stale unless this file has been intentionally updated to match it.
 If more than one ADB MCP is configured in the client, the skill should not guess
 the target. It should list the visible database MCP candidates and ask the user
 to choose one unless the prompt names `graph-mini-fraud-downer-26ai` exactly.
+For gate testing, this repo also defines
+`graph-mini-fraud-downer-26ai-shadow`, pointing to the same ADB endpoint.
 
 Claude Code OAuth/no-bearer:
 
@@ -181,6 +183,18 @@ The Mini-DOWNER setup creates:
 - optional plan-instability case `DOWNER_PI_Q01` using `PLAN_INSTABILITY_DEMO`
 - dashboard workload procedures and scheduler workers
 
+The current demo runbook supports three positive issue classes:
+
+- R1/R2 missing-index: `DOWNER_MI_Q01*`, remediated by validating
+  `E_USES_DEVICE(SRC, END_DATE, DST)` and
+  `E_USES_DEVICE(DST, END_DATE, SRC)` with invisible indexes.
+- R3 supernode/fan-out: `DOWNER_SN_Q01*`, remediated by routing high-degree
+  identifiers through `DOWNER_IP_FANOUT_FEATURES` instead of doing the full
+  online graph traversal.
+- R4 plan-instability: `DOWNER_PI_Q01*`, remediated first by stabilizing input
+  and optimizer environment; DBA-controlled SQL Plan Management is reserved for
+  cases where a single better plan is proven.
+
 Use `workload/downer/16_start_dashboard_load_before_long.sql` to start a
 120-minute bad-state workload for a live dashboard session.
 
@@ -193,12 +207,39 @@ Use `workload/downer/27_start_dashboard_load_all_issues_5_days.sql` when the
 demo should show all three coexistence signals at once: missing-index,
 supernode/fan-out, and plan-instability.
 
+Out-of-band validation scripts:
+
+- `workload/downer/28_missing_index_exact_plan_validation.sql`: exact
+  `EXPLAIN PLAN`, baseline run, invisible-index run, and visible-index command.
+- `workload/downer/29_supernode_feature_mitigation_validation.sql`: online
+  traversal vs precomputed feature lookup.
+- `workload/downer/30_plan_instability_stabilization_validation.sql`: unstable
+  optimizer environment vs stable execution pattern.
+
 Current run as of 2026-06-04:
 
-- run_id `6`: `DOWNER_MI_Q01_DASH_BEFORE`, status `RUNNING`, workers `2`
-- run_id `7`: `DOWNER_SN_Q01_DASH`, status `RUNNING`, workers `1`
-- run_id `8`: `DOWNER_PI_Q01_DASH`, status `RUNNING`, workers `1`
-- expected end: `2026-06-09 17:19:23 UTC`
+- run_id `9`: `DOWNER_MI_Q01_DASH_BEFORE`, status `RUNNING`, workers `2`
+- run_id `10`: `DOWNER_SN_Q01_DASH`, status `RUNNING`, workers `1`
+- run_id `11`: `DOWNER_PI_Q01_DASH`, status `RUNNING`, workers `1`
+- expected end: `2026-06-09 19:19:10 UTC`
+
+Validation evidence from the 2026-06-04 refresh:
+
+- `DOWNER_MI_Q01_DASH_BEFORE`: SQL_ID `7dyt3c6xcjg76` still shows two
+  `TABLE ACCESS FULL` operations on `DOWNER_DEMO.E_USES_DEVICE`, cost `478`,
+  average buffer gets around `1755` per execution.
+- `DOWNER_SN_Q01_DASH`: anchor `IP00000001` has active in-degree `12007`;
+  the online traversal expands to about `118599` joined bank-account paths and
+  currently averages about `90 ms` in the grouped fan-out query.
+- `DOWNER_PI_Q01_DASH`: plan-instability evidence is positive. SQL_ID
+  `fhvn4b3bguvvr` shows `2` child cursors, `2` distinct plan hashes, optimizer
+  modes `ALL_ROWS,FIRST_ROWS`, and elapsed ratio about `55x`. SQL_ID
+  `fcs0b3h0xkh06` also shows `3` child cursors, `2` plan hashes, bind-aware
+  execution, and elapsed ratio about `2.37x`.
+
+Do not execute the out-of-band remediation validation scripts before the
+customer-facing diagnosis unless the purpose is to show the post-analysis
+validation step. They are intentionally outside the read-only MCP channel.
 
 ## Optional plan-instability signal
 

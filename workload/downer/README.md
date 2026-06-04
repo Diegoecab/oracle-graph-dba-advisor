@@ -15,7 +15,8 @@ on `E_USES_DEVICE` until the out-of-band invisible indexes are tested.
 
 The secondary induced issue is `DOWNER_SN_Q01`, a supernode / fan-out scenario.
 It prepares `IP00000001` as a high-degree shared IP fingerprint on indexed
-`E_USES_IP` traversal paths so the dominant problem is path expansion, not a
+`E_USES_IP` traversal paths. The online query groups and deduplicates the
+expanded bank-account paths so the dominant problem is path expansion, not a
 simple missing index. This lets the supernode case coexist with the
 missing-index defect on `E_USES_DEVICE`.
 
@@ -40,7 +41,9 @@ Execution order:
 8. Run `07_grant_diagnostic_access.sql` as `ADMIN`.
 9. Register `RUN_SQL` as `GRAPH_DIAG_USER` using `clients/adb-native-run-sql-readonly.sql`.
 10. Run `08_missing_index_mcp_demo.sh` from WSL/bash to exercise the read-only pack.
-11. Optionally run `09_invisible_index_validation.sql` as `DOWNER_DEMO` for lab-only remediation proof.
+11. Optionally run `09_invisible_index_validation.sql` or
+    `28_missing_index_exact_plan_validation.sql` as `DOWNER_DEMO` for lab-only
+    remediation proof.
 12. To prepare the supernode scenario, run `18_setup_supernode_fanout.sql`, then
     `19_run_supernode_workload.sql` to seed `V$SQL` with `DOWNER_SN_Q01`.
 13. For a live ADB Performance Dashboard demo, run `10_dashboard_load_setup.sql`, then `11_start_dashboard_load_before.sql`.
@@ -55,10 +58,13 @@ Execution order:
     `24_start_dashboard_load_plan_instability.sql`.
 17. To exercise the supernode read-only MCP pack directly, run
     `26_supernode_fanout_mcp_demo.sh`.
-18. To leave all three issue classes visible together in Performance Dashboard,
+18. For out-of-band mitigation proof of the secondary scenarios, run
+    `29_supernode_feature_mitigation_validation.sql` and
+    `30_plan_instability_stabilization_validation.sql`.
+19. To leave all three issue classes visible together in Performance Dashboard,
     run `27_start_dashboard_load_all_issues_5_days.sql`.
-19. After the advisor recommendation, run `14_apply_visible_index_fix.sql`, then `12_start_dashboard_load_after.sql`.
-20. Stop or clean up with `13_stop_dashboard_load.sql` and `15_rollback_visible_index_fix.sql`.
+20. After the advisor recommendation, run `14_apply_visible_index_fix.sql`, then `12_start_dashboard_load_after.sql`.
+21. Stop or clean up with `13_stop_dashboard_load.sql` and `15_rollback_visible_index_fix.sql`.
 
 The PowerShell helper can include the plan-instability setup with
 `-SetupPlanInstability`. Use `-StartPlanInstabilityDashboardLoad` only when the
@@ -197,6 +203,18 @@ The corresponding read-only diagnostic templates are in
 and then focus on degree-aware query guards, traversal constraints, precomputed
 features, or identifier/model cleanup.
 
+Out-of-band mitigation proof:
+
+```sql
+@workload/downer/29_supernode_feature_mitigation_validation.sql
+```
+
+This creates `DOWNER_IP_FANOUT_FEATURES`, refreshes the feature for
+`IP00000001`, and compares the online graph traversal with a feature lookup.
+The intended remediation story is: keep online traversal for normal-degree
+identifiers and route very high-degree identifiers through a bounded feature
+path.
+
 Direct read-only MCP pack runner:
 
 ```bash
@@ -250,3 +268,15 @@ immediate index. The advisor should identify the unstable SQL, quantify plan
 and elapsed deviation, explain the child-cursor or optimizer-environment
 signal, and recommend DBA-controlled stabilization such as bind discipline,
 stats review, SQL Plan Management, or query shape hardening.
+
+Out-of-band mitigation proof:
+
+```sql
+@workload/downer/30_plan_instability_stabilization_validation.sql
+```
+
+This contrasts `DOWNER_PI_Q01_UNSTABLE`, which alternates optimizer
+environments, with `DOWNER_PI_Q01_STABLE`, which uses a consistent environment
+for the same lookup pattern. The intended remediation story is: remove unstable
+session/input conditions first, then consider DBA-approved SQL Plan Management
+only when a single better plan is proven.

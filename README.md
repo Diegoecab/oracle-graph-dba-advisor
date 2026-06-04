@@ -551,6 +551,11 @@ client or prior session says Mini-DOWNER is `GADVDOWNERAF`, `us-ashburn-1`, or
 `graph-mini-fraud-downer-26ai` in `sa-saopaulo-1` unless the demo database doc
 has been intentionally updated.
 
+For target-selection gate testing, this repo also includes
+`graph-mini-fraud-downer-26ai-shadow`, a second MCP alias that points to the
+same Mini-DOWNER ADB. With both aliases visible, a vague prompt should make the
+skill ask which MCP target to use before running SQL.
+
 #### Update the Codex plugin or local skill
 
 For the marketplace path, refresh the configured marketplace and restart Codex:
