@@ -105,6 +105,46 @@ what class of problem is present:
 - If evidence is insufficient, run more read-only triage or ask the user to
   confirm the intended workload window. Do not guess.
 
+### Default behavior for vague performance prompts
+
+Most users will ask broad questions such as "this graph is slow",
+"Mini-DOWNER is slow", or "Performance Hub shows load" without specifying
+SQL_IDs, packs, or evidence requirements. Treat these as requests for a broad
+incident triage, not as permission to pick the first plausible pack.
+
+For vague workload-performance prompts:
+
+1. Confirm the connected database context.
+2. Identify the top relevant graph SQL statements, not just the first one.
+   Default to up to 5 candidate SQL statements ranked by elapsed time,
+   buffer gets, active time, or recent activity depending on available views.
+3. Classify each relevant SQL by observed evidence:
+   - access-path/index gap
+   - supernode or fan-out expansion
+   - plan instability or elapsed-time deviation
+   - stats/cardinality/query-shape issue
+   - insufficient evidence
+4. Evaluate all applicable packaged packs whose evidence thresholds are met.
+   Do not stop after a missing-index recommendation if other top SQL statements
+   show a different pattern.
+5. Include a short coverage note in the final answer listing which issue
+   classes were detected, which were checked but not supported by evidence, and
+   which could not be evaluated because the required workload evidence was not
+   present or visible.
+
+For Mini-DOWNER specifically, a vague "Mini-DOWNER is slow" prompt must check
+for all three packaged issue classes when their SQL/evidence is visible:
+
+- `DOWNER_MI_Q01` / `missing-index`
+- `DOWNER_SN_Q01` / `supernode-fanout`
+- `DOWNER_PI_Q01` / `plan-instability`
+
+Only report a class as a finding when the evidence is present in the connected
+database. If the database currently exposes only `DOWNER_MI_Q01`, say that the
+current evidence supports missing-index and that no visible supernode or
+plan-instability evidence was found in the inspected window. Do not invent the
+other two findings from repository knowledge.
+
 ## SAFETY: INCIDENT-FACING LANGUAGE
 
 Treat the connected database workload as a real operational incident by default,
@@ -496,6 +536,10 @@ When presenting findings to the user, use this structure:
    - Why: [root cause in graph terms]
    - Impact: [quantified — elapsed time, CPU, I/O]
 
+### 3B. Diagnostic Coverage
+   [issue classes checked, evidence found, evidence not found, and any
+   restricted/optional views that limited confidence]
+
 ### 4. Recommendations (by priority)
    Organized by priority (P1 first, then P2, etc.):
    - Indexing
@@ -512,8 +556,7 @@ When presenting findings to the user, use this structure:
    If no P2+ recommendations: "Your graph only needs the FK indexes above. Auto Indexing will handle additional filter indexes as your workload evolves. No further manual indexing is needed at this time."
 
 ### 5. Recommendation Summary (ALWAYS LAST)
-   Interactive table listing ALL recommendations with status,
-   allowing the user to choose which to execute or rollback.
+   Table listing ALL recommendations with status and safe next action.
    (See Recommendation Summary format below)
 ```
 
@@ -545,7 +588,7 @@ When reporting optimization impact, use ONE ROW per query with columns for both 
 
 The report MUST end with a numbered summary table of ALL recommendations, including:
 - Status: `DONE`, `PROPOSED`, `SKIPPED`
-- Action available: what the user can request (execute, rollback, skip)
+- Action available: what the user can request safely
 
 This gives the user a single place to decide next steps.
 
@@ -554,14 +597,25 @@ This gives the user a single place to decide next steps.
 |----|------|-------------------|----------|--------------------------------------|-------------------------|
 | 1  | R1   | Indexing           | DONE     | SRC indexes on 11 edge tables        | Rollback: DROP INDEX    |
 | 2  | R2   | Indexing           | DONE     | DST indexes on 11 edge tables        | Rollback: DROP INDEX    |
-| 3  | R3   | Indexing           | PROPOSED | Composite (SRC,END_DATE,DST)         | Execute / Skip          |
-| 4  | R4   | Graph Design       | PROPOSED | Consolidate 11 → 5 edge tables       | Execute / Skip          |
-| 5  | R5   | Graph Design       | PROPOSED | Supernode degree cap                  | Execute / Skip          |
-| 6  | R6   | Query Rewriting    | PROPOSED | Anchor predicate on Q13               | Execute / Skip          |
+| 3  | R3   | Indexing           | PROPOSED | Composite (SRC,END_DATE,DST)         | DBA validation / Skip   |
+| 4  | R4   | Graph Design       | PROPOSED | Consolidate 11 → 5 edge tables       | Design review / Skip    |
+| 5  | R5   | Graph Design       | PROPOSED | Supernode degree cap                  | App change / Skip       |
+| 6  | R6   | Query Rewriting    | PROPOSED | Anchor predicate on Q13               | Query review / Skip     |
 | 7  | R11  | Statistics         | DONE     | SQL Plan Baselines fixed              | Rollback: unfix/drop    |
 ```
 
-Always ask: "Which recommendation would you like to execute or rollback? (use the # number)"
+In read-only diagnostic mode, do not ask the user which recommendation to
+execute. Phrase actions as DBA/out-of-band next steps such as:
+
+- `DBA validation: create invisible index and compare`
+- `DBA change: apply approved DDL`
+- `App/query change: review traversal guard`
+- `Observe: collect another workload window`
+- `Skip`
+
+Only ask "Which recommendation would you like to execute or rollback?" when the
+user explicitly put the session in an approved write mode and the production
+guard allows writes.
 ```
 
 ---

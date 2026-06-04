@@ -34,6 +34,12 @@ general triage path first and select the pack only if the SQL, plan, wait, and
 object/index evidence support that diagnosis. During diagnosis, treat the
 connected workload as a real incident and avoid demo/lab backstage language.
 
+For broad user prompts such as "the graph is slow" or "Mini-DOWNER is slow",
+inspect multiple relevant SQL statements and report diagnostic coverage across
+missing-index, supernode/fan-out, plan-instability, and other supported classes
+before concluding. Do not stop after the first missing-index finding when other
+visible SQL evidence points to a different issue class.
+
 Keep the runtime read-only. The diagnostic MCP surface should expose only an
 approved SQL read tool such as `RUN_SQL`. Generate DDL recommendations as text
 with validation and rollback steps; do not execute DDL/DML through the

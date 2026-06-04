@@ -1,6 +1,6 @@
 {
   "name": "oracle-graph-dba-advisor",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Oracle Graph DBA Advisor for read-only SQL/PGQ performance diagnostics on ADB Native MCP or SQLcl MCP.",
   "author": {
     "name": "Diego Cabrera",
@@ -21,7 +21,7 @@
   "interface": {
     "displayName": "Oracle Graph DBA Advisor",
     "shortDescription": "Diagnose Oracle SQL/PGQ graph performance with read-only SQL evidence.",
-    "longDescription": "A diagnostic skill for Oracle SQL/PGQ and Property Graph workloads. It uses packaged SQL templates, graph optimization rules, and ADB Native MCP or SQLcl MCP to identify expensive graph SQL, plan hot spots, index gaps, selectivity evidence, and reversible recommendations through evidence-based diagnostic path selection.",
+    "longDescription": "A diagnostic skill for Oracle SQL/PGQ and Property Graph workloads. It uses packaged SQL templates, graph optimization rules, and ADB Native MCP or SQLcl MCP to identify expensive graph SQL, plan hot spots, index gaps, fan-out patterns, plan instability, selectivity evidence, and reversible recommendations through evidence-based diagnostic path selection.",
     "developerName": "Diego Cabrera",
     "category": "Productivity",
     "capabilities": [

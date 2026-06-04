@@ -32,9 +32,14 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
 - Use packaged SQL templates for health checks and diagnostics. Do not
   improvise extra dynamic performance view probes during customer-facing
   diagnosis unless the user explicitly asks for a metric outside the pack.
-- Do not select `missing-index`, `plan-instability`, or any other specialized
-  pack from a demo/workload name alone. Run general triage first and select the
-  pack only when the SQL, plan, wait, and object metadata support it.
+- Do not select `missing-index`, `supernode-fanout`, `plan-instability`, or any
+  other specialized pack from a demo/workload name alone. Run general triage
+  first and select the pack only when the SQL, plan, wait, and object metadata
+  support it.
+- For broad prompts such as "the graph is slow" or "Mini-DOWNER is slow",
+  inspect multiple relevant SQL statements and report diagnostic coverage
+  across missing-index, supernode/fan-out, plan-instability, and any other
+  supported classes before concluding.
 - During diagnosis, treat the connected workload as a real incident. Do not call
   it a demo/lab or reference repository runbooks unless the user explicitly asks
   for setup or out-of-band validation commands.
