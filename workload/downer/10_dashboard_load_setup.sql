@@ -83,22 +83,41 @@ CREATE OR REPLACE PROCEDURE downer_dashboard_execute_once (
 ) AS
   v_sql CLOB;
 BEGIN
-  v_sql := '
-    SELECT /* ' || p_sql_tag || ' */
-           COUNT(*)
-    FROM GRAPH_TABLE (downer_graph
-      MATCH (u1 IS user_account) -[e1 IS uses_device]-> (d IS device)
-                                 <-[e2 IS uses_device]- (u2 IS user_account)
-      WHERE u1.id = :anchor_id
-        AND u1.id <> u2.id
-        AND e1.end_date IS NULL
-        AND e2.end_date IS NULL
-      COLUMNS (
-        u2.id AS neighbor_user_id,
-        d.id AS shared_device_id,
-        e2.device_type AS edge_device_type
-      )
-    )';
+  IF UPPER(p_sql_tag) LIKE 'DOWNER_SN_Q01%' THEN
+    v_sql := '
+      SELECT /* ' || p_sql_tag || ' */
+             COUNT(*)
+      FROM GRAPH_TABLE (downer_graph
+        MATCH (d IS device) <-[ed IS uses_device]- (u IS user_account)
+                            -[wb IS withdrawal_bank_account]-> (b IS bank_account)
+        WHERE d.id = :anchor_id
+          AND ed.end_date IS NULL
+          AND wb.end_date IS NULL
+        COLUMNS (
+          d.id AS device_id,
+          u.id AS user_id,
+          b.id AS bank_account_id,
+          ed.device_type AS device_edge_type
+        )
+      )';
+  ELSE
+    v_sql := '
+      SELECT /* ' || p_sql_tag || ' */
+             COUNT(*)
+      FROM GRAPH_TABLE (downer_graph
+        MATCH (u1 IS user_account) -[e1 IS uses_device]-> (d IS device)
+                                   <-[e2 IS uses_device]- (u2 IS user_account)
+        WHERE u1.id = :anchor_id
+          AND u1.id <> u2.id
+          AND e1.end_date IS NULL
+          AND e2.end_date IS NULL
+        COLUMNS (
+          u2.id AS neighbor_user_id,
+          d.id AS shared_device_id,
+          e2.device_type AS edge_device_type
+        )
+      )';
+  END IF;
 
   EXECUTE IMMEDIATE v_sql INTO p_result_count USING p_anchor_id;
 END;
@@ -187,7 +206,15 @@ BEGIN
 
     EXIT WHEN v_status != 'RUNNING';
 
-    IF v_anchor_mode = 'HOT' THEN
+    IF UPPER(p_sql_tag) LIKE 'DOWNER_SN_Q01%' THEN
+      IF v_anchor_mode = 'RANDOM' THEN
+        v_anchor_id := 'D' || LPAD(TRUNC(DBMS_RANDOM.VALUE(2, 1201)), 8, '0');
+      ELSIF v_anchor_mode = 'MIXED' AND MOD(v_executions, 4) = 0 THEN
+        v_anchor_id := 'D' || LPAD(TRUNC(DBMS_RANDOM.VALUE(2, 1201)), 8, '0');
+      ELSE
+        v_anchor_id := 'D00000001';
+      END IF;
+    ELSIF v_anchor_mode = 'HOT' THEN
       v_anchor_id := 'U00000042';
     ELSIF v_anchor_mode = 'RANDOM' THEN
       v_anchor_id := 'U' || LPAD(TRUNC(DBMS_RANDOM.VALUE(1, 12001)), 8, '0');
@@ -279,8 +306,8 @@ BEGIN
   stop_downer_dashboard_load;
 
   v_sql_tag := REGEXP_REPLACE(UPPER(SUBSTR(p_sql_tag, 1, 60)), '[^A-Z0-9_]', '_');
-  IF v_sql_tag NOT LIKE 'DOWNER_MI_Q01%' THEN
-    RAISE_APPLICATION_ERROR(-20000, 'SQL tag must start with DOWNER_MI_Q01');
+  IF v_sql_tag NOT LIKE 'DOWNER_MI_Q01%' AND v_sql_tag NOT LIKE 'DOWNER_SN_Q01%' THEN
+    RAISE_APPLICATION_ERROR(-20000, 'SQL tag must start with DOWNER_MI_Q01 or DOWNER_SN_Q01');
   END IF;
 
   v_anchor_mode := UPPER(SUBSTR(p_anchor_mode, 1, 16));

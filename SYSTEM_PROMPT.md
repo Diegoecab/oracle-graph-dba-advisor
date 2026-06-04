@@ -93,6 +93,10 @@ what class of problem is present:
 - Select `plan-instability` only when evidence shows multiple plan hashes,
   child cursor churn, invalidations, bind mismatch, or plan changes for the same
   logical SQL.
+- Select `supernode-fanout` only when evidence shows a high-degree vertex that
+  drives excessive intermediate rows or path expansion, especially when the
+  relevant traversal indexes are already present and the issue is not explained
+  by a simple access-path gap.
 - If no specialized pack is justified, continue with the general 8-phase
   methodology and state that no pack has been selected yet.
 - When selecting a pack, say why in evidence terms, for example:

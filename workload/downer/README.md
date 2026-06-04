@@ -1,4 +1,4 @@
-# Mini-DOWNER Missing-Index Workload
+# Mini-DOWNER Graph Workloads
 
 Synthetic ADB-S Always Free workload for the customer-facing Diagnostic Mode demo.
 
@@ -8,10 +8,15 @@ The schema mirrors a small subset of the customer-provided DOWNER metadata:
 - edges: `E_USES_DEVICE`, `E_WITHDRAWAL_BANK_ACCOUNT`, `E_USES_CARD`, `E_USES_IP`
 - graph: `DOWNER_DEMO.DOWNER_GRAPH`
 
-The induced issue is deliberate: `E_USES_DEVICE` has no leading index on `SRC`
-or `DST`, while the other edge tables do. The tagged query `DOWNER_MI_Q01`
-performs a shared-device traversal and should surface full scans on
-`E_USES_DEVICE` until the lab-only invisible indexes are tested.
+The primary induced issue is deliberate: `E_USES_DEVICE` has no leading index on
+`SRC` or `DST`, while the other edge tables do. The tagged query
+`DOWNER_MI_Q01` performs a shared-device traversal and should surface full scans
+on `E_USES_DEVICE` until the out-of-band invisible indexes are tested.
+
+The secondary induced issue is `DOWNER_SN_Q01`, a supernode / fan-out scenario.
+It prepares `D00000001` as a high-degree shared fingerprint and uses indexed
+traversal paths so the dominant problem is path expansion, not a simple missing
+index.
 
 Execution order:
 
@@ -27,11 +32,14 @@ Execution order:
 9. Register `RUN_SQL` as `GRAPH_DIAG_USER` using `clients/adb-native-run-sql-readonly.sql`.
 10. Run `08_missing_index_mcp_demo.sh` from WSL/bash to exercise the read-only pack.
 11. Optionally run `09_invisible_index_validation.sql` as `DOWNER_DEMO` for lab-only remediation proof.
-12. For a live ADB Performance Dashboard demo, run `10_dashboard_load_setup.sql`, then `11_start_dashboard_load_before.sql`.
+12. To prepare the supernode scenario, run `18_setup_supernode_fanout.sql`, then
+    `19_run_supernode_workload.sql` to seed `V$SQL` with `DOWNER_SN_Q01`.
+13. For a live ADB Performance Dashboard demo, run `10_dashboard_load_setup.sql`, then `11_start_dashboard_load_before.sql`.
     For a longer customer demo window, use `16_start_dashboard_load_before_long.sql`.
     To keep the dashboard signal alive across several days, use `17_start_dashboard_load_before_5_days.sql`.
-13. After the advisor recommendation, run `14_apply_visible_index_fix.sql`, then `12_start_dashboard_load_after.sql`.
-14. Stop or clean up with `13_stop_dashboard_load.sql` and `15_rollback_visible_index_fix.sql`.
+14. For the supernode dashboard signal, run `20_start_dashboard_load_supernode.sql`.
+15. After the advisor recommendation, run `14_apply_visible_index_fix.sql`, then `12_start_dashboard_load_after.sql`.
+16. Stop or clean up with `13_stop_dashboard_load.sql` and `15_rollback_visible_index_fix.sql`.
 
 `03_generate_data.sql` seeds `DBMS_RANDOM` for reproducible data and uses a
 compact default volume: 12k users, 1.2k devices, and about 155k total edges.
@@ -112,3 +120,37 @@ Rollback the lab-only visible indexes:
 ```sql
 @workload/downer/15_rollback_visible_index_fix.sql
 ```
+
+## Supernode / fan-out scenario
+
+Prepare the high-degree device and supporting indexed access paths:
+
+```sql
+@workload/downer/18_setup_supernode_fanout.sql
+```
+
+Seed the SQL cache:
+
+```sql
+@workload/downer/19_run_supernode_workload.sql
+```
+
+Dashboard run:
+
+```sql
+@workload/downer/20_start_dashboard_load_supernode.sql
+```
+
+Dashboard filters/signals:
+
+- Module: `MINI_DOWNER_DASHBOARD_LOAD`
+- SQL text tag: `DOWNER_SN_Q01_DASH`
+- Anchor device: `D00000001`
+- Expected symptom: high rows processed and buffer gets caused by a high-degree
+  device expanding to many users and bank-account paths.
+
+The corresponding read-only diagnostic templates are in
+`sql-templates/packs/supernode-fanout/`. The expected recommendation is not
+"add another index" by default. The advisor should first verify index coverage
+and then focus on degree-aware query guards, traversal constraints, precomputed
+features, or identifier/model cleanup.

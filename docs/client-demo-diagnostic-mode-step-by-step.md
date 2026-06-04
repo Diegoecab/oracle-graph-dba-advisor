@@ -522,3 +522,40 @@ Assets:
 Usarlo cuando el mensaje que se quiera mostrar sea cursor churn, child cursors,
 plan hash drift e invalidaciones. Para la demo DOWNER, el caso principal es
 `missing-index`.
+
+## Anexo interno - Supernode / fan-out
+
+El segundo caso recomendado para Mini-DOWNER es `supernode/fan-out`.
+
+Objetivo:
+
+1. demostrar un problema propio de grafos, no solo de indices
+2. mostrar que el skill no debe recomendar DDL automaticamente
+3. evidenciar que un nodo de grado extremo puede dominar la cardinalidad
+4. recomendar mitigaciones de modelo/query/features
+
+Preparacion fuera del canal MCP diagnostico:
+
+```sql
+@workload/downer/18_setup_supernode_fanout.sql
+@workload/downer/19_run_supernode_workload.sql
+```
+
+Para Performance Dashboard:
+
+```sql
+@workload/downer/20_start_dashboard_load_supernode.sql
+```
+
+Tag esperado:
+
+- `DOWNER_SN_Q01`
+- `DOWNER_SN_Q01_DASH`
+
+Pack read-only:
+
+- `sql-templates/packs/supernode-fanout/`
+
+El diagnostico correcto debe seleccionar este pack solo si la evidencia muestra
+un nodo de alto grado, expansion excesiva de paths o filas intermedias altas.
+No debe seleccionarlo por el nombre del workload.

@@ -67,3 +67,12 @@ SELECT
 FROM e_uses_device
 WHERE src = 'U00000042'
 GROUP BY src;
+
+SELECT
+  dst AS device_id,
+  COUNT(*) AS active_in_degree
+FROM e_uses_device
+WHERE end_date IS NULL
+GROUP BY dst
+ORDER BY active_in_degree DESC
+FETCH FIRST 10 ROWS ONLY;

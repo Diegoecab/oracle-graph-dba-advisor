@@ -27,3 +27,19 @@ FROM GRAPH_TABLE (downer_graph
   )
 )
 FETCH FIRST 100 ROWS ONLY;
+
+SELECT /* DOWNER_SN_Q01 */
+  COUNT(*) AS candidate_paths
+FROM GRAPH_TABLE (downer_graph
+  MATCH (d IS device) <-[ed IS uses_device]- (u IS user_account)
+                      -[wb IS withdrawal_bank_account]-> (b IS bank_account)
+  WHERE d.id = 'D00000001'
+    AND ed.end_date IS NULL
+    AND wb.end_date IS NULL
+  COLUMNS (
+    d.id AS device_id,
+    u.id AS user_id,
+    b.id AS bank_account_id,
+    ed.device_type AS device_edge_type
+  )
+);

@@ -25,6 +25,7 @@
 - Do not choose a specialized diagnostic pack from the demo name alone.
 - Select a pack only after evidence exists from the general triage path: connected context, graph inventory, candidate SQL, plan or wait evidence, and object/index metadata.
 - For Mini-DOWNER, `missing-index` is the expected lab conclusion only when evidence shows a hot graph SQL, full scan or inefficient access on the edge table, and missing leading indexes on traversal columns.
+- For Mini-DOWNER supernode/fan-out, `supernode-fanout` is justified only when evidence shows a high-degree vertex driving excessive intermediate rows or path expansion, not merely because the workload is tagged `DOWNER_SN_Q01`.
 - During customer-facing diagnosis, treat Mini-DOWNER as a real operational workload. Do not use demo/lab language or cite `workload/` scripts unless the user asks for setup, reproduction, or out-of-band validation runbooks.
 
 ## Runtime Safety
