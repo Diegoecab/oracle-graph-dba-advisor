@@ -23,7 +23,9 @@ Last verified: 2026-06-04
   `https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/mcp/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa`
 - ADB Native MCP token endpoint:
   `https://dataaccess.adb.sa-saopaulo-1.oraclecloudapps.com/adb/auth/v1/databases/ocid1.autonomousdatabase.oc1.sa-saopaulo-1.antxeljrfioir7iauszrvqwbv6dsu5pybolkiidctbm53wjecldafli5xmsa/token`
-- Graph Studio:
+- Graph Studio, database user login for `DOWNER_DEMO`:
+  `https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/graphstudio/`
+- Graph Studio, OCI SSO launch:
   `https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/graphstudio/?sso=true`
 - SQL Developer Web:
   `https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/ords/sql-developer`
@@ -80,6 +82,7 @@ Code, run `/mcp`, and authenticate with `GRAPH_DIAG_USER`.
 - Demo owner schema: `DOWNER_DEMO`
 - Diagnostic technical user: `GRAPH_DIAG_USER`
 - MCP tool: `RUN_SQL`
+- Graph Studio role for the owner schema: `GRAPH_DEVELOPER`
 
 Do not store database passwords, wallet passwords, bearer tokens, or wallet ZIPs
 in the repo.

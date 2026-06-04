@@ -39,6 +39,15 @@ Nota de ejecucion actual, 2026-06-04: la ADB activa de Mini-DOWNER fue creada en
 Mantener el dataset bajo 20 GB y el workload en 4 workers para conservar la demo
 controlada. Ver [mini-downer-demo-database.md](mini-downer-demo-database.md).
 
+URLs operativas de la ADB activa:
+
+- Graph Studio para login con usuario de base `DOWNER_DEMO`:
+  `https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/graphstudio/`
+- Graph Studio via OCI SSO:
+  `https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/graphstudio/?sso=true`
+- SQL Developer Web:
+  `https://JY2OTYFOMIMHAOC-F416HUO273AA732K.adb.sa-saopaulo-1.oraclecloudapps.com/ords/sql-developer`
+
 ## Que problema representa este caso
 
 Este escenario representa un incidente donde una consulta de grafo que deberia
@@ -145,9 +154,11 @@ Para correr el modo diagnostico del skill en esta demo se necesita:
    `adb$feature={"name":"mcp_server","enable":true}`.
 3. Usuario owner de laboratorio: `DOWNER_DEMO`.
 4. Usuario tecnico de diagnostico: `GRAPH_DIAG_USER`.
-5. Grants directos de observabilidad sobre vistas de performance y catalogo.
-6. Tool MCP read-only `RUN_SQL`.
-7. Bearer token generado con `GRAPH_DIAG_USER`.
+5. Role `GRAPH_DEVELOPER` habilitado para `DOWNER_DEMO` si se usara Graph
+   Studio.
+6. Grants directos de observabilidad sobre vistas de performance y catalogo.
+7. Tool MCP read-only `RUN_SQL`.
+8. Bearer token generado con `GRAPH_DIAG_USER`.
 
 ## Setup de OCI y ADB
 
