@@ -27,6 +27,9 @@ Execution order:
 
 1. Run `00_create_users.sql` as `ADMIN`, passing strong lab passwords:
    `@workload/downer/00_create_users.sql "<downer_password>" "<graph_diag_password>"`.
+   This also grants `GRAPH_DEVELOPER` and
+   `ALTER USER DOWNER_DEMO GRANT CONNECT THROUGH GRAPH$PROXY_USER` so
+   database-user login works in Graph Studio.
 2. Connect as `DOWNER_DEMO` and run `01_create_schema.sql`.
 3. Run `02_create_property_graph.sql`.
 4. Run `03_generate_data.sql`.
@@ -76,6 +79,15 @@ privileges, run this once as `ADMIN`:
 
 ```sql
 GRANT CREATE JOB TO DOWNER_DEMO;
+```
+
+If Graph Studio reports `Missing GRAPH_DEVELOPER role` or asks to grant proxy
+connection through `GRAPH$PROXY_USER`, run this once as `ADMIN`:
+
+```sql
+GRANT GRAPH_DEVELOPER TO DOWNER_DEMO;
+ALTER USER DOWNER_DEMO DEFAULT ROLE ALL;
+ALTER USER DOWNER_DEMO GRANT CONNECT THROUGH GRAPH$PROXY_USER;
 ```
 
 Run once as `DOWNER_DEMO`:

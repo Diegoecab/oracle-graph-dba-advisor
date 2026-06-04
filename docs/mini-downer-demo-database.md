@@ -83,6 +83,8 @@ Code, run `/mcp`, and authenticate with `GRAPH_DIAG_USER`.
 - Diagnostic technical user: `GRAPH_DIAG_USER`
 - MCP tool: `RUN_SQL`
 - Graph Studio role for the owner schema: `GRAPH_DEVELOPER`
+- Graph Studio proxy grant:
+  `ALTER USER DOWNER_DEMO GRANT CONNECT THROUGH GRAPH$PROXY_USER`
 
 Do not store database passwords, wallet passwords, bearer tokens, or wallet ZIPs
 in the repo.

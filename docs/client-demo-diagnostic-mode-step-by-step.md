@@ -156,9 +156,11 @@ Para correr el modo diagnostico del skill en esta demo se necesita:
 4. Usuario tecnico de diagnostico: `GRAPH_DIAG_USER`.
 5. Role `GRAPH_DEVELOPER` habilitado para `DOWNER_DEMO` si se usara Graph
    Studio.
-6. Grants directos de observabilidad sobre vistas de performance y catalogo.
-7. Tool MCP read-only `RUN_SQL`.
-8. Bearer token generado con `GRAPH_DIAG_USER`.
+6. Proxy grant de Graph Studio:
+   `ALTER USER DOWNER_DEMO GRANT CONNECT THROUGH GRAPH$PROXY_USER`.
+7. Grants directos de observabilidad sobre vistas de performance y catalogo.
+8. Tool MCP read-only `RUN_SQL`.
+9. Bearer token generado con `GRAPH_DIAG_USER`.
 
 ## Setup de OCI y ADB
 
