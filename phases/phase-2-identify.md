@@ -2,6 +2,16 @@
 
 **Goal**: Find which SQL/PGQ queries are consuming the most resources.
 
+**Template selection**:
+- Use `sql-templates/02-identify.sql` when the SQL connection's
+  `CURRENT_SCHEMA` owns the target property graph and the `USER_*` graph
+  dictionary views are populated.
+- Use `sql-templates/02a-identify-dba.sql` when the connection is a technical
+  diagnostic account and the graph is owned by another schema. Replace
+  `__GRAPH_OWNER__` with the discovered graph owner from the DBA catalog path
+  such as `01b-graph-dba-catalog.sql`. Do not rewrite `USER_PG_ELEMENTS`
+  templates ad hoc during analysis.
+
 **Actions**:
 1. Top SQL by elapsed time (graph queries only) → `IDENTIFY-01`
 2. Top SQL by CPU time (graph queries only) → `IDENTIFY-02`

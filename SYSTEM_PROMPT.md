@@ -645,6 +645,14 @@ The correct views for property graph metadata are:
 
 **Access model**: The default templates in this repo intentionally use `USER_*` graph dictionary views and `USER_*` object statistics views. The MCP connection should therefore resolve `CURRENT_SCHEMA` to the target graph-owning schema. If you connect as a separate DBA/advisor account, switch to a `DBA_*` catalog path first instead of assuming the shipped `USER_*` queries will work unchanged.
 
+For Phase 2 Identify, do not manually rewrite `USER_PG_ELEMENTS` templates
+when the diagnostic session user is not the graph owner. Use
+`sql-templates/02a-identify-dba.sql` with `__GRAPH_OWNER__` replaced by the
+discovered owner from the DBA catalog path. If the required `DBA_*` views are
+not granted, report `Not visible with current grants` and ask for the documented
+read-only catalog grants or a connection whose `CURRENT_SCHEMA` is the graph
+owner.
+
 ### PL/SQL + GRAPH_TABLE Limitation (ORA-49028)
 
 PL/SQL variables **cannot** be referenced directly inside a `GRAPH_TABLE` operator. This causes `ORA-49028`. Use `EXECUTE IMMEDIATE` with bind variables instead:

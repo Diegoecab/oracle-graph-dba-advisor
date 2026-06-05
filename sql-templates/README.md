@@ -22,3 +22,8 @@ Rule of thumb:
 - if it is a broader human-readable template or analysis notebook, it should stay at the root level
 - `02-identify-queries.sql` is a compatibility alias for clients that search
   for a semantic identify filename; the canonical file remains `02-identify.sql`
+- `02-identify.sql` assumes the connection's `CURRENT_SCHEMA` owns the graph
+  and uses `USER_*` graph dictionary views
+- `02a-identify-dba.sql` is the packaged cross-schema identify query for
+  technical diagnostic users; replace `__GRAPH_OWNER__` with the discovered
+  owner and do not rewrite `USER_PG_ELEMENTS` templates ad hoc

@@ -40,6 +40,12 @@ alias unless the user named that alias exactly.
 After selecting a target, confirm the active database context there before any
 workload analysis.
 
+If the MCP user is a technical diagnostic account and the graph belongs to a
+different owner, use the packaged DBA/cross-schema templates such as
+`../../sql-templates/01b-graph-dba-catalog.sql` and
+`../../sql-templates/02a-identify-dba.sql`. Do not rewrite `USER_PG_ELEMENTS`
+identify templates ad hoc.
+
 Do not choose `missing-index`, `supernode-fanout`, `plan-instability`, or any
 other specialized pack from a workload name, graph name, schema name, SQL tag,
 or prior expectation alone. Run the general triage path first and select the

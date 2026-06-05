@@ -40,6 +40,11 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
 - Use packaged SQL templates for health checks and diagnostics. Do not
   improvise extra dynamic performance view probes during customer-facing
   diagnosis unless the user explicitly asks for a metric outside the pack.
+- If the MCP user is a technical diagnostic account and the graph belongs to a
+  different owner, use the packaged DBA/cross-schema templates such as
+  `sql-templates/01b-graph-dba-catalog.sql` and
+  `sql-templates/02a-identify-dba.sql`. Do not rewrite `USER_PG_ELEMENTS`
+  identify templates ad hoc.
 - During Phase 0, run only default `HEALTH-*` blocks. Do not run `OPTIONAL-*`
   health probes such as `OPTIONAL-02C` / `V$SYS_TIME_MODEL` unless the user
   explicitly asks for that metric.

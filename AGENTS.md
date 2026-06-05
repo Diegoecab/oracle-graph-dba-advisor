@@ -61,7 +61,17 @@
 
 - Preserve unrelated local worktree changes.
 - Use focused edits and stage only files changed for the requested task.
+- Preserve UTF-8 text integrity. Do not bulk-rewrite Markdown, SQL, JSON, or
+  skill files through a plain PowerShell `Get-Content` / `Set-Content`
+  round-trip; Windows PowerShell can decode UTF-8-without-BOM as an ANSI code
+  page and re-save mojibake. Prefer `apply_patch` for manual edits. If a bulk
+  rewrite is unavoidable, read and write with explicit UTF-8 encoding through
+  .NET APIs, then inspect the diff for mojibake markers and line-ending churn
+  before staging.
+- Keep `.gitattributes` and `.editorconfig` as the repo source of truth for
+  line endings and text charset.
 - Before publishing plugin/runtime changes, run:
   - `claude plugin validate .`
   - `git diff --check`
+  - `powershell -NoProfile -File tools/check-text-integrity.ps1`
 - If SQL templates are changed, verify they remain plain `SELECT` or `WITH` statements with no comments or semicolons when they are intended for `RUN_SQL`.
