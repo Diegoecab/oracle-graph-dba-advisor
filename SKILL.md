@@ -12,7 +12,9 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
 
 1. Read `SYSTEM_PROMPT.md` first. It is the authoritative methodology, safety
    policy, diagnostic path selection guide, and output contract.
-2. Load only the supporting files needed for the current request:
+2. Before producing a customer-facing diagnostic report, read
+   `reporting/diagnostic-report-template.md` and follow it exactly.
+3. Load only the supporting files needed for the current request:
    - `phases/` for the current diagnostic phase.
    - `sql-templates/` for executable read-only SQL templates.
    - `sql-templates/packs/` only after evidence justifies a specialized pack.
@@ -65,7 +67,8 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   selected for indexing or fan-out findings. First run the generic workload
   instability candidate search from `sql-templates/packs/plan-instability/`
   across the discovered workload scope.
-- Use the `SYSTEM_PROMPT.md` output contract exactly in every client: connected
+- Use the `SYSTEM_PROMPT.md` output contract and
+  `reporting/diagnostic-report-template.md` exactly in every client: connected
   context, workload scope, top SQL classification, findings, diagnostic
   coverage, recommendations, and a final `Recommendation Summary` table. Do not
   omit diagnostic coverage just because only one finding is detected.
@@ -76,9 +79,11 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   `Checked - no supporting evidence`, `Not visible with current grants`, and
   `Blocked by access`; never print internal status codes in the report.
 - In the final `Recommendation Summary`, use the canonical category names from
-  `SYSTEM_PROMPT.md`; include `Impact`, `Effort`, and `Priority`, put
-  actionable rows first, and include concise `SKIPPED` coverage rows for
-  supported categories checked with no supporting evidence.
+  `SYSTEM_PROMPT.md`; use only the columns from
+  `reporting/diagnostic-report-template.md`, include `Impact`, `Effort`, and
+  `Priority`, put actionable rows first, and include concise `SKIPPED` coverage
+  rows for supported categories checked with no supporting evidence. Do not add
+  text after the final table.
 - When recommending out-of-band DBA validation, provide exact step-by-step SQL
   commands before the final summary. Do not stop at generic text such as
   "create invisible indexes and compare"; include schema, DDL, session settings,
@@ -91,8 +96,10 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   yourself when the read-only grants allow it; do not merely tell the user to
   confirm INSERT rate. If the evidence is not visible, state that limitation.
 - If the DML evidence template cannot access `DBA_TAB_MODIFICATIONS`, use the
-  packaged visible-SQL fallback instead of stopping the diagnosis, and make DBA
-  workload confirmation a prerequisite for a permanent visible index change.
+  packaged visible-SQL fallback instead of stopping the diagnosis. Treat the
+  missing grant as an evidence limitation, not as a performance finding, and
+  make DBA workload confirmation a prerequisite for a permanent visible index
+  change.
 - Use `R1`, `R2`, etc. consistently in detailed recommendations and the final
   table. Do not use `P1/P2` for user-facing recommendations.
 - For supernode/fan-out findings, provide concrete `AS-IS` and `TO-BE` query or

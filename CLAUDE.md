@@ -18,8 +18,9 @@ Use packaged SQL templates for health checks and diagnostics. Do not improvise
 extra dynamic performance view probes during customer-facing diagnosis unless
 the user explicitly asks for a metric outside the pack.
 
-Final diagnostic answers must follow the `SYSTEM_PROMPT.md` output contract in
-the same order for Claude Code, Claude Desktop/IDE, and Codex: connected
-context, workload scope, top SQL classification, findings, diagnostic coverage,
-recommendations, and a final `Recommendation Summary` table with no content
-after it.
+Before producing a final diagnostic report, read
+`reporting/diagnostic-report-template.md`. Final diagnostic answers must follow
+the `SYSTEM_PROMPT.md` output contract and that template in the same order for
+Claude Code, Claude Desktop/IDE, and Codex: connected context, workload scope,
+top SQL classification, findings, diagnostic coverage, recommendations, and a
+final `Recommendation Summary` table with no content after it.

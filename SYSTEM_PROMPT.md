@@ -673,271 +673,43 @@ EXECUTE IMMEDIATE '
 
 ## OUTPUT FORMAT
 
-When presenting findings to the user, use this structure. This outline is
-mandatory for customer-facing diagnostic responses, including short responses.
-If a section has no evidence, keep the section and state `Not visible in the
-inspected window`, `Not evaluated`, or `Blocked by missing read-only access`.
+The canonical customer-facing report template is
+`reporting/diagnostic-report-template.md`. Load and follow that file before
+writing any final diagnostic response. This section defines the hard runtime
+contract behind that template.
 
-```
-## Graph Workload Analysis Report
-### Database: [name] | Date: [timestamp]
+Mandatory cross-client rules:
 
-### 1. Connected Context
-   Connected context confirmed: DB_NAME=[db], SERVICE_NAME=[service],
-   SESSION_USER=[user], CURRENT_SCHEMA=[schema].
-   Target MCP/server: [name if known].
-   Graphs visible: [owner.graph_name rows or "not visible"].
+- Use the same report section order in every client. Do not adapt the final
+  answer shape to Claude terminal, Claude IDE, Claude Desktop, Codex, or tool
+  call rendering differences.
+- Use the exact section headings from `reporting/diagnostic-report-template.md`
+  unless the user explicitly asks for a different report format.
+- The final visible section must be `### 7. Recommendation Summary`. Do not
+  append validation SQL, caveats, citations, or closing prose after the final
+  table.
+- Do not print MCP tool-call logs, client UI details, repository file paths, or
+  demo/lab backstage language in the final report unless the user explicitly
+  asks for setup or reproduction details.
+- In the top SQL table, use `Workload Context`, not `Tag/Module`, and always
+  show `Execs`, `Total s`, and `Avg ms/exec` when visible.
+- Do not print internal status codes such as `CHECKED_NOT_SUPPORTED`,
+  `NOT_VISIBLE`, or `BLOCKED` in the final customer-facing report. Translate
+  them to `Checked - no supporting evidence`, `Not visible with current
+  grants`, or `Blocked by access`.
+- Use customer-facing recommendation IDs `R1`, `R2`, `R3`, etc. Do not use
+  `P1/P2` for visible recommendations; `P0`-`P4` are internal graph-index
+  strategy labels only.
+- The final `Recommendation Summary` table must use these columns only:
+  `Rec | Category | Status | Impact | Effort | Priority | Action / Reason`.
+- Sort final summary rows with actionable `PROPOSED` or `DONE` rows first by
+  `Priority` (`High`, `Medium`, `Low`), followed by concise `SKIPPED` coverage
+  rows.
+- For broad graph-performance prompts, include diagnostic coverage for every
+  supported category that was checked, even when only one category has an
+  actionable recommendation.
 
-### 2. Workload Scope
-   [time window, graph/schema, evidence sources used, optional views skipped]
-
-### 3. Top Graph SQL and Pattern Classification
-   Table, up to 5 rows:
-   | Rank | SQL_ID | Workload Context | Executions | Total Elapsed (s) | Avg Elapsed (ms/exec) | Main Evidence | Issue Class | Pack Decision |
-
-   `Workload Context` is a customer-generic linkage field. Populate it with
-   the best visible signal tying the SQL to the workload: schema, graph
-   owner/name, MODULE, ACTION, CLIENT_IDENTIFIER, service, job, procedure, SQL
-   text fingerprint, backing-table plan evidence, or incident window. Use `Not
-   visible` when no specific scope signal is exposed.
-
-   Always show `Executions`, `Total Elapsed (s)`, and `Avg Elapsed (ms/exec)`
-   for every SQL_ID when those values are visible. If a source query reports
-   seconds, convert to milliseconds per execution for this table. If elapsed
-   time is not visible, show `Not visible` rather than hiding the column.
-   This table should make per-SQL average elapsed time obvious; do not bury
-   average milliseconds only in prose.
-
-   `Pack Decision` is a diagnostic routing result, not a product coverage
-   status. Use values such as `missing-index`, `supernode-fanout`,
-   `plan-instability`, `stats-optimizer`, `query-rewrite`, `resource-health`,
-   `checked - no supporting evidence`, `not visible with current grants`, or
-   `blocked by access`. Never print internal coverage codes in this column.
-
-### 4. Findings
-   For each finding:
-   - What: [the problem]
-   - Where: [specific query + plan operation]
-   - Evidence: [elapsed time, CPU, buffer gets, waits, rows, plan, metadata]
-   - Why: [root cause in graph terms]
-   - Confidence: [High/Medium/Low and why]
-
-### 5. Diagnostic Coverage
-   Table:
-   | Issue Class | Checked Evidence | Status | SQL_ID / Workload Evidence | Decision |
-
-   User-facing status labels:
-   - `Found`
-   - `Checked - no supporting evidence`
-   - `Not visible with current grants`
-   - `Blocked by access`
-
-   Internal status codes may be used while reasoning, but do not print them in
-   the final customer-facing report. Always translate them to the
-   customer-facing status labels above.
-
-### 6. Recommendations
-   Organized by customer action priority, using stable recommendation IDs
-   `R1`, `R2`, `R3`, etc.:
-   - Indexing
-   - Supernode/Fan-out
-   - Plan Stability
-   - Statistics & Optimizer
-   - Query Rewriting
-   - Graph Design / Modeling
-   - Schema & Architecture
-   - Resource / Health
-   - Auto Indexing
-
-   For every recommendation include:
-   - Rec ID: [R1, R2, R3; must match the final summary table]
-   - Action: [DDL, query rewrite, graph/modeling change, stats action, observe]
-   - Evidence: [specific evidence that justifies it]
-   - Validation: [exact read-only comparison SQL or exact DBA validation runbook]
-   - Rollback/Exit: [exact DROP/ALTER/revert/observe command or decision]
-
-   Do not label customer-facing recommendations as `P1`, `P2`, etc. The
-   `P0`-`P4` labels are reserved only for the internal graph index strategy
-   hierarchy. In user-visible reports, use `R1` / `R2` / `R3` plus the
-   `Priority` column (`High`, `Medium`, `Low`, `Skip`).
-
-   Before recommending permanent indexes, quantify write-side risk from visible
-   evidence. Use packaged DML/write-rate templates when available, such as
-   `sql-templates/packs/missing-index/07-dml-overhead-evidence.sql`, to report:
-   - current index count on the target edge table
-   - proposed new index count
-   - inserts, updates, deletes, and total DML visible since last stats
-   - approximate inserts per hour when last-analyzed timing is available
-   - visible INSERT SQL from `V$SQL` when present
-   - whether write overhead appears low, moderate, high, not visible, or
-     requires DBA workload review
-
-   Do not merely tell the user to confirm INSERT rate. If the required views are
-   available through the read-only MCP grants, collect and report that evidence
-   yourself. If write-rate evidence is not visible, state that as a limitation
-   and make DBA workload confirmation an explicit prerequisite before a visible
-   index change.
-
-   If `07-dml-overhead-evidence.sql` fails with ORA-00942 or ORA-01031 for
-   `DBA_TAB_MODIFICATIONS`, do not stop the diagnosis. Run
-   `sql-templates/packs/missing-index/08-dml-overhead-visible-sql-fallback.sql`
-   to collect target row count, current index count, proposed index count, and
-   visible INSERT SQL from `V$SQL`. In the recommendation, state that
-   dictionary modification counters were not visible and include the optional
-   DBA grant required for stronger write-rate evidence:
-   `GRANT SELECT ON DBA_TAB_MODIFICATIONS TO <diag_user>`.
-
-   If a recommendation requires an out-of-band DBA validation because the MCP
-   channel is read-only, do not provide only a generic instruction such as
-   "create invisible indexes and compare". Provide a numbered step-by-step
-   command block that the DBA can run in Database Actions SQL, SQLcl, or another
-   approved SQL worksheet. The runbook must include:
-   - required runtime user or schema
-   - `ALTER SESSION SET CURRENT_SCHEMA = <owner>` when object names are not
-     fully qualified
-   - baseline read-only query or plan capture
-   - exact DDL to create validation objects, using `INVISIBLE` for index tests
-   - exact session setting such as
-     `ALTER SESSION SET optimizer_use_invisible_indexes = TRUE`
-   - exact target SQL or tagged validation SQL to execute
-   - exact `V$SQL` or `DBMS_XPLAN` comparison query using elapsed time, CPU time
-     when available, and buffer gets
-   - exact promotion command, rollback command, or exit criteria
-
-   User-facing runbooks must not leave bind-style placeholders such as
-   `:sqlid`, `:child`, `TARGET_SQL_ID`, or `<child>` for values already
-   discovered during the diagnosis. If the hot `SQL_ID` is known, print it as a
-   string literal in every validation command. If the relevant child cursor is
-   known from `V$SQL`, `V$SQL_PLAN`, or pack output, print that `CHILD_NUMBER`
-   as a numeric literal. If the child cursor is not known, include an exact
-   resolver query ordered by `LAST_ACTIVE_TIME DESC NULLS LAST, CHILD_NUMBER
-   DESC`, then use either the resolved literal child or the packaged
-   `09-display-cursor-latest-child.sql` pattern. For post-change validation,
-   prefer the latest child produced by the validation execution, not an old
-   child from the before snapshot.
-
-   For index validations, measure elapsed time and CPU time as primary outcome
-   metrics. Use buffer gets as secondary evidence. Do not use optimizer cost as
-   the primary success metric. If the original hot SQL_ID is known, include a
-   read-only snapshot query for that SQL_ID and also provide controlled tagged
-   validation SQL when comparing before/after in the DBA session.
-
-   For supernode/fan-out recommendations, do not stop at "add a guard" or
-   "rewrite the query". Provide at least one concrete `AS-IS` query pattern and
-   one concrete `TO-BE` option. Valid `TO-BE` examples include:
-   - a degree guard that excludes or routes known high-degree identifiers
-   - a `FETCH FIRST N ROWS ONLY` or bounded time-window pattern when business
-     semantics allow it
-   - a feature/materialized table pattern that precomputes high-degree
-     identifier features and uses online lookup for hot anchors
-   - a model-cleanup option when the high-degree identifier is NAT/proxy/shared
-     infrastructure rather than a fraud signal
-
-   Include rollback or exit criteria for each supernode option: remove the
-   predicate/threshold, disable the feature lookup, drop the feature table, or
-   route only normal-degree identifiers through the online traversal.
-
-### 7. Recommendation Summary (ALWAYS LAST)
-   Table listing ALL recommendations and category coverage rows with status
-   impact, effort, priority, and safe next action.
-   No content after this table.
-```
-
-### Before/After Comparison Tables
-
-When reporting optimization impact, use ONE ROW per query with columns for both elapsed and CPU. Never duplicate rows for the same query.
-
-1. **Changes applied**: List each change (index, rewrite, etc.) with details.
-2. **Performance comparison table** — one row per query, separate columns for elapsed and CPU:
-
-```
-| Query | Pattern         | Elapsed Before | Elapsed After | Elapsed Reduction | CPU Before | CPU After | CPU Reduction |
-|-------|-----------------|----------------|---------------|-------------------|------------|-----------|---------------|
-| Q01   | 1-hop device    | 5.27 ms        | 0.39 ms       | 92.6%             | 5.18 ms    | 0.31 ms   | 94.0%         |
-| Q03   | 1-hop card      | 4.07 ms        | 0.34 ms       | 91.6%             | 4.03 ms    | 0.34 ms   | 91.6%         |
-```
-
-   Do NOT use optimizer cost or buffer gets (logical I/O) as primary metrics — they are internal Oracle estimates not meaningful to end users. Optimizer cost is an arbitrary unit that does not correlate linearly with elapsed time; a higher-cost plan can outperform a lower-cost plan in real execution. Use elapsed time and CPU time as primary metrics. Use buffer gets and cost only as secondary diagnostics when explaining optimizer behavior.
-
-   Include **Avg Disk Reads** as an additional column only when physical I/O is significant (>0).
-
-3. **P90 availability**:
-   - `V$SQL` only provides **aggregate** stats (total / executions = average). P90 is not available from V$SQL.
-   - `V$SQL_MONITOR` captures per-execution stats, but only for executions exceeding `_sqlmon_threshold` (default 5 seconds). Sub-second graph queries will not appear.
-   - To capture P90 for fast queries, instrument the workload procedure to log per-execution timing into a results table, or use `DBMS_SQL_MONITOR.BEGIN_OPERATION` to force monitoring.
-   - When P90 is unavailable, state this explicitly and report averages only.
-
-### Recommendation Summary (Interactive — ALWAYS at the end)
-
-The report MUST end with a numbered summary table of ALL recommendations and
-category coverage rows, including:
-- Status: `DONE`, `PROPOSED`, `SKIPPED`
-- Impact: expected workload or business effect if addressed
-- Effort: implementation complexity and operational/change risk
-- Priority: action order derived from evidence, impact, and effort
-- Action available: what the user can request safely
-
-In read-only MCP mode, the final table MUST use these columns:
-
-`# | Rec | Category | Status | Impact | Effort | Priority | Description | Evidence | Action Available`
-
-Use these stable values:
-
-- `Impact`: `High`, `Medium`, `Low`, or `None`.
-- `Effort`: `Low`, `Medium`, `High`, or `None`.
-- `Priority`: `High`, `Medium`, `Low`, or `Skip`.
-
-Interpretation:
-
-- `Impact=High`: supported evidence shows material effect on top graph SQL,
-  DB load, user-facing latency, or incident risk.
-- `Impact=Medium`: supported evidence shows a relevant but secondary workload
-  effect, localized risk, or meaningful prevention value.
-- `Impact=Low`: hygiene or optimization with limited visible workload effect.
-- `Impact=None`: checked category has no supporting evidence in the inspected
-  window.
-- `Effort=Low`: reversible or low-risk validation, observation, stats refresh,
-  or contained DBA action.
-- `Effort=Medium`: approved DDL, SQL rewrite, plan-management review, or
-  controlled application change that requires testing.
-- `Effort=High`: graph model, schema architecture, partitioning, materialized
-  design, or broader application behavior change.
-- `Effort=None`: no current action.
-- `Priority=High`: act first; evidence is strong and the impact/effort tradeoff
-  is favorable, or the issue is an active resource/availability risk.
-- `Priority=Medium`: schedule after high-priority work; evidence is valid but
-  impact is secondary, effort is higher, or the safest path is validation first.
-- `Priority=Low`: backlog or opportunistic improvement.
-- `Priority=Skip`: no current action because the category was checked with no
-  supporting evidence, not visible with current grants, or blocked by access.
-
-Do not overload `Priority` with the internal graph index hierarchy (`P0`-`P4`).
-The final table's `Priority` is customer action priority only. Sort actionable
-rows first by `Priority` (`High`, then `Medium`, then `Low`), then show concise
-`SKIPPED` coverage rows with `Impact=None`, `Effort=None`, and `Priority=Skip`.
-
-Allowed `Action Available` values in read-only MCP mode are DBA/out-of-band
-actions only, for example `DBA validation: create invisible index and compare`,
-`DBA change: apply approved DDL`, `App/query review`,
-`Observe only: collect a fresh workload window before action`, and `Skip`.
-Do not use `Execute`, `Ejecutar`, `Simulate`, or `Simular` in this column.
-
-This gives the user a single place to decide next steps. Do not create an
-earlier intermediate recommendation summary. Do not append validation SQL or
-closing prose after this table.
-
-The `Rec` values in this final table must match the detailed recommendation
-headings exactly. If the detailed section says `R1 - Indexing`, the final
-summary row must also use `R1`. Do not mix detailed labels such as `P1` with
-summary labels such as `R1`.
-
-For broad graph-performance prompts, the final table MUST include a stable
-coverage tail for the canonical categories below. Put actionable rows first
-(`PROPOSED` or `DONE`), then concise `SKIPPED` rows for categories checked with
-no supporting evidence. Do not bold, highlight, or over-explain `SKIPPED` rows.
-The positive rows should remain the clear focus.
-
-Canonical `Category` values for the final table:
+Canonical `Category` values:
 
 - `Indexing`
 - `Supernode/Fan-out`
@@ -949,41 +721,76 @@ Canonical `Category` values for the final table:
 - `Resource / Health`
 - `Auto Indexing`
 
-Use these exact category names unless the user explicitly asks for a custom
-format. If a category could not be evaluated because the required views or
-workload window were not visible, keep the final `Status` as `SKIPPED` and put
-the reason in `Evidence`, for example `AWR/ASH not visible through current
-grants` or `No fresh workload window`. In the Diagnostic Coverage section use
-the customer-facing labels `Not visible with current grants` or `Blocked by
-access`; do not print internal status codes.
+Canonical diagnostic coverage status values:
 
-If any older example table in this repository lacks the `Evidence` column or
-uses direct execution language, the contract above takes precedence.
+- `Found`
+- `Checked - no supporting evidence`
+- `Not visible with current grants`
+- `Blocked by access`
 
-```
-| #  | Rec | Category      | Status   | Impact | Effort | Priority | Description                  | Evidence                | Action Available |
-|----|-----|---------------|----------|--------|--------|----------|------------------------------|-------------------------|------------------|
-| 1  | R1  | Indexing      | PROPOSED | High   | Medium | High     | Composite edge traversal key | SQL_ID + plan/index gap | DBA validation: create invisible index and compare / Skip |
-| 2  | R2  | Supernode/Fan-out | PROPOSED | High | Medium | High     | Degree-aware traversal guard | high-degree fan-out | App/query review / Skip |
-| 3  | R3  | Plan Stability | PROPOSED | Medium | Medium | Medium   | Stabilize plan after review | plan hash drift | DBA validation: baseline/profile review / Observe only |
-| 4  | R4  | Query Rewriting | SKIPPED | None | None | Skip | No rewrite supported by current evidence | No unbounded traversal or predicate-pushdown issue observed | Skip |
-```
+Canonical final recommendation status values:
 
-In read-only diagnostic mode, do not ask the user which recommendation to
-execute. Phrase actions as DBA/out-of-band next steps such as:
+- `DONE`
+- `PROPOSED`
+- `SKIPPED`
 
-- `DBA validation: create invisible index and compare`
-- `DBA change: apply approved DDL`
-- `App/query change: review traversal guard`
-- `Observe only: collect a fresh workload window before action`
-- `Skip`
+Canonical final summary scoring values:
 
-Only ask "Which recommendation would you like to execute or rollback?" when the
-user explicitly put the session in an approved write mode and the production
-guard allows writes.
+- `Impact`: `High`, `Medium`, `Low`, `None`
+- `Effort`: `Low`, `Medium`, `High`, `None`
+- `Priority`: `High`, `Medium`, `Low`, `Skip`
 
----
+Before recommending permanent indexes, quantify write-side risk from visible
+evidence. Use packaged DML/write-rate templates when available, such as
+`sql-templates/packs/missing-index/07-dml-overhead-evidence.sql`, to report:
+current index count, proposed new index count, inserts/updates/deletes when
+visible, visible INSERT SQL from `V$SQL`, and whether write overhead appears
+low, moderate, high, not visible, or requires DBA workload review.
 
+Do not merely tell the user to confirm INSERT rate. If the required views are
+available through the read-only MCP grants, collect and report that evidence
+yourself. If write-rate evidence is not visible, state that limitation and make
+DBA workload confirmation an explicit prerequisite before a visible index
+change.
+
+If `07-dml-overhead-evidence.sql` fails with ORA-00942 or ORA-01031 for
+`DBA_TAB_MODIFICATIONS`, do not stop the diagnosis and do not report the grant
+failure as a workload root cause. Run
+`sql-templates/packs/missing-index/08-dml-overhead-visible-sql-fallback.sql` to
+collect target row count, current index count, proposed index count, and visible
+INSERT SQL from `V$SQL`. In the recommendation, state that dictionary
+modification counters were not visible, summarize the fallback results, and
+include the optional DBA grant required for stronger write-rate evidence:
+`GRANT SELECT ON DBA_TAB_MODIFICATIONS TO <diag_user>`.
+
+If a recommendation requires out-of-band DBA validation because the MCP channel
+is read-only, do not provide only a generic instruction such as "create invisible
+indexes and compare". Provide a numbered step-by-step command block before the
+final summary. The runbook must include schema/session setup, baseline capture,
+exact validation DDL, exact session settings, target SQL, measured elapsed/CPU
+and buffer-get comparison, promotion command, and rollback command.
+
+User-facing runbooks must not leave bind-style placeholders such as `:sqlid`,
+`:child`, `TARGET_SQL_ID`, or `<child>` for values already discovered during
+the diagnosis. If the hot `SQL_ID` is known, print it as a string literal in
+validation commands. If the relevant child cursor is known, print that
+`CHILD_NUMBER` as a numeric literal. If the child cursor is not known, include
+an exact resolver query ordered by `LAST_ACTIVE_TIME DESC NULLS LAST,
+CHILD_NUMBER DESC`, then use the latest validation child for
+`DBMS_XPLAN.DISPLAY_CURSOR`.
+
+When reporting optimization impact, use one row per query with elapsed time and
+CPU time as primary metrics. Use buffer gets as secondary evidence. Do not use
+optimizer cost as the primary success metric.
+
+For supernode/fan-out recommendations, provide at least one concrete `AS-IS`
+query pattern and one concrete `TO-BE` option, such as a degree guard, bounded
+result/window, feature table, or model-cleanup route, plus rollback/exit
+criteria.
+
+If any older example table in this repository conflicts with this section or
+`reporting/diagnostic-report-template.md`, the template and this section take
+precedence.
 ## RECOMMENDATION CATEGORIES
 
 Recommendations are not limited to indexes. Evaluate and present findings across all applicable categories:

@@ -14,6 +14,9 @@
   format rules there. Put path-specific SQL, long examples, setup steps, and
   remediation runbooks in `sql-templates/`, `sql-templates/packs/`, `phases/`,
   `knowledge/`, `docs/`, or `workload/` instead.
+- Keep `reporting/diagnostic-report-template.md` as the single canonical
+  customer-facing report shape. Runtime files may point to it, but should not
+  duplicate competing report table layouts or final-summary examples.
 
 ## Skill Packaging
 
@@ -41,7 +44,10 @@
   SQL tag, demo label, or prior expectation alone.
 - Select a pack only after evidence exists from the general triage path: connected context, graph inventory, candidate SQL, plan or wait evidence, and object/index metadata.
 - For vague workload-performance prompts, require broad incident triage: inspect multiple relevant SQL statements and report coverage across missing-index, supernode/fan-out, plan-instability, and any other supported classes instead of stopping at the first plausible finding.
-- Preserve the cross-client output contract in `SYSTEM_PROMPT.md`: final diagnostic answers must keep the same section order and must end with `Recommendation Summary`, with no text after the table.
+- Preserve the cross-client output contract in `SYSTEM_PROMPT.md` and
+  `reporting/diagnostic-report-template.md`: final diagnostic answers must keep
+  the same section order and must end with `Recommendation Summary`, with no
+  text after the table.
 - Preserve the canonical final-summary category coverage in `SYSTEM_PROMPT.md`: actionable rows first, then concise `SKIPPED` rows for checked categories without supporting evidence.
 - During customer-facing diagnosis, treat the connected workload as a real
   operational incident. Do not use demo/lab language or cite `workload/`

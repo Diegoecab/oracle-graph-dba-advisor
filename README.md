@@ -607,7 +607,11 @@ servers are configured and the prompt does not name one exactly, the advisor
 must list the visible database candidates and ask the user to choose one before
 executing SQL.
 
-The final `Recommendation Summary` uses stable categories across clients:
+Final reports use the canonical template in
+`reporting/diagnostic-report-template.md`, so Claude terminal, Claude
+Desktop/IDE, and Codex should produce the same section order and final table
+shape even when their tool-call UI differs. The final `Recommendation Summary`
+uses stable categories across clients:
 `Indexing`, `Supernode/Fan-out`, `Plan Stability`,
 `Statistics & Optimizer`, `Query Rewriting`, `Graph Design / Modeling`,
 `Schema & Architecture`, `Resource / Health`, and `Auto Indexing`. Actionable
@@ -631,9 +635,11 @@ For index recommendations, the advisor should collect visible DML/write-rate
 evidence itself before asking the DBA to accept extra index overhead. The
 missing-index pack includes a DML evidence template that checks
 `DBA_TAB_MODIFICATIONS`, `V$SQL` INSERT visibility, current index count, and
-proposed new index count. If the required view is not granted, the report must
-say that DML overhead evidence was not visible and require DBA workload
-confirmation before a visible index change.
+proposed new index count. If `DBA_TAB_MODIFICATIONS` is not granted, the
+advisor must run the packaged visible-SQL fallback, state that dictionary DML
+counters were not visible, and require DBA workload confirmation before a
+visible index change. That missing grant is an evidence limitation, not a
+performance root cause.
 
 For supernode/fan-out recommendations, the advisor should include concrete
 `AS-IS` and `TO-BE` examples, such as a degree guard, bounded traversal, or
@@ -945,6 +951,8 @@ oracle-graph-dba-advisor/
 |-- SYSTEM_PROMPT.md
 |-- SKILL.md
 |-- CLAUDE.md
+|-- reporting/
+|   `-- diagnostic-report-template.md
 |-- skills/
 |   `-- oracle-graph-dba-advisor/
 |-- clients/
@@ -963,10 +971,13 @@ oracle-graph-dba-advisor/
 
 Runtime source-of-truth model:
 
-1. `SYSTEM_PROMPT.md` contains the full diagnostic methodology and safety gates.
-2. `SKILL.md`, `CLAUDE.md`, and `skills/oracle-graph-dba-advisor/SKILL.md` are
+1. `SYSTEM_PROMPT.md` contains the runtime methodology, safety gates, and
+   cross-client report contract.
+2. `reporting/diagnostic-report-template.md` contains the canonical
+   customer-facing report shape used by every client.
+3. `SKILL.md`, `CLAUDE.md`, and `skills/oracle-graph-dba-advisor/SKILL.md` are
    lightweight loaders.
-3. `AGENTS.md` captures repository maintenance rules for future coding agents.
+4. `AGENTS.md` captures repository maintenance rules for future coding agents.
 
 ## Prompt architecture
 
@@ -976,7 +987,7 @@ across Claude, Codex, and other MCP clients:
 
 - safety gates and read-only behavior
 - phase order and diagnostic decision rules
-- output contract and final report structure
+- output contract and final report structure pointer
 - canonical categories, statuses, and priority semantics
 - constraints that prevent known client drift
 
@@ -988,6 +999,7 @@ Move everything else out of the system prompt:
 - versioned product knowledge belongs in `knowledge/`
 - demo setup, reproduction, and remediation runbooks belong in `docs/` or
   `workload/`
+- the detailed customer-facing report skeleton belongs in `reporting/`
 
 Best-practice rule for this repo: entrypoints stay small, the system prompt
 stays as the shared contract, and large procedural detail is loaded by
@@ -995,6 +1007,9 @@ progressive disclosure only when the current task needs it. If a new rule is
 only for one diagnostic path, put it in the relevant phase or pack instead of
 expanding `SYSTEM_PROMPT.md`. If a rule affects every client and every
 diagnostic report, keep it in `SYSTEM_PROMPT.md` and update the plugin version.
+If a change affects the exact visible report shape, update
+`reporting/diagnostic-report-template.md` instead of duplicating a competing
+table layout in a loader.
 
 ## Roadmap
 

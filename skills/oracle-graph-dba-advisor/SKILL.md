@@ -14,6 +14,8 @@ source of truth for safety gates, diagnostic path selection, phase order, and
 output format:
 
 - `../../SYSTEM_PROMPT.md`
+- `../../reporting/diagnostic-report-template.md` before producing a
+  customer-facing diagnostic report
 
 Load supporting files only when needed:
 
@@ -68,19 +70,21 @@ selected for indexing or fan-out findings. First run the generic workload
 instability candidate search from `../../sql-templates/packs/plan-instability/`
 across the discovered workload scope.
 
-Use the `../../SYSTEM_PROMPT.md` output contract exactly in every client:
+Use the `../../SYSTEM_PROMPT.md` output contract and
+`../../reporting/diagnostic-report-template.md` exactly in every client:
 connected context, workload scope, top SQL classification, findings,
 diagnostic coverage, recommendations, and a final `Recommendation Summary`
 table. Do not omit diagnostic coverage just because only one finding is
 detected. In the top SQL table, use the generic column `Workload Context`, not
-demo-specific labels, and always show `Executions`, `Total Elapsed (s)`, and
-`Avg Elapsed (ms/exec)` per SQL_ID when visible. Use customer-facing coverage
-labels such as `Found`, `Checked - no supporting evidence`, `Not visible with
-current grants`, and `Blocked by access`; never print internal status codes in
-the report. In the final table, use the canonical category names from
-`../../SYSTEM_PROMPT.md`; include `Impact`, `Effort`, and `Priority`, put
-actionable rows first, and include concise `SKIPPED` coverage rows for
-supported categories checked with no supporting evidence.
+demo-specific labels, and always show `Execs`, `Total s`, and `Avg ms/exec` per
+SQL_ID when visible. Use customer-facing coverage labels such as `Found`,
+`Checked - no supporting evidence`, `Not visible with current grants`, and
+`Blocked by access`; never print internal status codes in the report. In the
+final table, use the canonical category names from `../../SYSTEM_PROMPT.md`;
+use only the columns from `../../reporting/diagnostic-report-template.md`,
+include `Impact`, `Effort`, and `Priority`, put actionable rows first, and
+include concise `SKIPPED` coverage rows for supported categories checked with
+no supporting evidence. Do not add text after the final table.
 
 When recommending out-of-band DBA validation, provide exact step-by-step SQL
 commands before the final summary. Do not stop at generic text such as "create
@@ -95,9 +99,10 @@ Before recommending permanent indexes, collect visible DML/write-rate evidence
 yourself when the read-only grants allow it; do not merely tell the user to
 confirm INSERT rate. If the evidence is not visible, state that limitation. If
 the DML evidence template cannot access `DBA_TAB_MODIFICATIONS`, use the
-packaged visible-SQL fallback instead of stopping the diagnosis, and make DBA
-workload confirmation a prerequisite for a permanent visible index change. Use
-`R1`, `R2`, etc. consistently in detailed recommendations and the final table.
+packaged visible-SQL fallback instead of stopping the diagnosis. Treat the
+missing grant as an evidence limitation, not as a performance finding, and make
+DBA workload confirmation a prerequisite for a permanent visible index change.
+Use `R1`, `R2`, etc. consistently in detailed recommendations and the final table.
 Do not use `P1/P2` for user-facing recommendations. For supernode/fan-out
 findings, provide concrete `AS-IS` and `TO-BE` query or feature-table examples,
 plus rollback/exit criteria.
