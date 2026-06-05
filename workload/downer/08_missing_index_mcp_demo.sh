@@ -111,15 +111,15 @@ print(text)
 PY
 }
 
-SQL_LAB_SUMMARY="$(render_sql_template "${SQL_TEMPLATE_DIR}/00-lab-summary.sql")"
+SQL_GRAPH_TABLE_SUMMARY="$(render_sql_template "${SQL_TEMPLATE_DIR}/00-graph-table-summary.sql")"
 SQL_CANDIDATES="$(render_sql_template "${SQL_TEMPLATE_DIR}/01-candidate-sql.sql")"
 SQL_PRIMARY_SQLID="$(render_sql_template "${SQL_TEMPLATE_DIR}/02-primary-sqlid.sql")"
 SQL_INDEX_GAP="$(render_sql_template "${SQL_TEMPLATE_DIR}/04-edge-fk-leading-index-gap.sql")"
 SQL_DEGREE="$(render_sql_template "${SQL_TEMPLATE_DIR}/05-degree-selectivity.sql")"
 SQL_RECOMMENDATIONS="$(render_sql_template "${SQL_TEMPLATE_DIR}/06-recommendations.sql")"
 
-section "Lab Object Summary"
-call_run_sql "$SQL_LAB_SUMMARY" | jq .
+section "Graph Table Summary"
+call_run_sql "$SQL_GRAPH_TABLE_SUMMARY" | jq .
 
 section "Candidate SQL"
 call_run_sql "$SQL_CANDIDATES" | jq .

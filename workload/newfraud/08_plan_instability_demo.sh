@@ -157,7 +157,7 @@ SQL
   "${SQLCL_BIN}" -S /nolog @"${wrapper}"
 }
 
-SQL_LAB_SUMMARY="$(load_sql "${SQL_TEMPLATE_DIR}/00-lab-summary.sql")"
+SQL_GRAPH_TABLE_SUMMARY="$(load_sql "${SQL_TEMPLATE_DIR}/00-graph-table-summary.sql")"
 SQL_INSTABILITY_SUMMARY="$(render_sql_template "${SQL_TEMPLATE_DIR}/01-instability-summary.sql")"
 SQL_PRIMARY_SQLID="$(render_sql_template "${SQL_TEMPLATE_DIR}/02-primary-sqlid.sql")"
 SQL_CHILD_DETAIL_TEMPLATE="$(load_sql "${SQL_TEMPLATE_DIR}/03-child-detail.sql")"
@@ -169,8 +169,8 @@ if [[ "$RUN_SETUP" == "1" ]]; then
   run_sqlcl_setup
 fi
 
-section "Lab Object Summary"
-call_run_sql "$SQL_LAB_SUMMARY" | jq .
+section "Graph Table Summary"
+call_run_sql "$SQL_GRAPH_TABLE_SUMMARY" | jq .
 
 section "Instability Summary"
 call_run_sql "$SQL_INSTABILITY_SUMMARY" | jq .

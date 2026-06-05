@@ -9,7 +9,8 @@ semicolons.
 
 Files:
 
-- `00-lab-summary.sql`: validates table shape, row counts, and index counts.
+- `00-graph-table-summary.sql`: validates graph table shape, row counts, and
+  index counts from the graph catalog.
 - `00-workload-candidates.sql`: finds candidate SQL from the visible graph or
   workload scope without requiring SQL tags.
 - `01-candidate-sql.sql`: finds tagged SQL candidates by elapsed time and buffer gets.
