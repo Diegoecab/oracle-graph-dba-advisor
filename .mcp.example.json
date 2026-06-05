@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "graph-advisor-adb": {
+      "type": "streamableHttp",
+      "url": "https://dataaccess.adb.<region>.oraclecloudapps.com/adb/mcp/v1/databases/<database_ocid>",
+      "headers": {
+        "Authorization": "Bearer ${ADB_MCP_TOKEN}"
+      },
+      "timeout": 300
+    },
+    "sqlcl": {
+      "command": "<path-to-sqlcl-sql-executable>",
+      "args": [
+        "-mcp"
+      ],
+      "env": {
+        "TNS_ADMIN": "<wallet-directory>"
+      }
+    }
+  }
+}

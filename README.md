@@ -287,6 +287,11 @@ Detailed docs:
    }
    ```
 
+   Keep per-database MCP aliases in a local `.mcp.json`. The repository tracks
+   `.mcp.example.json` as a placeholder only; `.mcp.json` is ignored so demo or
+   customer database aliases do not become the default runtime target for other
+   users.
+
 6. Start the diagnostic prompt.
 
    Load `SYSTEM_PROMPT.md` or the client-specific instruction file, then ask the
