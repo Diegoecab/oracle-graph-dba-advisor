@@ -18,6 +18,8 @@ Files:
 - `04-degree-outliers.sql`: quantifies high-degree destination vertex outliers.
 - `05-path-fanout-evidence.sql`: estimates path expansion from the anchor vertex to users to bank accounts.
 - `06-recommendations.sql`: returns diagnostic recommendation text as SELECT rows.
+- `07-cursor-metrics-for-sqlid.sql`: captures exact elapsed, CPU, buffer-get, row, module, and action evidence for a known SQL ID.
+- `08-cursor-metrics-by-scope.sql`: captures the same cursor metrics when the workload is scoped by schema plus module/action and a stable SQL text token.
 
 Template placeholders:
 
@@ -28,6 +30,10 @@ Template placeholders:
   service/job, SQL text, application name, incident scope, or graph owner. If no
   better scope is visible, use the graph/workload owner as the fallback scope.
 - `__SQL_ID__`: selected SQL ID.
+- `__PARSING_SCHEMA__`: schema that parsed the target workload SQL.
+- `__MODULE__`: application module value discovered from cursor evidence.
+- `__ACTION_LIKE__`: action filter discovered from cursor evidence, for example `MY_ACTION%`.
+- `__SQL_TEXT_TOKEN__`: stable SQL text token derived from the selected workload SQL, not a demo-only label.
 - `__GRAPH_OWNER__`: graph or backing-table owner.
 - `__EDGE_TABLE__`: first-hop edge table involved in the high-degree expansion.
 - `__SECOND_EDGE_TABLE__`: optional secondary edge table used to quantify path

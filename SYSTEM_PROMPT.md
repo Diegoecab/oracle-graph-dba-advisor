@@ -794,6 +794,15 @@ session settings, target SQL, measured elapsed/CPU and buffer-get comparison,
 plan verification query, plan-operation comparison query, promotion command, and
 rollback command.
 
+For actionable `Supernode/Fan-out` recommendations, do not write only
+"compare elapsed/buffer_gets in V$SQL". In `quick-win` mode, include at least
+one exact read-only measurement query with evidence-supported filters before the
+final summary. Prefer `SQL_ID` plus `PARSING_SCHEMA_NAME` when a hot cursor is
+known; otherwise use the discovered `MODULE`, `ACTION`, owner/schema, and stable
+SQL text tokens. Print discovered values as literals. If after-remediation SQL
+will be a different query shape, state that before and after cursors should be
+compared as separate SQL_IDs over the same wall-clock validation window.
+
 User-facing runbooks must not leave bind-style placeholders such as `:sqlid`,
 `:child`, `TARGET_SQL_ID`, or `<child>` for values already discovered during
 the diagnosis. If the hot `SQL_ID` is known, print it as a string literal in
