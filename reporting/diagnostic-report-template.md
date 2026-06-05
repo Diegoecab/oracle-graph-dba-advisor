@@ -198,6 +198,13 @@ GRANT SELECT ON DBA_TAB_MODIFICATIONS TO <diag_user>
 - When the child cursor is not known, include an exact resolver query ordered
   by `LAST_ACTIVE_TIME DESC NULLS LAST, CHILD_NUMBER DESC`, then use the latest
   validation child for `DBMS_XPLAN.DISPLAY_CURSOR`.
+- Never use `DBMS_XPLAN.DISPLAY_CURSOR()` without explicit `SQL_ID` and
+  `CHILD_NUMBER`, and never use a format-only call such as
+  `DBMS_XPLAN.DISPLAY_CURSOR(FORMAT => 'ALLSTATS LAST')`. In Database Actions,
+  SQL Developer Web, SQLcl, IDEs, and similar clients, the last cursor can be
+  client helper SQL/PLSQL rather than the workload SQL. For validation runs,
+  add a unique SQL marker, resolve the real cursor from `V$SQL`, then display
+  that explicit cursor.
 - Index validation runbooks must include schema/session setup, invisible index
   DDL, `optimizer_use_invisible_indexes`, the target validation SQL, measured
   elapsed/CPU/buffer-get comparison, promotion command, and rollback command.

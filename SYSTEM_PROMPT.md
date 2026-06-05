@@ -802,6 +802,18 @@ an exact resolver query ordered by `LAST_ACTIVE_TIME DESC NULLS LAST,
 CHILD_NUMBER DESC`, then use the latest validation child for
 `DBMS_XPLAN.DISPLAY_CURSOR`.
 
+Never print `DBMS_XPLAN.DISPLAY_CURSOR()` with omitted `sql_id` /
+`cursor_child_no`, and never print a format-only call such as
+`DBMS_XPLAN.DISPLAY_CURSOR(FORMAT => 'ALLSTATS LAST')` in a user-facing runbook.
+Several clients, including Database Actions / SQL Developer Web, can execute
+helper SQL or PL/SQL after the target statement, so the session's "last cursor"
+may be a client wrapper such as `DBMS_OUTPUT.GET_LINE` instead of the workload
+SQL. For post-validation plan checks, add a unique SQL comment marker to the
+validation SQL, execute it, resolve the actual `SQL_ID` and `CHILD_NUMBER` from
+`V$SQL` by that marker while excluding the resolver query itself, then call
+`DBMS_XPLAN.DISPLAY_CURSOR('<sql_id>', <child_number>, 'ALLSTATS LAST ...')`
+with literal values or with an exact resolver subquery.
+
 Index validation runbooks must not refer to the target workload SQL indirectly,
 for example "re-run the SQL_ID", "use that value as :ANCHOR_ID", or "execute the
 COUNT(*) pattern". A `SQL_ID` identifies an existing cursor for plan inspection;

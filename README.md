@@ -656,6 +656,15 @@ catalog metadata, plan metadata, or pack evidence; the runtime should not assume
 Mini-DOWNER names such as `anchor_id`, `NUMBER`, `DOWNER_GRAPH`, or
 `E_USES_DEVICE` outside the Mini-DOWNER runbooks.
 
+Plan-display runbooks must use explicit cursor identity. Do not use
+`DBMS_XPLAN.DISPLAY_CURSOR()` without parameters, and do not use
+`DBMS_XPLAN.DISPLAY_CURSOR(FORMAT => 'ALLSTATS LAST')`. Database Actions, SQL
+Developer Web, SQLcl, and IDE clients can execute helper SQL/PLSQL after the
+target query, so the session's last cursor may be a client wrapper instead of
+the workload SQL. For post-validation checks, the advisor should add a unique
+SQL comment marker, resolve the actual `SQL_ID` and `CHILD_NUMBER` from `V$SQL`,
+then print an explicit `DBMS_XPLAN.DISPLAY_CURSOR('<sql_id>', <child>, ...)`.
+
 For index recommendations, the advisor should collect visible DML/write-rate
 evidence itself before asking the DBA to accept extra index overhead. The
 missing-index pack includes a DML evidence template that checks

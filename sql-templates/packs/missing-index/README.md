@@ -30,6 +30,8 @@ Files:
   `SQL_ID` as if it were runnable text.
 - `11-target-sql-binds.sql`: retrieves captured bind names, positions, datatypes,
   and values for the selected `SQL_ID` when visible.
+- `12-validation-marker-cursor.sql`: resolves the actual post-validation cursor
+  by a unique SQL text marker before printing `DBMS_XPLAN.DISPLAY_CURSOR`.
 
 Template placeholders:
 
@@ -71,6 +73,10 @@ Runtime rule:
   selected SQL_ID as a literal. Use the observed child cursor as a numeric
   literal, or use `09-display-cursor-latest-child.sql` when the post-validation
   latest child must be resolved from `V$SQL`.
+- Do not use `DBMS_XPLAN.DISPLAY_CURSOR()` without explicit `SQL_ID` and
+  `CHILD_NUMBER`, and do not use format-only calls. For newly executed validation
+  SQL, add a unique marker and use `12-validation-marker-cursor.sql` or an
+  equivalent resolver before printing the explicit `DISPLAY_CURSOR` command.
 - Do not output "re-run the SQL_ID", "use that value as :ANCHOR_ID", or similar
   partial instructions. Fetch the target SQL with `10-target-sql-fulltext.sql`
   or another visible SQL text source, then print the executable validation SQL.
