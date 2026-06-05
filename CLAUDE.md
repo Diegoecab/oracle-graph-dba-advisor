@@ -23,4 +23,7 @@ Before producing a final diagnostic report, read
 the `SYSTEM_PROMPT.md` output contract and that template in the same order for
 Claude Code, Claude Desktop/IDE, and Codex: connected context, workload scope,
 top SQL classification, findings, diagnostic coverage, recommendations, and a
-final `Recommendation Summary` table with no content after it.
+final `Recommendation Summary` table. Use `quick-win` mode by default: high
+impact/high priority findings first, compact evidence, no full skipped-category
+tail, and at most one short follow-up question asking whether the user wants
+the extended report.

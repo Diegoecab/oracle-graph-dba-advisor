@@ -46,9 +46,11 @@
 - For vague workload-performance prompts, require broad incident triage: inspect multiple relevant SQL statements and report coverage across missing-index, supernode/fan-out, plan-instability, and any other supported classes instead of stopping at the first plausible finding.
 - Preserve the cross-client output contract in `SYSTEM_PROMPT.md` and
   `reporting/diagnostic-report-template.md`: final diagnostic answers must keep
-  the same section order and must end with `Recommendation Summary`, with no
-  text after the table.
-- Preserve the canonical final-summary category coverage in `SYSTEM_PROMPT.md`: actionable rows first, then concise `SKIPPED` rows for checked categories without supporting evidence.
+  the same section order and must include `Recommendation Summary`.
+- Preserve the default quick-win output mode in `SYSTEM_PROMPT.md`: ordinary
+  performance prompts should print high-impact/high-priority findings first,
+  summarize broader coverage, and reserve the full `SKIPPED` category tail plus
+  exact SQL runbooks for extended reports requested by the user.
 - During customer-facing diagnosis, treat the connected workload as a real
   operational incident. Do not use demo/lab language or cite `workload/`
   scripts unless the user asks for setup, reproduction, or out-of-band

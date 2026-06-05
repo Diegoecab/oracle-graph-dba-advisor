@@ -610,26 +610,31 @@ executing SQL.
 Final reports use the canonical template in
 `reporting/diagnostic-report-template.md`, so Claude terminal, Claude
 Desktop/IDE, and Codex should produce the same section order and final table
-shape even when their tool-call UI differs. The final `Recommendation Summary`
-uses stable categories across clients:
+shape even when their tool-call UI differs. The default report mode is
+**quick-win**: it highlights high-impact or high-priority findings, keeps
+evidence compact, and avoids printing the full skipped-category tail or long
+DBA SQL runbooks unless the user asks for the extended report.
+
+The final `Recommendation Summary` uses stable categories across clients:
 `Indexing`, `Supernode/Fan-out`, `Plan Stability`,
 `Statistics & Optimizer`, `Query Rewriting`, `Graph Design / Modeling`,
 `Schema & Architecture`, `Resource / Health`, and `Auto Indexing`. Actionable
 rows appear first and include `Impact`, `Effort`, and `Priority` columns.
 Use `Impact` to express expected workload/business effect, `Effort` to express
 implementation complexity and change risk, and `Priority` to express the
-recommended action order derived from the evidence. Categories checked without
-supporting evidence appear as concise `SKIPPED` rows with `Impact=None`,
-`Effort=None`, and `Priority=Skip`, so the user can see what was ruled out
-without losing focus on the real finding.
+recommended action order derived from the evidence. In quick-win mode, checked
+categories without supporting evidence are summarized instead of expanded into
+one row per category. In extended mode, those categories appear as concise
+`SKIPPED` rows with `Impact=None`, `Effort=None`, and `Priority=Skip`.
 
 When the advisor proposes a DBA validation outside the read-only MCP channel,
-it must include an exact step-by-step command block before the final summary:
-schema/session setup, validation DDL such as `CREATE INDEX ... INVISIBLE`,
-`ALTER SESSION` settings, the exact SQL to execute, the `V$SQL` or
-`DBMS_XPLAN` comparison query, and promote/rollback commands. The final summary
-keeps the short action label; the executable runbook belongs in the detailed
-recommendation section before it.
+quick-win mode should show the shortest safe validation approach and offer the
+extended report for exact commands. Extended mode must include an exact
+step-by-step command block before the final summary: schema/session setup,
+validation DDL such as `CREATE INDEX ... INVISIBLE`, `ALTER SESSION` settings,
+the exact SQL to execute, the `V$SQL` or `DBMS_XPLAN` comparison query, and
+promote/rollback commands. The final summary keeps the short action label; the
+executable runbook belongs in the detailed recommendation section before it.
 
 For index recommendations, the advisor should collect visible DML/write-rate
 evidence itself before asking the DBA to accept extra index overhead. The

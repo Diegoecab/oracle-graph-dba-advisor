@@ -246,7 +246,8 @@ recommendation table.
 
 For broad or vague performance prompts, the final report must include a
 `Diagnostic Coverage` section even when only one root cause is found. The
-coverage section must state:
+coverage section must state, compactly in `quick-win` mode and fully in
+`extended` mode:
 
 - issue classes detected
 - issue classes checked with no supporting evidence
@@ -254,26 +255,16 @@ coverage section must state:
   read-only MCP grants
 
 When the user, runbook, service owner, incident notes, or visible workload
-metadata define expected issue classes, include coverage rows for those
-classes. If the evidence only supports one class, the report can recommend only
-that class, but it must explicitly say which documented classes were checked
-with no supporting evidence, not visible in the inspected workload window, or
-blocked by access.
+metadata define expected issue classes, evaluate those classes when evidence is
+visible. If the evidence only supports one class, the report can recommend only
+that class. In `quick-win` mode, summarize checked-negative coverage in the
+`Diagnostic Coverage` section instead of adding one `SKIPPED` final-summary row
+per category. In `extended` mode, add `SKIPPED` rows with `Observe only:
+collect a fresh workload window before action` or `Skip` as the action.
 
-For broad prompts, the final `Recommendation Summary` table must also make
-documented coverage visible. Do not end with only one category when other
-documented classes were checked. If a documented class was checked with no
-supporting evidence, add `SKIPPED` rows with `Observe only: collect a fresh
-workload window before action` or `Skip` as the action. Example:
-
-- `Supernode/Fan-out | SKIPPED | Checked; no high-degree/fan-out evidence
-  visible in inspected SQL/window`
-- `Plan Stability | SKIPPED | Checked; no multiple plan hashes, child cursor
-  churn, or elapsed deviation visible in inspected SQL/window`
-
-This does not mean inventing findings. It means making checked-negative
-coverage explicit in the last table so a user reading only the summary can see
-which expected issue classes were considered.
+This does not mean inventing findings. It means preserving broad triage while
+keeping the default report focused on quick wins. A user who asks for the
+extended report should see the full checked-negative category coverage.
 
 In read-only MCP mode, recommendation actions must never be phrased as direct
 execution choices such as `Execute`, `Ejecutar`, `Simulate`, or `Simular`.
@@ -286,8 +277,10 @@ Use DBA/out-of-band phrasing instead:
 - `Skip`
 
 Validation SQL belongs inside the recommendation detail or an appendix before
-the final summary. The final visible section must be `Recommendation Summary`;
-do not append extra SQL, commentary, or next-step prose after that table.
+the final summary. In `quick-win` mode, keep validation detail short and ask one
+brief follow-up question after the final summary if the user wants the extended
+report. In `extended` mode, place full validation SQL before the final summary
+and do not append extra commentary after the table.
 
 ## SAFETY: INCIDENT-FACING LANGUAGE
 
@@ -680,6 +673,12 @@ contract behind that template.
 
 Mandatory cross-client rules:
 
+- Default output mode is `quick-win`. For ordinary or vague performance prompts,
+  still run broad triage internally, but print only high-impact or
+  high-priority findings, the minimum evidence needed to trust them, and the
+  first DBA/app actions. Use `extended` mode only when the user asks for a full
+  report, full evidence, exact SQL scripts, all checked categories, all
+  `SKIPPED` rows, or a detailed DBA handoff.
 - Use the same report section order in every client. Do not adapt the final
   answer shape to Claude terminal, Claude IDE, Claude Desktop, Codex, or tool
   call rendering differences.
@@ -687,7 +686,8 @@ Mandatory cross-client rules:
   unless the user explicitly asks for a different report format.
 - The final visible section must be `### 7. Recommendation Summary`. Do not
   append validation SQL, caveats, citations, or closing prose after the final
-  table.
+  table. In `quick-win` mode only, one short follow-up question may appear after
+  the final table asking whether the user wants the extended report.
 - Do not print MCP tool-call logs, client UI details, repository file paths, or
   demo/lab backstage language in the final report unless the user explicitly
   asks for setup or reproduction details.
@@ -702,12 +702,15 @@ Mandatory cross-client rules:
   strategy labels only.
 - The final `Recommendation Summary` table must use these columns only:
   `Rec | Category | Status | Impact | Effort | Priority | Action / Reason`.
-- Sort final summary rows with actionable `PROPOSED` or `DONE` rows first by
-  `Priority` (`High`, `Medium`, `Low`), followed by concise `SKIPPED` coverage
-  rows.
-- For broad graph-performance prompts, include diagnostic coverage for every
-  supported category that was checked, even when only one category has an
-  actionable recommendation.
+- In `quick-win` mode, include only actionable quick-win rows and any blocker
+  that changes the first action. Do not print the full `SKIPPED` coverage tail.
+- In `extended` mode, sort final summary rows with actionable `PROPOSED` or
+  `DONE` rows first by `Priority` (`High`, `Medium`, `Low`), followed by
+  concise `SKIPPED` coverage rows.
+- For broad graph-performance prompts, evaluate diagnostic coverage for every
+  supported category applicable to the visible workload. In `quick-win` mode,
+  summarize coverage compactly; in `extended` mode, enumerate every checked
+  category.
 
 Canonical `Category` values:
 
@@ -765,10 +768,13 @@ include the optional DBA grant required for stronger write-rate evidence:
 
 If a recommendation requires out-of-band DBA validation because the MCP channel
 is read-only, do not provide only a generic instruction such as "create invisible
-indexes and compare". Provide a numbered step-by-step command block before the
-final summary. The runbook must include schema/session setup, baseline capture,
-exact validation DDL, exact session settings, target SQL, measured elapsed/CPU
-and buffer-get comparison, promotion command, and rollback command.
+indexes and compare". In `quick-win` mode, provide the shortest safe validation
+approach and say that the exact SQL runbook is available in the extended
+report. In `extended` mode, provide a numbered step-by-step command block
+before the final summary. The runbook must include schema/session setup,
+baseline capture, exact validation DDL, exact session settings, target SQL,
+measured elapsed/CPU and buffer-get comparison, promotion command, and rollback
+command.
 
 User-facing runbooks must not leave bind-style placeholders such as `:sqlid`,
 `:child`, `TARGET_SQL_ID`, or `<child>` for values already discovered during

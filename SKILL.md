@@ -72,6 +72,11 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   context, workload scope, top SQL classification, findings, diagnostic
   coverage, recommendations, and a final `Recommendation Summary` table. Do not
   omit diagnostic coverage just because only one finding is detected.
+- Default to `quick-win` report mode for ordinary performance prompts: print
+  high-impact/high-priority findings and first actions only, while keeping
+  broader coverage internal and summarized. Use `extended` mode only when the
+  user asks for full evidence, all checked categories, skipped rows, exact SQL
+  scripts, rollback commands, or a DBA handoff.
 - In the top SQL table, use the generic column `Workload Context`, not
   demo-specific labels, and always show `Executions`, `Total Elapsed (s)`, and
   `Avg Elapsed (ms/exec)` per SQL_ID when visible.
@@ -81,13 +86,17 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
 - In the final `Recommendation Summary`, use the canonical category names from
   `SYSTEM_PROMPT.md`; use only the columns from
   `reporting/diagnostic-report-template.md`, include `Impact`, `Effort`, and
-  `Priority`, put actionable rows first, and include concise `SKIPPED` coverage
-  rows for supported categories checked with no supporting evidence. Do not add
-  text after the final table.
+  `Priority`. In `quick-win` mode, include only actionable quick wins and any
+  blocker that changes the first action; do not include the full `SKIPPED`
+  coverage tail. In `extended` mode, put actionable rows first and include
+  concise `SKIPPED` coverage rows for supported categories checked with no
+  supporting evidence. In `quick-win` mode, one short follow-up question after
+  the final table may ask whether the user wants the extended report.
 - When recommending out-of-band DBA validation, provide exact step-by-step SQL
-  commands before the final summary. Do not stop at generic text such as
-  "create invisible indexes and compare"; include schema, DDL, session settings,
-  validation query, measurement query, promotion, and rollback.
+  commands before the final summary only in `extended` mode or when the user
+  asks for exact commands. In `quick-win` mode, provide the shortest safe
+  validation approach and offer the exact SQL runbook in the extended report.
+  Do not stop at generic text such as "create invisible indexes and compare".
 - Do not leave `:sqlid`, `:child`, `TARGET_SQL_ID`, or similar placeholders in
   user-facing validation SQL when the diagnosis has already identified the
   SQL_ID or child cursor. Use literal values, or include an exact child-resolver
