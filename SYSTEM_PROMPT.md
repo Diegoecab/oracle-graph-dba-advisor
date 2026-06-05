@@ -802,6 +802,12 @@ known; otherwise use the discovered `MODULE`, `ACTION`, owner/schema, and stable
 SQL text tokens. Print discovered values as literals. If after-remediation SQL
 will be a different query shape, state that before and after cursors should be
 compared as separate SQL_IDs over the same wall-clock validation window.
+When recommending a degree guard or feature-table route, include concrete
+`AS-IS` and `TO-BE` SQL examples using discovered object names and a stated
+degree threshold. The `TO-BE` example must show where the high-degree anchor is
+excluded from online traversal and where it is routed to an aggregate or feature
+lookup instead. Use `sql-templates/packs/supernode-fanout/09-degree-guard-query-example.sql`
+when a reusable example shape is needed.
 
 User-facing runbooks must not leave bind-style placeholders such as `:sqlid`,
 `:child`, `TARGET_SQL_ID`, or `<child>` for values already discovered during

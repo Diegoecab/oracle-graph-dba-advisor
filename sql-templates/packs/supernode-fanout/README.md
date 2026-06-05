@@ -20,6 +20,7 @@ Files:
 - `06-recommendations.sql`: returns diagnostic recommendation text as SELECT rows.
 - `07-cursor-metrics-for-sqlid.sql`: captures exact elapsed, CPU, buffer-get, row, module, and action evidence for a known SQL ID.
 - `08-cursor-metrics-by-scope.sql`: captures the same cursor metrics when the workload is scoped by schema plus module/action and a stable SQL text token.
+- `09-degree-guard-query-example.sql`: returns AS-IS and TO-BE SQL example shapes for degree guards and high-degree feature lookup routing.
 
 Template placeholders:
 
@@ -40,6 +41,12 @@ Template placeholders:
   expansion beyond the first hop.
 - `__ANCHOR_ID__`: high-degree source or destination vertex identified from
   workload evidence.
+- `__DEGREE_TABLE__`: existing or proposed table/view that stores active degree
+  by identifier.
+- `__DEGREE_THRESHOLD__`: degree guard threshold chosen from P95/P99, business
+  review, or incident-specific evidence.
+- `__HIGH_DEGREE_FEATURE_TABLE__`: existing or proposed table/view for bounded
+  aggregate handling of high-degree identifiers.
 
 Runtime rule:
 

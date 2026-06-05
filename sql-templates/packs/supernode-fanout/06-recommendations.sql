@@ -9,8 +9,8 @@ UNION ALL
 SELECT
   2,
   'ADD_DEGREE_AWARE_QUERY_GUARD',
-  'Provide an AS-IS online traversal and a TO-BE degree-aware query example. The TO-BE should exclude or route very high-degree identifiers such as __ANCHOR_ID__ through a separate feature path instead of expanding every connected user online.',
-  'Compare anchor active in-degree against P95/P99 and confirm the high-degree node dominates result expansion.',
+  'Provide an AS-IS online traversal and a TO-BE degree-aware query example using discovered object names. The TO-BE must show a degree threshold, exclude very high-degree identifiers such as __ANCHOR_ID__ from online traversal, and route those identifiers through a separate aggregate or feature path. Use 09-degree-guard-query-example.sql as the reusable shape when needed.',
+  'Compare anchor active in-degree against P95/P99, run an exact V$SQL measurement query for the before cursor, and compare it with the guarded or feature-lookup cursor over the same validation window.',
   'Remove the predicate or threshold change if business recall is harmed.'
 FROM dual
 UNION ALL
@@ -25,8 +25,8 @@ UNION ALL
 SELECT
   4,
   'PRECOMPUTE_HIGH_DEGREE_FEATURES',
-  'For recurring fraud scoring, provide DDL and query examples for a precomputed feature table keyed by the high-degree identifier, then use a direct lookup for hot anchors instead of the online graph traversal.',
-  'Validate that online SQL elapsed time drops while the feature refresh job remains bounded.',
+  'For recurring fraud scoring, provide DDL and query examples for a precomputed feature table keyed by the high-degree identifier, then use a direct lookup for hot anchors instead of the online graph traversal. Include the online-traversal AS-IS and feature-lookup TO-BE query shapes.',
+  'Validate that online SQL elapsed time drops for hot anchors while the feature refresh job remains bounded. Compare before and after SQL_IDs separately if the query shape changes.',
   'Disable the feature lookup, drop the feature table if it is validation-only, and return to the prior query path.'
 FROM dual
 UNION ALL
