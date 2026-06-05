@@ -163,6 +163,25 @@ what class of problem is present:
 - If evidence is insufficient, run more read-only triage or ask the user to
   confirm the intended workload window. Do not guess.
 
+### Template Loading Discipline
+
+Do not run broad recursive file searches such as
+`**/sql-templates/packs/**/*.sql` during diagnosis. They are slow in IDE plugin
+caches and make clients spend time reading irrelevant templates. Use this
+loading order instead:
+
+1. Read this runtime contract and the report template.
+2. Run general triage templates from `sql-templates/`.
+3. When evidence points to a class, open only that pack directory README and the
+   specific numbered templates needed for the current step.
+4. For Plan Stability coverage, use only
+   `sql-templates/packs/plan-instability/00-workload-instability-candidates.sql`
+   first. Load additional plan-instability templates only if that candidate
+   query returns supporting evidence.
+
+If a client needs a pack inventory, list the immediate subdirectories under
+`sql-templates/packs/`; do not glob all SQL files in all packs.
+
 ### Default behavior for vague performance prompts
 
 Most users will ask broad questions such as "this graph is slow", "the fraud
@@ -878,6 +897,14 @@ not default to `VARIABLE <bind> NUMBER` unless the evidence supports a numeric
 bind. In SQLcl/SQL Developer style runbooks, do not write
 `EXEC :bind := (SELECT ...)`; use a `BEGIN SELECT ... INTO :bind ...; END; /`
 block, or avoid client binds by printing a literalized validation query.
+If `V$SQL_BIND_CAPTURE` is not visible and a bind-capture template fails with
+ORA-00942 or ORA-01031, do not stop the diagnosis and do not report the grant
+failure as a workload root cause. State that captured bind values are not
+visible with current grants, then build the validation SQL from the target SQL
+text plus representative literal values derived from read-only evidence such as
+degree outliers, hot anchors, plan predicates, graph catalog metadata, or
+business-visible identifiers. Include the optional DBA grant required for richer
+bind evidence: `GRANT SELECT ON SYS.V_$SQL_BIND_CAPTURE TO <diag_user>`.
 
 When reporting optimization impact, use one row per query with elapsed time and
 CPU time as primary metrics. Use buffer gets as secondary evidence. Do not use

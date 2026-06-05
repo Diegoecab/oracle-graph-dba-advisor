@@ -21,6 +21,9 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
    - `knowledge/` for versioned graph, optimizer, and design guidance.
    - `workload/` and `docs/` only when the user explicitly asks for setup,
      reproduction, or out-of-band validation runbooks.
+   Do not run recursive globs over all pack SQL files. If pack inventory is
+   needed, list immediate pack directories, then open only the selected pack
+   README and specific numbered templates justified by evidence.
 
 ## Runtime Rules
 
@@ -67,6 +70,10 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   selected for indexing or fan-out findings. First run the generic workload
   instability candidate search from `sql-templates/packs/plan-instability/`
   across the discovered workload scope.
+- For Plan Stability coverage, start with only
+  `sql-templates/packs/plan-instability/00-workload-instability-candidates.sql`.
+  Load the rest of the plan-instability pack only if that query returns
+  supporting evidence.
 - Use the `SYSTEM_PROMPT.md` output contract and
   `reporting/diagnostic-report-template.md` exactly in every client: connected
   context, workload scope, top SQL classification, findings, diagnostic

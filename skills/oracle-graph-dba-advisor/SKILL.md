@@ -24,6 +24,10 @@ Load supporting files only when needed:
 - `../../sql-templates/packs/` after evidence justifies a specialized pack
 - `../../knowledge/` for versioned graph, optimizer, and design guidance
 
+Do not run recursive globs over all pack SQL files. If pack inventory is needed,
+list immediate pack directories, then open only the selected pack README and the
+specific numbered templates justified by evidence.
+
 For setup, reproduction, or out-of-band validation requests, `../../workload/`
 and `../../docs/` may provide runbook context. Do not use those files as
 diagnostic evidence during normal workload analysis unless the user explicitly
@@ -69,6 +73,10 @@ Do not mark Plan Stability as `SKIPPED` based only on the hot SQL_IDs already
 selected for indexing or fan-out findings. First run the generic workload
 instability candidate search from `../../sql-templates/packs/plan-instability/`
 across the discovered workload scope.
+For Plan Stability coverage, start with only
+`../../sql-templates/packs/plan-instability/00-workload-instability-candidates.sql`.
+Load the rest of the plan-instability pack only if that query returns supporting
+evidence.
 
 Use the `../../SYSTEM_PROMPT.md` output contract and
 `../../reporting/diagnostic-report-template.md` exactly in every client:

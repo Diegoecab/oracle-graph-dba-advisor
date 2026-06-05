@@ -110,6 +110,12 @@ Runtime rule:
   equivalent with representative values resolved from read-only evidence. Do not
   assume demo-specific bind names, bind datatypes, graph names, table names, or
   labels. For `GRAPH_TABLE` targets, print the complete `GRAPH_TABLE` query.
+- If `11-target-sql-binds.sql` fails with ORA-00942 or ORA-01031 for
+  `V$SQL_BIND_CAPTURE`, continue without bind capture. State that captured bind
+  values are not visible with current grants, derive representative literals
+  from read-only evidence such as degree outliers or plan predicates, and include
+  the optional DBA grant:
+  `GRANT SELECT ON SYS.V_$SQL_BIND_CAPTURE TO <diag_user>`.
 - Before proposing visible indexes, run `07-dml-overhead-evidence.sql` when the
   required views are available. Include the insert/DML rate and current index
   count in the evidence. If `DBA_TAB_MODIFICATIONS` is not visible, run

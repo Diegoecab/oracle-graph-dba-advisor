@@ -158,6 +158,7 @@ GRANT SELECT ON SYS.V_$SQLAREA_PLAN_HASH TO graph_diag_user;
 GRANT SELECT ON SYS.V_$SQL_PLAN TO graph_diag_user;
 GRANT SELECT ON SYS.V_$SQL_PLAN_STATISTICS_ALL TO graph_diag_user;
 GRANT SELECT ON SYS.V_$SQL_SHARED_CURSOR TO graph_diag_user;
+GRANT SELECT ON SYS.V_$SQL_BIND_CAPTURE TO graph_diag_user;
 GRANT SELECT ON SYS.V_$SQLTEXT TO graph_diag_user;
 GRANT SELECT ON SYS.V_$PARAMETER TO graph_diag_user;
 GRANT SELECT ON SYS.V_$SESSION TO graph_diag_user;
@@ -655,6 +656,9 @@ labels, and column names must come from the selected SQL text, bind capture,
 catalog metadata, plan metadata, or pack evidence; the runtime should not assume
 Mini-DOWNER names such as `anchor_id`, `NUMBER`, `DOWNER_GRAPH`, or
 `E_USES_DEVICE` outside the Mini-DOWNER runbooks.
+If `V$SQL_BIND_CAPTURE` is not granted, the advisor should continue with a
+literalized validation query derived from read-only evidence and report the
+grant limitation, not fail the diagnosis.
 
 Plan-display runbooks must use explicit cursor identity. Do not use
 `DBMS_XPLAN.DISPLAY_CURSOR()` without parameters, and do not use
