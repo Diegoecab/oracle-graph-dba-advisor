@@ -894,20 +894,36 @@ Support both validation paths when relevant:
    evidence-supported workload scope, then compare that newest cursor with the
    baseline cursor.
 
-For the `Implement now in dev/test` path, include all of these elements:
+For the `Implement now in dev/test` path, include all of these elements, ordered
+so the `CREATE INDEX` is bracketed by a before and after `V$SQL` snapshot of the
+target `SQL_ID`:
 
-- baseline cursor resolver and `DBMS_XPLAN.DISPLAY_CURSOR` for the current
-  cursor when a hot SQL_ID is known
-- visible `CREATE INDEX` DDL for each proposed index
-- exact target SQL to execute immediately, or exact application-rerun resolver
-  if the validation must wait for the app workload
-- after cursor resolver and `DBMS_XPLAN.DISPLAY_CURSOR`
-- one metrics comparison query over `V$SQL` showing baseline versus after
-  `executions`, `elapsed`, `CPU`, `buffer_gets`, and average ms/exec
-- one plan-operation comparison query over `V$SQL_PLAN` or
-  `V$SQL_PLAN_STATISTICS_ALL` showing whether the expected table scan changed
-  to the expected index access
-- explicit rollback `DROP INDEX` command for every new visible index
+1. BEFORE snapshot: a `V$SQL` query filtered by the target `SQL_ID` (printed as a
+   string literal when known), selecting `plan_hash_value`, `executions`,
+   `elapsed`, `CPU`, `buffer_gets`, average ms/exec, and `last_active_time`, run
+   immediately before the DDL. Also include the baseline cursor resolver and
+   `DBMS_XPLAN.DISPLAY_CURSOR` for the current cursor when a hot SQL_ID is known.
+2. visible `CREATE INDEX` DDL for each proposed index
+3. exact target SQL to execute immediately, or exact application-rerun resolver
+   if the validation must wait for the app workload
+4. AFTER snapshot: the same `V$SQL` query filtered by the same target `SQL_ID`,
+   run after the re-execution, plus the after cursor resolver and
+   `DBMS_XPLAN.DISPLAY_CURSOR`. A new `plan_hash_value` / child cursor with the
+   expected index access confirms the change took effect.
+5. one metrics comparison query over `V$SQL` showing baseline versus after
+   `executions`, `elapsed`, `CPU`, `buffer_gets`, and average ms/exec
+6. one plan-operation comparison query over `V$SQL_PLAN` or
+   `V$SQL_PLAN_STATISTICS_ALL` showing whether the expected table scan changed
+   to the expected index access
+7. explicit rollback `DROP INDEX` command for every new visible index
+
+The before-and-after `V$SQL` snapshot filtered by the target `SQL_ID` is
+mandatory for this path, even in `quick-win` mode: it is the minimal proof that
+the index changed the cursor, and it is independent from the single baseline-vs-
+after comparison query. The same before/after snapshot by `SQL_ID` applies to
+the controlled production/pre-prod path, where it brackets the
+`CREATE INDEX ... INVISIBLE` validation (with `optimizer_use_invisible_indexes`)
+and the eventual `ALTER INDEX ... VISIBLE` promotion.
 
 When `SQL_ID` and `CHILD_NUMBER` values are already known, print them literally
 in the comparison SQL. If the after cursor is not known yet, print the exact

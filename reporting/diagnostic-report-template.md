@@ -179,12 +179,16 @@ Recommendation rules:
   extended report.
 - For actionable `Indexing` recommendations, split the action into two labeled
   paths when enough object names are known:
-  - `Implement now in dev/test`: direct visible `CREATE INDEX` DDL, exact
-    before/after verification SQL, plan comparison SQL, and `DROP INDEX`
-    rollback.
+  - `Implement now in dev/test`: direct visible `CREATE INDEX` DDL, bracketed by
+    a before and after `V$SQL` snapshot filtered by the target `SQL_ID` (run the
+    snapshot immediately before the DDL and again after re-executing the target
+    SQL), exact before/after verification SQL, plan comparison SQL, and
+    `DROP INDEX` rollback.
   - `Controlled validation for production/pre-prod`: invisible-index runbook
-    with `optimizer_use_invisible_indexes`, target SQL, plan/metric comparison,
-    promotion commands, and rollback.
+    with `optimizer_use_invisible_indexes`, target SQL, the same before/after
+    `V$SQL` snapshot by `SQL_ID` around the `CREATE INDEX ... INVISIBLE`
+    validation and the `ALTER INDEX ... VISIBLE` promotion, plan/metric
+    comparison, promotion commands, and rollback.
   If the environment is production or unknown, lead with the controlled
   validation path and label direct visible DDL as a non-production or eventual
   approved apply step.
