@@ -301,10 +301,10 @@
           </label>
 
           <label class="option">
-            <input id="planBaseline" type="checkbox">
+            <input id="planBaseline" type="checkbox" checked>
             <span>
               <strong data-i18n="planBaselineTitle">Include SQL plan baseline visibility</strong>
-              <span data-i18n="planBaselineHelp">Only when plan management or baseline state is in scope.</span>
+              <span data-i18n="planBaselineHelp">Required for full advisor-mode Plan Stability and SQL Plan Management coverage.</span>
             </span>
           </label>
 
@@ -377,7 +377,7 @@
         timeModelTitle: "Include DB time model breakdown",
         timeModelHelp: "Requires SYS.V_$SYS_TIME_MODEL and enables OPTIONAL-02C.",
         planBaselineTitle: "Include SQL plan baseline visibility",
-        planBaselineHelp: "Only when plan management or baseline state is in scope.",
+        planBaselineHelp: "Required for full advisor-mode Plan Stability and SQL Plan Management coverage.",
         nativeMcpTitle: "Use ADB Native MCP",
         nativeMcpHelp: "Preferred runtime for ADB Serverless Diagnostic Mode.",
         selfInstallTitle: "Diagnostic user installs or updates RUN_SQL",
@@ -407,7 +407,7 @@
           catalogNo: "Use owner-scoped USER_* views only if the diagnostic user connects as the graph owner.",
           health: "Grant health, AWR/ASH, tablespace/temp, and Auto Indexing views.",
           timeModel: "Grant SYS.V_$SYS_TIME_MODEL only if DB time vs DB CPU breakdown is in scope.",
-          planBaseline: "Grant SQL plan baseline visibility.",
+          planBaseline: "Grant SQL plan baseline visibility for full advisor-mode Plan Stability and SQL Plan Management coverage.",
           nativeMcp: "Enable ADB Native MCP and expose only RUN_SQL with read-only guardrails.",
           selfInstall: "Temporarily grant installation privileges to the diagnostic user, validate RUN_SQL, then revoke installation-only privileges.",
           dbaInstall: "Preferred: have a DBA or installer create RUN_SQL in the diagnostic schema. Do not grant CREATE PROCEDURE at runtime.",
@@ -422,6 +422,7 @@
           sql: "Confirm access to SYS.V_$SQL.",
           catalog: "Confirm access to DBA_PROPERTY_GRAPHS.",
           history: "Confirm access to DBA_HIST_SNAPSHOT and SYS.V_$ACTIVE_SESSION_HISTORY.",
+          planBaseline: "If selected, confirm access to SYS.DBA_SQL_PLAN_BASELINES.",
           timeModel: "If selected, confirm access to SYS.V_$SYS_TIME_MODEL."
         }
       },
@@ -442,7 +443,7 @@
         timeModelTitle: "Incluir breakdown de DB time model",
         timeModelHelp: "Requiere SYS.V_$SYS_TIME_MODEL y habilita OPTIONAL-02C.",
         planBaselineTitle: "Incluir visibilidad de SQL plan baselines",
-        planBaselineHelp: "Solo cuando plan management o baseline state está dentro del alcance.",
+        planBaselineHelp: "Requerido para cobertura completa de Plan Stability y SQL Plan Management en modo advisor.",
         nativeMcpTitle: "Usar ADB Native MCP",
         nativeMcpHelp: "Runtime preferido para Diagnostic Mode en ADB Serverless.",
         selfInstallTitle: "El usuario diagnóstico instala o actualiza RUN_SQL",
@@ -472,7 +473,7 @@
           catalogNo: "Usar vistas USER_* solo si el usuario diagnóstico se conecta como el owner del graph.",
           health: "Otorgar grants para health, AWR/ASH, tablespace/temp y Auto Indexing.",
           timeModel: "Otorgar SYS.V_$SYS_TIME_MODEL solo si el breakdown DB time vs DB CPU esta en alcance.",
-          planBaseline: "Otorgar visibilidad sobre SQL plan baselines.",
+          planBaseline: "Otorgar visibilidad sobre SQL plan baselines para cobertura completa de Plan Stability y SQL Plan Management en modo advisor.",
           nativeMcp: "Habilitar ADB Native MCP y exponer solo RUN_SQL con guardrails read-only.",
           selfInstall: "Otorgar temporalmente privilegios de instalación al usuario diagnóstico, validar RUN_SQL y luego revocar privilegios de instalación.",
           dbaInstall: "Preferido: que un DBA o installer cree RUN_SQL en el schema diagnóstico. No otorgar CREATE PROCEDURE en runtime.",
@@ -487,7 +488,8 @@
           sql: "Confirmar acceso a SYS.V_$SQL.",
           catalog: "Confirmar acceso a DBA_PROPERTY_GRAPHS.",
           history: "Confirmar acceso a DBA_HIST_SNAPSHOT y SYS.V_$ACTIVE_SESSION_HISTORY.",
-          timeModel: "Si se selecciono, confirmar acceso a SYS.V_$SYS_TIME_MODEL."
+          planBaseline: "Si se seleccionó, confirmar acceso a SYS.DBA_SQL_PLAN_BASELINES.",
+          timeModel: "Si se seleccionó, confirmar acceso a SYS.V_$SYS_TIME_MODEL."
         }
       }
     };
@@ -496,7 +498,7 @@
       otherSchemas: true,
       health: true,
       timeModel: false,
-      planBaseline: false,
+      planBaseline: true,
       nativeMcp: true,
       selfInstall: false,
       executeChanges: false
@@ -685,6 +687,7 @@
       addList(els.validation, t().validation.sql);
       if (els.otherSchemas.checked) addList(els.validation, t().validation.catalog);
       if (els.health.checked) addList(els.validation, t().validation.history);
+      if (els.planBaseline.checked) addList(els.validation, t().validation.planBaseline);
       if (els.timeModel.checked) addList(els.validation, t().validation.timeModel);
 
       els.sql.textContent = selectedGrants();

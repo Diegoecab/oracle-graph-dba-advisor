@@ -54,6 +54,7 @@ GRANT SELECT ON SYS.V_$SYSMETRIC_HISTORY TO graph_diag_user;
 GRANT SELECT ON SYS.V_$SYSTEM_EVENT TO graph_diag_user;
 GRANT SELECT ON SYS.V_$SGASTAT TO graph_diag_user;
 GRANT SELECT ON SYS.V_$PGASTAT TO graph_diag_user;
+GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO graph_diag_user;
 
 GRANT SELECT ON DBA_PROPERTY_GRAPHS TO graph_diag_user;
 GRANT SELECT ON DBA_PG_ELEMENTS TO graph_diag_user;
@@ -83,7 +84,6 @@ Optional extras:
 
 ```sql
 GRANT SELECT ON DBA_HIST_ACTIVE_SESS_HISTORY TO graph_diag_user;
-GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO graph_diag_user;
 ```
 
 Use this option when the skill must:
@@ -91,6 +91,7 @@ Use this option when the skill must:
 - expose packaged MCP tools from inside ADB
 - run repeatable diagnostic playbooks
 - keep the runtime fully packaged and predictable
+- include SQL Plan Management visibility for plan-stability recommendations
 
 ## Which one to use
 

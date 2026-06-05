@@ -68,6 +68,8 @@ GRANT SELECT ON SYS.V_$SYSMETRIC_HISTORY TO graph_diag_user;
 GRANT SELECT ON SYS.V_$SYSTEM_EVENT TO graph_diag_user;
 GRANT SELECT ON SYS.V_$SGASTAT TO graph_diag_user;
 GRANT SELECT ON SYS.V_$PGASTAT TO graph_diag_user;
+
+GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO graph_diag_user;
 ```
 
 ### Recommended for Graph DBA catalog mode
@@ -118,11 +120,15 @@ GRANT EXECUTE ON C##CLOUD$SERVICE.DBMS_CLOUD_AI_AGENT TO graph_diag_user;
 After installation and validation, revoke installation-only privileges that are
 not needed at runtime.
 
-### Optional for baseline / plan management visibility
+### Required for advisor-mode plan management visibility
 
 ```sql
 GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO graph_diag_user;
 ```
+
+If a customer does not approve this grant, the skill can still diagnose with
+`V$SQL`, child cursor, plan hash, and plan-operation evidence, but SQL Plan
+Management state must be reported as not visible with current grants.
 
 ### Optional if the skill should execute test changes itself
 

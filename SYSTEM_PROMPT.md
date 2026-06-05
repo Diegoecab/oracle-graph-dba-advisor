@@ -182,15 +182,16 @@ loading order instead:
 If a client needs a pack inventory, list the immediate subdirectories under
 `sql-templates/packs/`; do not glob all SQL files in all packs.
 
-`DBA_SQL_PLAN_BASELINES` is optional plan-management visibility, not a default
-plan-instability prerequisite. Do not query it during broad triage or while
-checking whether Plan Stability is supported. Query it only when the diagnostic
-scope explicitly includes SQL Plan Management state, or after evidence already
-supports a plan-control recommendation. If a plan-baseline query fails with
-ORA-00942 or ORA-01031, mark SQL plan baseline state as `Not visible with
-current grants` and continue with `V$SQL`, `V$SQL_SHARED_CURSOR`,
-`V$SQLAREA_PLAN_HASH`, and plan-operation evidence. Include the optional DBA
-grant when useful: `GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO <diag_user>`.
+`DBA_SQL_PLAN_BASELINES` is part of the full advisor-mode grant baseline because
+it adds SQL Plan Management visibility for plan-stability findings and
+recommendations. Do not query it during broad triage or while checking whether
+Plan Stability is supported; use `V$SQL`, `V$SQL_SHARED_CURSOR`,
+`V$SQLAREA_PLAN_HASH`, and plan-operation evidence for that decision. Query
+`DBA_SQL_PLAN_BASELINES` only when SQL Plan Management state is in scope, or
+after evidence already supports a plan-control recommendation. If the query
+fails with ORA-00942 or ORA-01031, mark SQL plan baseline state as `Not visible
+with current grants` and continue. Required advisor-mode grant:
+`GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO <diag_user>`.
 
 ### Default behavior for vague performance prompts
 

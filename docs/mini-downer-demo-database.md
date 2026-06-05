@@ -8,9 +8,10 @@ and validated directly in the ADB. The ADB Native MCP tool input contract is now
 only `QUERY`; the function applies `OFFSET 0 FETCH NEXT 200 ROWS ONLY`
 internally so clients do not pass optional pagination arguments.
 
-Skill `0.2.33` includes DML/write-rate evidence before permanent index
-recommendations and the single-input `RUN_SQL` contract. This live demo ADB has
-the required grant applied:
+The current skill package includes DML/write-rate evidence before permanent
+index recommendations, SQL plan baseline visibility for Plan Stability
+coverage, and the single-input `RUN_SQL` contract. This live demo ADB has the
+required write-rate grant applied:
 
 ```sql
 GRANT SELECT ON DBA_TAB_MODIFICATIONS TO GRAPH_DIAG_USER;
@@ -169,6 +170,9 @@ SQL plan baseline visibility grant update from 2026-06-05:
 - applied `GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO GRAPH_DIAG_USER`
 - verified in `DBA_TAB_PRIVS` as owner `SYS`, table
   `DBA_SQL_PLAN_BASELINES`, grantee `GRAPH_DIAG_USER`, privilege `SELECT`
+- verified through the real diagnostic path:
+  `GRAPH_DIAG_USER.RUN_SQL('SELECT COUNT(*) AS PLAN_BASELINE_ROWS FROM DBA_SQL_PLAN_BASELINES')`
+  returned `PLAN_BASELINE_ROWS=41`
 
 Validation evidence from 2026-06-04:
 

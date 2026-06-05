@@ -21,6 +21,7 @@ Consultive Mode, and SQLcl runtime setup.
 | Diagnostic access | Direct read grants on performance, graph catalog, health, AWR, and ASH views | Yes |
 | Runtime writes | No DDL, DML, PL/SQL, or admin tool exposure | Yes |
 | AWR/ASH | Access approved for historical diagnosis | Yes |
+| SQL plan baselines | `SYS.DBA_SQL_PLAN_BASELINES` for SQL Plan Management visibility | Yes |
 | DB time model | `SYS.V_$SYS_TIME_MODEL` for DB time vs DB CPU breakdown / `OPTIONAL-02C` | Conditional |
 
 Primary requirement detail:
@@ -104,11 +105,9 @@ flowchart LR
     D --> F{"Health or history?"}
     E --> F
     F -->|Yes| G["AWR/ASH health grants"]
-    F -->|No| H{"Plan baselines?"}
-    G --> H
-    H -->|Yes| I["SPM visibility"]
-    H -->|No| J{"ADB Native MCP?"}
-    I --> J
+    F -->|No| I["SPM visibility"]
+    G --> I
+    I --> J{"ADB Native MCP?"}
     J -->|Yes| K["RUN_SQL guardrails"]
     J -->|No| L["SQLcl/session fallback"]
     K --> M{"Self-install tool?"}
@@ -126,7 +125,7 @@ Grant sets used in the flow:
 | Always | Session, `DBMS_XPLAN`, and dynamic performance views. |
 | Graph DBA catalog across schemas | Property graph catalog and object metadata grants. |
 | Health, AWR/ASH, Auto Indexing analysis | Health, AWR/ASH, tablespace/temp, and Auto Indexing grants. |
-| SQL plan baseline visibility | `SELECT ON SYS.DBA_SQL_PLAN_BASELINES`. |
+| Full advisor-mode Plan Stability/SPM coverage | `SELECT ON SYS.DBA_SQL_PLAN_BASELINES`. |
 | ADB Native MCP runtime | Expose `RUN_SQL` with read-only guardrails. |
 | Diagnostic user self-installs `RUN_SQL` | Temporary `CREATE PROCEDURE` and `DBMS_CLOUD_AI_AGENT` execute; revoke after validation. |
 
@@ -191,6 +190,20 @@ GRANT SELECT ON DBA_HIST_PGASTAT TO graph_diag_user;
 GRANT SELECT ON DBA_HIST_ACTIVE_SESS_HISTORY TO graph_diag_user;
 ```
 
+### SQL Plan Management visibility
+
+Grant this for full advisor-mode Plan Stability coverage and SQL plan baseline
+state reporting:
+
+```sql
+GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO graph_diag_user;
+```
+
+If the grant is not approved, the advisor must not fail the whole diagnosis.
+It must report SQL plan baseline state as `Not visible with current grants` and
+continue with child cursor, plan hash, elapsed deviation, and plan-operation
+evidence.
+
 ### DB time model breakdown
 
 Grant this when the diagnostic scope includes DB time vs DB CPU breakdown or
@@ -203,14 +216,6 @@ GRANT SELECT ON SYS.V_$SYS_TIME_MODEL TO graph_diag_user;
 This grant is not required for the baseline graph diagnosis. If it is not
 approved, the advisor must skip `OPTIONAL-02C` and continue with the default
 `HEALTH-*` path.
-
-### Optional plan management visibility
-
-Grant this only when the diagnostic scope includes SQL plan baselines:
-
-```sql
-GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO graph_diag_user;
-```
 
 ## ADB Native MCP requirements
 
@@ -315,6 +320,7 @@ Complete these checks before running the skill.
 | Performance views | Query against `SYS.V_$SQL` succeeds. |
 | Graph catalog | Query against `DBA_PROPERTY_GRAPHS` succeeds. |
 | AWR/ASH | Query against `DBA_HIST_SNAPSHOT` and `SYS.V_$ACTIVE_SESSION_HISTORY` succeeds. |
+| SQL plan baselines | Query against `SYS.DBA_SQL_PLAN_BASELINES` succeeds. |
 
 Suggested smoke-test SQL through `RUN_SQL`:
 

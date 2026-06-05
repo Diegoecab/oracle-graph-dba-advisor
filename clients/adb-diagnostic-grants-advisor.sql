@@ -62,7 +62,7 @@ GRANT SELECT ON SYS.V_$SYS_TIME_MODEL TO &&diag_user;
 GRANT SELECT ON SYS.V_$SGASTAT TO &&diag_user;
 GRANT SELECT ON SYS.V_$PGASTAT TO &&diag_user;
 
--- Optional plan-management visibility used only when SQL plan baselines are in scope.
+-- Advisor-mode SQL Plan Management visibility.
 GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO &&diag_user;
 
 --------------------------------------------------------------------------------
@@ -105,7 +105,7 @@ PROMPT Optional demo/build-only extras are NOT included here:
 PROMPT   CREATE TABLE, CREATE VIEW, CREATE SEQUENCE,
 PROMPT   CREATE PROPERTY GRAPH, ALTER SESSION,
 PROMPT   EXECUTE ON DBMS_RANDOM, EXECUTE ON DBMS_STATS
-PROMPT Optional advanced baseline visibility included:
+PROMPT Advisor-mode SQL Plan Management visibility included:
 PROMPT   GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO &&diag_user;
 PROMPT Optional advanced baseline remediation:
 PROMPT   GRANT ADMINISTER SQL MANAGEMENT OBJECT TO &&diag_user;
