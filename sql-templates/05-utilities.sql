@@ -1,15 +1,14 @@
 -- ============================================================
--- UTILITY TEMPLATES — Stats, Index Management, Reporting
+-- UTILITY TEMPLATES - Stats, Index Management, Reporting
 -- ============================================================
--- These are ACTION queries (write operations). The agent
--- must ask for explicit user permission before executing.
+-- These are action templates and can modify database state.
+-- They are not part of the read-only MCP diagnostic surface.
+-- The advisor must present them as DBA/out-of-band actions and require
+-- explicit approval before execution.
 -- ============================================================
 
-
--- ┌──────────────────────────────────────────────────────────┐
--- │ UTIL-01: Gather statistics on all graph tables           │
--- └──────────────────────────────────────────────────────────┘
--- ⚠ REQUIRES USER PERMISSION — this modifies database state.
+-- UTIL-01: Gather statistics on all graph tables
+-- Requires user permission.
 
 BEGIN
     FOR t IN (
@@ -17,10 +16,10 @@ BEGIN
         FROM user_pg_elements
     ) LOOP
         DBMS_STATS.GATHER_TABLE_STATS(
-            ownname     => USER,
-            tabname     => t.table_name,
-            method_opt  => 'FOR ALL COLUMNS SIZE AUTO',
-            cascade     => TRUE,
+            ownname       => USER,
+            tabname       => t.table_name,
+            method_opt    => 'FOR ALL COLUMNS SIZE AUTO',
+            cascade       => TRUE,
             no_invalidate => FALSE
         );
         DBMS_OUTPUT.PUT_LINE('Stats gathered: ' || t.table_name);
@@ -28,65 +27,61 @@ BEGIN
 END;
 /
 
-
--- ┌──────────────────────────────────────────────────────────┐
--- │ UTIL-02: Gather extended stats for correlated columns    │
--- └──────────────────────────────────────────────────────────┘
--- For edge tables where multi-column predicates appear,
--- extended stats improve cardinality estimates.
+-- UTIL-02: Gather extended stats for correlated columns
 -- Replace TABLE_NAME, COL1, COL2.
+-- Requires user permission.
 
--- ⚠ REQUIRES USER PERMISSION
 -- SELECT DBMS_STATS.CREATE_EXTENDED_STATS(USER, 'TABLE_NAME', '(COL1, COL2)') FROM dual;
 -- EXEC DBMS_STATS.GATHER_TABLE_STATS(USER, 'TABLE_NAME', method_opt => 'FOR ALL COLUMNS SIZE AUTO');
 
+-- UTIL-03A: Create recommended index for immediate dev/test apply
+-- Use only in approved non-production or disposable validation environments.
+-- Requires user permission.
 
--- ┌──────────────────────────────────────────────────────────┐
--- │ UTIL-03: Create recommended index (invisible)            │
--- └──────────────────────────────────────────────────────────┘
--- Template for index creation. Always INVISIBLE first.
--- ⚠ REQUIRES USER PERMISSION
+-- CREATE INDEX idx_{table}_{cols}
+-- ON {table_name}({col1}, {col2});
+
+-- Verify:
+-- SELECT index_name, visibility, status, num_rows
+-- FROM user_indexes
+-- WHERE index_name = 'IDX_NAME';
+
+-- Rollback:
+-- DROP INDEX idx_{table}_{cols};
+
+-- UTIL-03B: Create recommended index for controlled validation
+-- Use for production/pre-prod validation before any visible change.
+-- Requires user permission.
 
 -- CREATE INDEX idx_{table}_{cols}
 -- ON {table_name}({col1}, {col2})
--- INVISIBLE
--- NOLOGGING;
---
+-- INVISIBLE;
+
+-- ALTER SESSION SET optimizer_use_invisible_indexes = TRUE;
+
 -- Verify:
 -- SELECT index_name, visibility, status, num_rows
--- FROM user_indexes WHERE index_name = 'IDX_NAME';
+-- FROM user_indexes
+-- WHERE index_name = 'IDX_NAME';
 
-
--- ┌──────────────────────────────────────────────────────────┐
--- │ UTIL-04: Promote invisible index to visible              │
--- └──────────────────────────────────────────────────────────┘
--- After validating improvement with SIMULATE templates.
--- ⚠ REQUIRES USER PERMISSION
+-- UTIL-04: Promote invisible index to visible
+-- After validating improvement with the controlled validation path.
+-- Requires user permission.
 
 -- ALTER INDEX idx_name VISIBLE;
 
-
--- ┌──────────────────────────────────────────────────────────┐
--- │ UTIL-05: Rollback — make index invisible again           │
--- └──────────────────────────────────────────────────────────┘
--- Instant rollback, no data movement.
+-- UTIL-05: Roll back a promoted index by making it invisible
+-- This is a fast exit path, but the object remains in the schema.
 
 -- ALTER INDEX idx_name INVISIBLE;
 
-
--- ┌──────────────────────────────────────────────────────────┐
--- │ UTIL-06: Rollback — drop index entirely                  │
--- └──────────────────────────────────────────────────────────┘
--- ⚠ REQUIRES USER PERMISSION
+-- UTIL-06: Drop an index entirely
+-- Requires user permission.
 
 -- DROP INDEX idx_name;
 
-
--- ┌──────────────────────────────────────────────────────────┐
--- │ UTIL-07: Index usage tracking (23ai+)                    │
--- └──────────────────────────────────────────────────────────┘
--- After indexes have been visible for some time, check
--- if they're actually being used.
+-- UTIL-07: Index usage tracking
+-- After indexes have been visible for some time, check whether they are used.
 
 WITH graph_tables AS (
     SELECT DISTINCT object_name AS table_name
@@ -112,12 +107,8 @@ GROUP BY i.index_name, i.table_name, i.visibility,
          u.total_rows_returned, u.last_used
 ORDER BY NVL(u.total_access_count, 0) ASC;
 
-
--- ┌──────────────────────────────────────────────────────────┐
--- │ UTIL-08: Graph topology statistics                       │
--- └──────────────────────────────────────────────────────────┘
--- Summary report of the graph landscape. Useful for the
--- agent's opening analysis.
+-- UTIL-08: Graph topology statistics
+-- Summary report of the graph landscape.
 
 WITH graph_elements AS (
     SELECT DISTINCT
@@ -160,12 +151,8 @@ WHERE i.table_name IN (
     SELECT table_name FROM graph_elements
 );
 
-
--- ┌──────────────────────────────────────────────────────────┐
--- │ UTIL-09: Complete recommendation report query            │
--- └──────────────────────────────────────────────────────────┘
--- Combines discovery + identify + analyze into a single
--- diagnostic snapshot. Good for periodic health checks.
+-- UTIL-09: Complete recommendation report query
+-- Combines discovery, identify, and analyze into a single diagnostic snapshot.
 
 WITH graph_tables AS (
     SELECT DISTINCT
@@ -194,13 +181,13 @@ SELECT
     NVL(fs.queries_with_fts, 0)               AS queries_doing_full_scan,
     ROUND(SYSDATE - ts.last_analyzed, 1)      AS days_since_stats,
     CASE
-        WHEN ts.table_role = 'EDGE' AND ts.num_rows > 100000 AND NVL(fs.queries_with_fts,0) > 0
-        THEN '🔴 Action needed: full scans on large edge table'
+        WHEN ts.table_role = 'EDGE' AND ts.num_rows > 100000 AND NVL(fs.queries_with_fts, 0) > 0
+        THEN 'Action needed: full scans on large edge table'
         WHEN ts.last_analyzed IS NULL OR SYSDATE - ts.last_analyzed > 7
-        THEN '🟡 Stale stats — gather before analyzing'
-        WHEN NVL(fs.queries_with_fts,0) = 0
-        THEN '✅ No full scans detected'
-        ELSE '🟢 Full scans on small table — likely optimal'
+        THEN 'Stale stats - gather before analyzing'
+        WHEN NVL(fs.queries_with_fts, 0) = 0
+        THEN 'No full scans detected'
+        ELSE 'Full scans on small table - likely optimal'
     END AS status
 FROM table_stats ts
 LEFT JOIN full_scans fs ON ts.table_name = fs.table_name

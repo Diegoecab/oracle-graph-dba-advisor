@@ -111,6 +111,10 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   recommendations must include the exact DBA validation runbook even in
   `quick-win` mode because that is usually the first DBA action.
   Do not stop at generic text such as "create invisible indexes and compare".
+  For actionable `Indexing`, include two labeled paths when object names are
+  known: direct visible `CREATE INDEX` plus before/after verification for
+  approved dev/test, and controlled invisible-index validation plus promotion
+  and rollback for production/pre-prod.
 - Do not leave `:sqlid`, `:child`, `TARGET_SQL_ID`, or similar placeholders in
   user-facing validation SQL when the diagnosis has already identified the
   SQL_ID or child cursor. Use literal values, or include an exact child-resolver

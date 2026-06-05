@@ -642,7 +642,26 @@ Este script:
 4. compara elapsed time, buffer gets y plan hash entre
    `DOWNER_MI_Q01_BASE_RUN` y `DOWNER_MI_Q01_INVISIBLE_RUN`
 
-DDL esperado para validar:
+DDL esperado para implementar ya en dev/test:
+
+```sql
+CREATE INDEX downer_demo.idx_e_uses_device_src_end_dst
+  ON downer_demo.e_uses_device (src, end_date, dst);
+
+CREATE INDEX downer_demo.idx_e_uses_device_dst_end_src
+  ON downer_demo.e_uses_device (dst, end_date, src);
+```
+
+Despues de aplicar en dev/test, el skill debe incluir consultas exactas para
+resolver el cursor nuevo, mostrar el plan nuevo y comparar elapsed, CPU y
+buffer gets contra el cursor baseline. Tambien debe imprimir rollback completo:
+
+```sql
+DROP INDEX downer_demo.idx_e_uses_device_src_end_dst;
+DROP INDEX downer_demo.idx_e_uses_device_dst_end_src;
+```
+
+DDL esperado para validacion controlada en prod/pre-prod:
 
 ```sql
 CREATE INDEX idx_e_uses_device_src_ed_dst

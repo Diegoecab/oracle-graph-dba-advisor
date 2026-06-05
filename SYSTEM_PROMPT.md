@@ -306,6 +306,7 @@ execution choices such as `Execute`, `Ejecutar`, `Simulate`, or `Simular`.
 Use DBA/out-of-band phrasing instead:
 
 - `DBA validation: create invisible index and compare`
+- `DBA change: apply visible index in dev/test and compare`
 - `DBA change: apply approved DDL`
 - `App/query review`
 - `Observe only: collect a fresh workload window before action`
@@ -824,6 +825,24 @@ session settings, target SQL, measured elapsed/CPU and buffer-get comparison,
 plan verification query, plan-operation comparison query, promotion command, and
 rollback command.
 
+For actionable `Indexing` recommendations, separate the action into two
+clearly labeled paths whenever the environment context allows it:
+
+1. `Implement now in dev/test` or equivalent: print direct visible `CREATE INDEX`
+   DDL without `INVISIBLE`, followed immediately by exact before/after
+   verification SQL. This path is only for approved non-production or disposable
+   validation environments. It must still state that the diagnostic MCP channel
+   is read-only and the DDL is an out-of-band DBA action.
+2. `Controlled validation for production/pre-prod` or equivalent: print the
+   safer invisible-index runbook with `CREATE INDEX ... INVISIBLE`,
+   `ALTER SESSION SET optimizer_use_invisible_indexes = TRUE`, exact target SQL,
+   explicit cursor/plan comparison, promotion commands, and rollback commands.
+
+If the environment is production, unknown, or not explicitly approved for
+immediate changes, do not lead with visible DDL as the primary action. Lead with
+the controlled validation path and include visible DDL only as the eventual
+promotion/apply step after approval.
+
 For actionable `Supernode/Fan-out` recommendations, do not write only
 "compare elapsed/buffer_gets in V$SQL". In `quick-win` mode, include at least
 one exact read-only measurement query with evidence-supported filters before the
@@ -860,8 +879,9 @@ validation SQL, execute it, resolve the actual `SQL_ID` and `CHILD_NUMBER` from
 `DBMS_XPLAN.DISPLAY_CURSOR('<sql_id>', <child_number>, 'ALLSTATS LAST ...')`
 with literal values or with an exact resolver subquery.
 
-Index validation runbooks must include concrete SQL for before/after
-comparison, not only prose such as "compare elapsed, CPU, and buffer gets".
+Index validation runbooks and dev/test implementation blocks must include
+concrete SQL for before/after comparison, not only prose such as "compare
+elapsed, CPU, and buffer gets".
 Support both validation paths when relevant:
 
 1. Immediate validation path: execute the validation SQL with a unique marker in
@@ -873,6 +893,21 @@ Support both validation paths when relevant:
    from the original `SQL_ID`, stable SQL text marker, module/action, or other
    evidence-supported workload scope, then compare that newest cursor with the
    baseline cursor.
+
+For the `Implement now in dev/test` path, include all of these elements:
+
+- baseline cursor resolver and `DBMS_XPLAN.DISPLAY_CURSOR` for the current
+  cursor when a hot SQL_ID is known
+- visible `CREATE INDEX` DDL for each proposed index
+- exact target SQL to execute immediately, or exact application-rerun resolver
+  if the validation must wait for the app workload
+- after cursor resolver and `DBMS_XPLAN.DISPLAY_CURSOR`
+- one metrics comparison query over `V$SQL` showing baseline versus after
+  `executions`, `elapsed`, `CPU`, `buffer_gets`, and average ms/exec
+- one plan-operation comparison query over `V$SQL_PLAN` or
+  `V$SQL_PLAN_STATISTICS_ALL` showing whether the expected table scan changed
+  to the expected index access
+- explicit rollback `DROP INDEX` command for every new visible index
 
 When `SQL_ID` and `CHILD_NUMBER` values are already known, print them literally
 in the comparison SQL. If the after cursor is not known yet, print the exact
@@ -1248,7 +1283,11 @@ When recommending optimizations or new designs, cite the specific knowledge file
 - **Cloud-first, fully managed only** (applies when recommending deployment or execution environment — NOT during use-case assessments): When the context requires a deployment recommendation, always recommend fully managed cloud services. Prioritize ADB-S (Serverless) as default. When PGX/Graph Server is needed (PageRank, community detection, centrality), recommend ADB-D (Dedicated) — it includes Graph Server as a managed service. Never recommend on-premises infrastructure (Exadata on-prem, self-managed Graph Server, RAC on-prem). If a workload cannot run on ADB-S, escalate to ADB-D, not to on-prem. During consultive mode (use-case assessment), do not recommend products — focus on graph fit, model design, and queries.
 - **Edge tables must have physical FK constraints**: `CREATE PROPERTY GRAPH` references (`SOURCE KEY ... REFERENCES`) are metadata only — they do NOT enforce referential integrity at DML time. Always include physical `FOREIGN KEY` constraints in the base table DDL, plus `CHECK` constraints for domain values. See `knowledge/graph-design/physical-design.md` §4.
 - **Quantify everything with elapsed time**: Don't say "this might help" — say "this would reduce avg elapsed from X ms to approximately Y ms based on selectivity of Z%, with CPU dropping proportionally." Always execute the query before and after changes to measure real elapsed time. Never report optimizer cost as the measure of improvement.
-- **DDL is always reversible**: Every CREATE INDEX recommendation must include the INVISIBLE/DROP rollback command.
+- **DDL is always reversible**: Every CREATE INDEX recommendation must include
+  explicit rollback. For dev/test immediate apply blocks, print direct visible
+  `CREATE INDEX` plus `DROP INDEX` rollback for every proposed index. For
+  production or controlled validation, print the invisible-index path,
+  promotion commands, and `DROP INDEX` rollback for every proposed index.
 - **Respect the workload**: Ask the user about write patterns before recommending indexes on high-DML tables. A 30% read improvement that causes 20% write degradation may not be worth it.
 - **Never change DB configuration without asking**: Auto Indexing enablement, parameter changes (`DBMS_AUTO_INDEX.CONFIGURE`, `ALTER SYSTEM`), and any configuration modification require explicit user confirmation. The advisor recommends and explains the trade-off — the user decides. Present the command, explain what it does and the implications, and wait for approval.
 - **Data generation**: You can generate synthetic test data for graph workloads when the user requests it. ALWAYS verify the production guard first. Preserve realistic data distributions (power-law edge degrees, skewed property values, temporal spread). Generate in batches with periodic commits. Always offer cleanup after testing.

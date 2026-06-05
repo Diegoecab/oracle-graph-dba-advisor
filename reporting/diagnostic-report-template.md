@@ -177,6 +177,17 @@ Recommendation rules:
   include the exact DBA validation runbook in this section even in `quick-win`
   mode. Do not replace it with "short validation" and do not defer it to the
   extended report.
+- For actionable `Indexing` recommendations, split the action into two labeled
+  paths when enough object names are known:
+  - `Implement now in dev/test`: direct visible `CREATE INDEX` DDL, exact
+    before/after verification SQL, plan comparison SQL, and `DROP INDEX`
+    rollback.
+  - `Controlled validation for production/pre-prod`: invisible-index runbook
+    with `optimizer_use_invisible_indexes`, target SQL, plan/metric comparison,
+    promotion commands, and rollback.
+  If the environment is production or unknown, lead with the controlled
+  validation path and label direct visible DDL as a non-production or eventual
+  approved apply step.
 - In `extended` mode, include full validation and rollback SQL when available.
 - Before recommending permanent indexes, collect write-side evidence yourself
   when grants allow it. Do not merely tell the user to confirm INSERT rate.
@@ -205,10 +216,13 @@ GRANT SELECT ON DBA_TAB_MODIFICATIONS TO <diag_user>
   client helper SQL/PLSQL rather than the workload SQL. For validation runs,
   add a unique SQL marker, resolve the real cursor from `V$SQL`, then display
   that explicit cursor.
-- Index validation runbooks must include schema/session setup, invisible index
-  DDL, `optimizer_use_invisible_indexes`, the target validation SQL, measured
-  elapsed/CPU/buffer-get comparison, plan verification query, plan-operation
-  comparison query, promotion command, and rollback command.
+- Index validation runbooks must include schema/session setup, the appropriate
+  DDL path, the target validation SQL, measured elapsed/CPU/buffer-get
+  comparison, plan verification query, plan-operation comparison query, and
+  rollback command. The dev/test implementation path uses visible
+  `CREATE INDEX`; the controlled production/pre-prod path uses
+  `CREATE INDEX ... INVISIBLE`, `optimizer_use_invisible_indexes`, and explicit
+  promotion commands.
 - Include SQL for both validation modes when relevant: immediate validation
   with a unique SQL marker, and application rerun validation after a visible
   change. The report must include a query that compares baseline vs after
@@ -281,6 +295,7 @@ Allowed `Priority` values:
 Allowed read-only `Action / Reason` patterns:
 
 - `DBA validation: create invisible index and compare`
+- `DBA change: apply visible index in dev/test and compare`
 - `DBA change: apply approved DDL`
 - `App/query review`
 - `Observe only: collect a fresh workload window before action`

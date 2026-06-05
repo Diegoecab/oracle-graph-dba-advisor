@@ -81,10 +81,14 @@ Runtime rule:
 - Test indexes only through out-of-band DBA validation scripts outside the
   read-only MCP runtime.
 - If this pack supports a missing-index recommendation, the advisor must output
-  the exact DBA validation runbook in the recommendation detail: schema/session
-  setup, invisible index DDL, `optimizer_use_invisible_indexes`, target SQL,
-  `V$SQL` or `DBMS_XPLAN` comparison query, promotion command, and rollback.
-  Do not leave the user with only "create invisible indexes and compare".
+  exact DBA action SQL in the recommendation detail. When object names are
+  known, split the action into two labeled paths:
+  `Implement now in dev/test`, with direct visible `CREATE INDEX` DDL and exact
+  before/after verification SQL; and `Controlled validation for
+  production/pre-prod`, with invisible index DDL,
+  `optimizer_use_invisible_indexes`, target SQL, `V$SQL` or `DBMS_XPLAN`
+  comparison query, promotion command, and rollback. Do not leave the user with
+  only "create invisible indexes and compare".
 - Do not output `:sqlid`, `:child`, `TARGET_SQL_ID`, or similar placeholders in
   the user-facing DBA runbook when the SQL_ID or child cursor is known. Use the
   selected SQL_ID as a literal. Use the observed child cursor as a numeric
@@ -95,11 +99,12 @@ Runtime rule:
   SQL, add a unique marker and use `12-validation-marker-cursor.sql` or an
   equivalent resolver before printing the explicit `DISPLAY_CURSOR` command.
 - Include `13-cursor-metrics-before-after.sql` and
-  `14-plan-operations-before-after.sql`, or equivalent SQL, in the DBA runbook so
-  the user can compare the old plan/cursor to the new one. Support both immediate
-  validation by SQL marker and application rerun after an approved visible
-  change. Use `15-application-rerun-cursor.sql` or equivalent SQL to find the
-  newest real application cursor after a visible change.
+  `14-plan-operations-before-after.sql`, or equivalent SQL, in both dev/test
+  implementation blocks and controlled validation runbooks so the user can
+  compare the old plan/cursor to the new one. Support both immediate validation
+  by SQL marker and application rerun after an approved visible change. Use
+  `15-application-rerun-cursor.sql` or equivalent SQL to find the newest real
+  application cursor after a visible change.
 - Promotion and rollback sections must enumerate every proposed index command;
   do not abbreviate with "and the second index" when names are known.
 - Do not output "re-run the SQL_ID", "use that value as :ANCHOR_ID", or similar

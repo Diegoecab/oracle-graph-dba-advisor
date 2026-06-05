@@ -15,7 +15,7 @@ UNION ALL
 SELECT
   30,
   'INDEX_GAP',
-  'For graph __GRAPH_OWNER__.__GRAPH_NAME__, propose DBA validation of leading btree coverage for missing SOURCE_FK and DESTINATION_FK rows reported on __EDGE_TABLE__, then validate with invisible indexes before any approved visible change',
+  'For graph __GRAPH_OWNER__.__GRAPH_NAME__, propose leading btree coverage for missing SOURCE_FK and DESTINATION_FK rows reported on __EDGE_TABLE__; provide visible CREATE INDEX plus before/after verification for approved dev/test, and invisible-index validation before any approved production visible change',
   '04-edge-fk-leading-index-gap.sql'
 FROM dual
 UNION ALL
@@ -29,7 +29,7 @@ UNION ALL
 SELECT
   50,
   'VALIDATION',
-  'Before any visible change, provide an exact DBA runbook with CURRENT_SCHEMA, CREATE INDEX INVISIBLE, optimizer_use_invisible_indexes TRUE, target SQL, explicit DBMS_XPLAN cursor display, V$SQL elapsed and buffer comparison, before/after plan-operation comparison, ALTER INDEX visible commands, and every DROP INDEX rollback command',
+  'For approved dev/test, provide exact visible CREATE INDEX DDL followed by target SQL, explicit DBMS_XPLAN cursor display, V$SQL elapsed and buffer comparison, before/after plan-operation comparison, and every DROP INDEX rollback command; for production/pre-prod controlled validation, provide CURRENT_SCHEMA, CREATE INDEX INVISIBLE, optimizer_use_invisible_indexes TRUE, target SQL, explicit DBMS_XPLAN cursor display, V$SQL elapsed and buffer comparison, before/after plan-operation comparison, ALTER INDEX visible commands, and every DROP INDEX rollback command',
   '01-candidate-sql.sql'
 FROM dual
 UNION ALL
