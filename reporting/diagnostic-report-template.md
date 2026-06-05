@@ -207,7 +207,16 @@ GRANT SELECT ON DBA_TAB_MODIFICATIONS TO <diag_user>
   that explicit cursor.
 - Index validation runbooks must include schema/session setup, invisible index
   DDL, `optimizer_use_invisible_indexes`, the target validation SQL, measured
-  elapsed/CPU/buffer-get comparison, promotion command, and rollback command.
+  elapsed/CPU/buffer-get comparison, plan verification query, plan-operation
+  comparison query, promotion command, and rollback command.
+- Include SQL for both validation modes when relevant: immediate validation
+  with a unique SQL marker, and application rerun validation after a visible
+  change. The report must include a query that compares baseline vs after
+  elapsed/CPU/buffer gets and a query that compares baseline vs after plan
+  operations. Do not leave this as prose.
+- Promotion and rollback sections must print every object-specific command when
+  names are known. Do not write "(and the second)" or "repeat for the other
+  index".
 - The target validation SQL must be executable as printed. Do not say
   "re-run the SQL_ID", "use this value as :ANCHOR_ID", or "execute the pattern"
   without printing the actual SQL. If the workload SQL is a `GRAPH_TABLE`

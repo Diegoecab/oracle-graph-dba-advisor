@@ -29,7 +29,7 @@ UNION ALL
 SELECT
   50,
   'VALIDATION',
-  'Before any visible change, provide an exact DBA runbook with CURRENT_SCHEMA, CREATE INDEX INVISIBLE, optimizer_use_invisible_indexes TRUE, target SQL, V$SQL elapsed and buffer comparison, ALTER INDEX visible commands, and every DROP INDEX rollback command',
+  'Before any visible change, provide an exact DBA runbook with CURRENT_SCHEMA, CREATE INDEX INVISIBLE, optimizer_use_invisible_indexes TRUE, target SQL, explicit DBMS_XPLAN cursor display, V$SQL elapsed and buffer comparison, before/after plan-operation comparison, ALTER INDEX visible commands, and every DROP INDEX rollback command',
   '01-candidate-sql.sql'
 FROM dual
 UNION ALL

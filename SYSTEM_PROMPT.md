@@ -791,7 +791,8 @@ not replace it with "short validation" or defer it to extended mode. In
 actionable recommendation that needs out-of-band validation. Each runbook must
 include schema/session setup, baseline capture, exact validation DDL, exact
 session settings, target SQL, measured elapsed/CPU and buffer-get comparison,
-promotion command, and rollback command.
+plan verification query, plan-operation comparison query, promotion command, and
+rollback command.
 
 User-facing runbooks must not leave bind-style placeholders such as `:sqlid`,
 `:child`, `TARGET_SQL_ID`, or `<child>` for values already discovered during
@@ -813,6 +814,31 @@ validation SQL, execute it, resolve the actual `SQL_ID` and `CHILD_NUMBER` from
 `V$SQL` by that marker while excluding the resolver query itself, then call
 `DBMS_XPLAN.DISPLAY_CURSOR('<sql_id>', <child_number>, 'ALLSTATS LAST ...')`
 with literal values or with an exact resolver subquery.
+
+Index validation runbooks must include concrete SQL for before/after
+comparison, not only prose such as "compare elapsed, CPU, and buffer gets".
+Support both validation paths when relevant:
+
+1. Immediate validation path: execute the validation SQL with a unique marker in
+   the DBA validation session, resolve the marked cursor, then compare the
+   baseline cursor and validation cursor with `V$SQL`, `V$SQL_PLAN`, and when
+   available `V$SQL_PLAN_STATISTICS_ALL`.
+2. Application rerun path: after an approved visible change, wait for the
+   application to execute the same logical SQL again, resolve the newest cursor
+   from the original `SQL_ID`, stable SQL text marker, module/action, or other
+   evidence-supported workload scope, then compare that newest cursor with the
+   baseline cursor.
+
+When `SQL_ID` and `CHILD_NUMBER` values are already known, print them literally
+in the comparison SQL. If the after cursor is not known yet, print the exact
+resolver query that the DBA should run after executing the validation SQL or
+after the application reruns the statement.
+
+Promotion and rollback sections must enumerate every object-specific command
+when object names are known. Do not abbreviate with phrases such as "and the
+second index", "(and the second)", or "repeat for the other index". Print each
+`ALTER INDEX ... VISIBLE`, `ALTER INDEX ... INVISIBLE`, or `DROP INDEX ...`
+statement explicitly.
 
 Index validation runbooks must not refer to the target workload SQL indirectly,
 for example "re-run the SQL_ID", "use that value as :ANCHOR_ID", or "execute the

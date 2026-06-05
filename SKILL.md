@@ -104,8 +104,11 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   SQL_ID or child cursor. Use literal values, or include an exact child-resolver
   query and then the `DBMS_XPLAN.DISPLAY_CURSOR` command. Never use
   `DISPLAY_CURSOR()` without explicit `SQL_ID` and `CHILD_NUMBER`; resolve the
-  cursor by SQL marker when validating a newly executed statement. For index validation,
-  do not say "re-run the SQL_ID" or "use this value as :ANCHOR_ID"; print the
+  cursor by SQL marker when validating a newly executed statement. For index
+  validation, include executable SQL to compare baseline vs after cursor metrics
+  and plan operations, either after immediate validation SQL or after the
+  application reruns the statement. Do not say "re-run the SQL_ID" or "use this
+  value as :ANCHOR_ID"; print the
   executable target SQL with exact bind setup or resolved literal values. Do not
   assume demo-specific bind names, bind datatypes, table names, labels, or graph
   names; derive them from SQL text, bind capture, catalog metadata, and pack

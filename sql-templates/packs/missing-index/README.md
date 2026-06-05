@@ -32,6 +32,13 @@ Files:
   and values for the selected `SQL_ID` when visible.
 - `12-validation-marker-cursor.sql`: resolves the actual post-validation cursor
   by a unique SQL text marker before printing `DBMS_XPLAN.DISPLAY_CURSOR`.
+- `13-cursor-metrics-before-after.sql`: compares baseline and after cursor
+  elapsed time, CPU time, buffer gets, executions, and plan hash.
+- `14-plan-operations-before-after.sql`: compares baseline and after plan
+  operations with available row and buffer statistics.
+- `15-application-rerun-cursor.sql`: resolves the newest application cursor
+  after a visible change when the after plan should come from the real workload
+  instead of an immediate validation marker.
 
 Template placeholders:
 
@@ -54,6 +61,16 @@ Template placeholders:
   such as an active-edge filter. Use `1 = 1` when no edge filter applies.
 - `__PROPOSED_INDEX_COUNT__`: number of proposed new indexes for DML overhead
   estimation.
+- `__BEFORE_SQL_ID__`, `__BEFORE_CHILD_NUMBER__`: baseline cursor identity.
+- `__AFTER_SQL_ID__`, `__AFTER_CHILD_NUMBER__`: post-validation or post-change
+  cursor identity.
+- `__VALIDATION_SQL_MARKER__`: unique SQL text marker added to immediate
+  validation SQL.
+- `__ORIGINAL_SQL_ID__`: original application cursor SQL_ID used as a stable
+  resolver when the application reruns the same SQL text.
+- `__WORKLOAD_SQL_MARKER__`, `__WORKLOAD_MODULE__`, `__WORKLOAD_ACTION__`:
+  optional stable workload scope values for resolving an application rerun
+  cursor when SQL_ID alone is not enough.
 
 Runtime rule:
 
@@ -77,6 +94,14 @@ Runtime rule:
   `CHILD_NUMBER`, and do not use format-only calls. For newly executed validation
   SQL, add a unique marker and use `12-validation-marker-cursor.sql` or an
   equivalent resolver before printing the explicit `DISPLAY_CURSOR` command.
+- Include `13-cursor-metrics-before-after.sql` and
+  `14-plan-operations-before-after.sql`, or equivalent SQL, in the DBA runbook so
+  the user can compare the old plan/cursor to the new one. Support both immediate
+  validation by SQL marker and application rerun after an approved visible
+  change. Use `15-application-rerun-cursor.sql` or equivalent SQL to find the
+  newest real application cursor after a visible change.
+- Promotion and rollback sections must enumerate every proposed index command;
+  do not abbreviate with "and the second index" when names are known.
 - Do not output "re-run the SQL_ID", "use that value as :ANCHOR_ID", or similar
   partial instructions. Fetch the target SQL with `10-target-sql-fulltext.sql`
   or another visible SQL text source, then print the executable validation SQL.

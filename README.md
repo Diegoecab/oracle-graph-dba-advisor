@@ -664,6 +664,14 @@ target query, so the session's last cursor may be a client wrapper instead of
 the workload SQL. For post-validation checks, the advisor should add a unique
 SQL comment marker, resolve the actual `SQL_ID` and `CHILD_NUMBER` from `V$SQL`,
 then print an explicit `DBMS_XPLAN.DISPLAY_CURSOR('<sql_id>', <child>, ...)`.
+For index validations, the runbook must also include executable SQL to compare
+baseline vs after cursor metrics and plan operations. The after cursor can come
+from the immediate validation SQL marker or, after a visible change, from the
+newest application cursor in the same logical workload scope. If the user chooses
+to wait for the application path, the runbook should include a resolver query
+that finds the newest app cursor by original `SQL_ID`, SQL text marker,
+module/action, or another evidence-supported workload scope before running the
+before/after comparison queries.
 
 For index recommendations, the advisor should collect visible DML/write-rate
 evidence itself before asking the DBA to accept extra index overhead. The
