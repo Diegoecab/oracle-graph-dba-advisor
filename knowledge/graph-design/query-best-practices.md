@@ -1,8 +1,8 @@
 ---
-verified_version: "23ai"
-last_verified: "2026-03-09"
+verified_version: "23ai, 26ai"
+last_verified: "2026-06-05"
 oracle_doc_urls:
-  - https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/variable-length-path-patterns.html
+  - https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/variable-length-path-patterns.html
 next_review: "on_new_oracle_release"
 confidence: "high"
 version_sensitive_facts:
@@ -27,7 +27,7 @@ version_sensitive_facts:
 
 Always specify upper bounds on quantified patterns: `{1,3}` not `{1,}` or `*`.
 
-Oracle 23ai has a **hard maximum of 10** for the upper bound. Internally, `{1,3}` generates UNION ALL of 3 fixed-length subqueries — so `{1,10}` = 10 unioned plans.
+Oracle 23ai/26ai has a **hard maximum of 10** for the upper bound. Internally, `{1,3}` generates UNION ALL of 3 fixed-length subqueries — so `{1,10}` = 10 unioned plans.
 
 **Performance impact**: Each additional hop multiplies execution time. The CBO must optimize each sub-plan independently, and the UNION ALL aggregates all results.
 

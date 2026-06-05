@@ -1,10 +1,13 @@
 ---
-verified_version: "23ai"
-last_verified: "2026-03-09"
+verified_version: "23ai, 26ai"
+last_verified: "2026-06-05"
 oracle_doc_urls:
-  - https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/
+  - https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/
 next_review: "on_new_oracle_release"
 confidence: "high"
+version_sensitive_facts:
+  - "partial indexing syntax and restrictions"
+  - "JSON and vector property indexing options"
 ---
 
 # Advanced Indexing Strategies for Property Graphs

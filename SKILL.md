@@ -64,10 +64,16 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   context, workload scope, top SQL classification, findings, diagnostic
   coverage, recommendations, and a final `Recommendation Summary` table. Do not
   omit diagnostic coverage just because only one finding is detected.
+- In the top SQL table, use the generic column `Workload Context`, not
+  demo-specific labels, and always show `Executions`, `Total Elapsed (s)`, and
+  `Avg Elapsed (ms/exec)` per SQL_ID when visible.
+- Use customer-facing coverage labels such as `Found`,
+  `Checked - no supporting evidence`, `Not visible with current grants`, and
+  `Blocked by access`; never print internal status codes in the report.
 - In the final `Recommendation Summary`, use the canonical category names from
   `SYSTEM_PROMPT.md`; include `Impact`, `Effort`, and `Priority`, put
   actionable rows first, and include concise `SKIPPED` coverage rows for
-  supported categories that were checked but not evidenced.
+  supported categories checked with no supporting evidence.
 - When recommending out-of-band DBA validation, provide exact step-by-step SQL
   commands before the final summary. Do not stop at generic text such as
   "create invisible indexes and compare"; include schema, DDL, session settings,

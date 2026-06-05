@@ -1,6 +1,6 @@
 ---
 verified_version: "23ai, 26ai"
-last_verified: "2026-03-09"
+last_verified: "2026-06-05"
 oracle_doc_urls: []  # This file IS the URL reference
 next_review: "quarterly"
 confidence: "high"
@@ -267,18 +267,18 @@ For a path `v1 -[e1]-> v2 -[e2]-> v3 -[e3]-> v4`:
 
 ## 5. Oracle Documentation URLs
 
-### Primary Reference — Graph Developer's Guide (25.3)
+### Primary Reference — Graph Developer's Guide (26.2)
 
 | Topic | URL |
 |-------|-----|
-| Guide Home | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/ |
-| SQL Graph Queries | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/sql-graph-queries.html |
-| Graph Pattern Syntax | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/graph-pattern.html |
-| Variable Length Patterns | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/variable-length-path-patterns.html |
-| Complex Path Patterns | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/complex-path-patterns.html |
-| ONE ROW PER Clause | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/using-one-row-clause-sql-graph-query.html |
-| Features & Limitations | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/supported-feature-and-limitations-querying-sql-property-graph.html |
-| Tuning SQL Graph Queries | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/tuning-sql-property-graph-queries.html |
+| Guide Home | https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/ |
+| SQL Graph Queries | https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/sql-graph-queries.html |
+| Graph Pattern Syntax | https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/graph-pattern.html |
+| Variable Length Patterns | https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/variable-length-path-patterns.html |
+| Complex Path Patterns | https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/complex-path-patterns.html |
+| ONE ROW PER Clause | https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/using-one-row-clause-sql-graph-query.html |
+| Features & Limitations | https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/supported-feature-and-limitations-when-querying-sql-property-graph.html |
+| Tuning SQL Graph Queries | https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/tuning-sql-property-graph-queries.html |
 
 ### SQL Language Reference — GRAPH_TABLE (26ai)
 
@@ -290,17 +290,17 @@ For a path `v1 -[e1]-> v2 -[e2]-> v3 -[e3]-> v4`:
 
 | Topic | URL |
 |-------|-----|
-| Performance Considerations for PGQL | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/performance-considerations-pgql-queries-executed-sql.html |
+| Performance Considerations for PGQL | https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/performance-considerations-pgql-queries-executed-sql.html |
 | Load Graph to Memory (PGX) | https://docs.oracle.com/en/database/oracle/property-graph/23.1/spgdg/load-graph-memory-and-run-graph-analytics.html |
-| API: Loading Graphs into PGX | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/loading-graph-pgx-server.html |
-| Two-Tier vs Three-Tier Architecture | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/overview-oracle-property-graph.html |
+| API: Loading Graphs into PGX | https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/loading-graph-pgx-server.html |
+| Two-Tier vs Three-Tier Architecture | https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/overview-oracle-property-graph.html |
 
 ### SQL/PGQ Compliance & Standards
 
 | Topic | URL |
 |-------|-----|
-| SQL/PGQ ISO Compliance | https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/sql-property-graph-query-pgq-compliance.html |
-| Graph Developer's Guide PDF (25.1) | https://docs.oracle.com/en/database/oracle/property-graph/25.1/spgdg/property-graph-developer-guide.pdf |
+| SQL/PGQ ISO Compliance | https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/sql-property-graph-query-pgq-compliance.html |
+| Graph Developer's Guide PDF (26.2) | https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/graph-developers-guide-property-graph.pdf |
 
 ### Community & Blog References
 

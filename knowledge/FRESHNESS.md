@@ -18,7 +18,13 @@ Oracle releases new database versions roughly annually. Each release can:
 
 ### Layer 1: Advisor Self-Check (automatic, every session)
 
-The advisor reads `verified_version` from each knowledge file's frontmatter and compares with the connected database version. If the DB is newer, the advisor flags uncertain facts. No action needed from maintainers — this works out of the box.
+The advisor reads `verified_version` and `version_sensitive_facts` from each
+knowledge file's frontmatter and compares them with the connected database
+version. If the DB is newer, the advisor flags only facts that are actually
+version-sensitive and material to the finding. It should not add a blanket
+currency caveat for live evidence such as `V$SQL`, `DBMS_XPLAN`, plan
+operations, index metadata, row counts, statistics freshness, elapsed time, CPU
+time, buffer gets, or grants observed in the connected database.
 
 ### Layer 2: URL Health Check (automated, weekly)
 

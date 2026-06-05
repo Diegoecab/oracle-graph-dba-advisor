@@ -1,10 +1,15 @@
 ---
-verified_version: "23ai"
-last_verified: "2026-03-09"
+verified_version: "23ai, 26ai"
+last_verified: "2026-06-05"
 oracle_doc_urls:
-  - https://docs.oracle.com/en/database/oracle/property-graph/25.3/spgdg/tuning-sql-property-graph-queries.html
+  - https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/tuning-sql-property-graph-queries.html
 next_review: "on_new_oracle_release"
 confidence: "high"
+version_sensitive_facts:
+  - "GRAPH_TABLE query transformation details"
+  - "dynamic sampling defaults"
+  - "adaptive statistics defaults"
+  - "star transformation eligibility for graph expansions"
 ---
 
 # Oracle CBO Behavior with GRAPH_TABLE (SQL/PGQ)
@@ -82,7 +87,7 @@ See also: `official-documentation-reference.md` in this directory for the featur
 
 **Key observations**:
 
-- **Missing stats**: When table statistics are missing (e.g., after a fresh data load), Oracle uses **dynamic sampling** (level 2 by default in 23ai). Dynamic sampling samples a small number of blocks and extrapolates. For skewed graph data (supernodes), this produces wildly inaccurate estimates.
+- **Missing stats**: When table statistics are missing (e.g., after a fresh data load), Oracle can use **dynamic sampling**. The exact level is version- and configuration-dependent; verify it from the connected database's plan notes or optimizer parameters. Dynamic sampling samples a small number of blocks and extrapolates. For skewed graph data (supernodes), this can produce inaccurate estimates.
 
 - **Stale stats**: After significant DML (>10% row change), stats become stale. The CBO may continue using old cardinality estimates, leading to suboptimal join orders. Check `USER_TAB_STATISTICS.STALE_STATS` (note: this column is in `USER_TAB_STATISTICS`, not `USER_TABLES`).
 
@@ -94,7 +99,7 @@ See also: `official-documentation-reference.md` in this directory for the featur
   EXEC DBMS_STATS.GATHER_TABLE_STATS(USER, 'E_USES_DEVICE', METHOD_OPT => 'FOR ALL COLUMNS SIZE AUTO');
   ```
 
-- **Adaptive statistics** (23ai): Oracle can learn from execution feedback and adjust statistics between executions. This is controlled by `OPTIMIZER_ADAPTIVE_STATISTICS`. For graph workloads with varying selectivity (different user IDs have different degrees), adaptive statistics help but don't fully solve the supernode problem.
+- **Adaptive statistics**: Oracle can learn from execution feedback and adjust statistics between executions when the feature is enabled in the connected database. For graph workloads with varying selectivity (different user IDs have different degrees), adaptive behavior can help but does not replace representative statistics and histograms for supernode-heavy data.
 
 **Implication for the advisor**: Always check `LAST_ANALYZED` dates and gather stats with histograms before making optimization recommendations. Stale stats can make good indexes appear ineffective.
 

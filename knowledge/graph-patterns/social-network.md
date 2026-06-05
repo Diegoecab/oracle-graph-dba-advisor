@@ -1,9 +1,12 @@
 ---
-verified_version: "23ai"
-last_verified: "2026-03-09"
+verified_version: "23ai, 26ai"
+last_verified: "2026-06-05"
 oracle_doc_urls: []
 next_review: "on_new_oracle_release"
 confidence: "high"
+version_sensitive_facts:
+  - "bounded variable-length path upper bound"
+  - "ANY/ALL SHORTEST support"
 ---
 
 # Social Network — Graph Patterns
@@ -213,11 +216,15 @@ FROM GRAPH_TABLE(social_graph
 ```
 
 **Performance Characteristics**:
-- Hops: N (fixed at query write time — SQL/PGQ has no variable-length paths in Oracle 23ai)
+- Hops: N for this fixed-length approximation; bounded variable-length
+  patterns are available, but still require an upper bound and are not the
+  same as shortest-path semantics
 - Edge joins: N
 - Vertex joins: N+1
 - Fan-out risk: **EXTREME** for N>2 without early termination
-- Key constraint: Oracle SQL/PGQ does not support `SHORTEST PATH` or variable-length patterns — must enumerate fixed lengths
+- Key constraint: Oracle SQL/PGQ does not support `SHORTEST PATH` semantics;
+  use bounded patterns or enumerate fixed lengths according to business
+  requirements
 
 **Index Strategy**:
 - FK indexes on follows(src) and follows(dst) are **mandatory** for any multi-hop
@@ -228,6 +235,8 @@ FROM GRAPH_TABLE(social_graph
 **Anti-patterns**:
 - Don't try to find all shortest paths — use FETCH FIRST 1
 - Don't increment hop count dynamically in PL/SQL loops — write separate queries for each hop count (1, 2, 3)
-- Oracle 23ai does not support `MATCH ANY SHORTEST` or `MATCH ALL SHORTEST` — these are in the SQL/PGQ spec but not yet implemented
+- Oracle 23ai/26ai does not support `MATCH ANY SHORTEST` or `MATCH ALL SHORTEST`
+  in the base SQL/PGQ implementation; these are in the SQL/PGQ spec but not
+  implemented there
 
 **Real-world frequency**: **LOW** in real-time, **MEDIUM** in analytics (degrees of separation)

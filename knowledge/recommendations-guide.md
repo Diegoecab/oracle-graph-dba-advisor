@@ -256,7 +256,7 @@ CREATE INDEX idx_e_trunc_start ON e_uses_device(TRUNC(start_date));
 ### Strategy 4: Partial Indexes
 Index only rows matching a specific condition to reduce index size by 80-95%.
 
-**Oracle 23ai implementation:** Use partitioning with `INDEXING OFF` on non-target partitions, or an invisible function-based index with a CASE expression.
+**Oracle 23ai/26ai implementation:** Use partitioning with `INDEXING OFF` on non-target partitions, or an invisible function-based index with a CASE expression.
 
 Only worthwhile for tables with > 100K rows.
 
@@ -418,7 +418,7 @@ Only investigate if TABLE ACCESS FULL appears on a table with JSON columns AND a
 
 ### Pattern 5: Shortest Path Approximation
 
-**Oracle 23ai limitation:** No `ANY SHORTEST` / `ALL SHORTEST` / `ANY CHEAPEST` path semantics.
+**Oracle 23ai/26ai limitation:** No `ANY SHORTEST` / `ALL SHORTEST` / `ANY CHEAPEST` path semantics in the base SQL/PGQ implementation.
 
 - Must enumerate fixed hop lengths (1, 2, 3 as separate sub-plans)
 - Alternative: Recursive CTEs for variable depth

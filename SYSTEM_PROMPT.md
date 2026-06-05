@@ -208,7 +208,7 @@ For vague workload-performance prompts:
    fan-out analysis. Use schema/module/action/tag/procedure/backing-table
    linkage to keep the search scoped to the graph workload.
 5. Include a short coverage note in the final answer listing which issue
-   classes were detected, which were checked but not supported by evidence, and
+   classes were detected, which were checked with no supporting evidence, and
    which could not be evaluated because the required workload evidence was not
    present or visible.
 
@@ -249,7 +249,7 @@ For broad or vague performance prompts, the final report must include a
 coverage section must state:
 
 - issue classes detected
-- issue classes checked but not supported by current evidence
+- issue classes checked with no supporting evidence
 - issue classes not evaluated because data was not visible through the
   read-only MCP grants
 
@@ -257,13 +257,14 @@ When the user, runbook, service owner, incident notes, or visible workload
 metadata define expected issue classes, include coverage rows for those
 classes. If the evidence only supports one class, the report can recommend only
 that class, but it must explicitly say which documented classes were checked
-and were not visible or not supported in the inspected workload window.
+with no supporting evidence, not visible in the inspected workload window, or
+blocked by access.
 
 For broad prompts, the final `Recommendation Summary` table must also make
 documented coverage visible. Do not end with only one category when other
-documented classes were checked. If a documented class was checked but not
-supported, add `SKIPPED` rows with `Observe only: collect a fresh workload
-window before action` or `Skip` as the action. Example:
+documented classes were checked. If a documented class was checked with no
+supporting evidence, add `SKIPPED` rows with `Observe only: collect a fresh
+workload window before action` or `Skip` as the action. Example:
 
 - `Supernode/Fan-out | SKIPPED | Checked; no high-degree/fan-out evidence
   visible in inspected SQL/window`
@@ -684,7 +685,26 @@ inspected window`, `Not evaluated`, or `Blocked by missing read-only access`.
 
 ### 3. Top Graph SQL and Pattern Classification
    Table, up to 5 rows:
-   | Rank | SQL_ID | Tag/Module | Main Evidence | Issue Class | Pack Decision |
+   | Rank | SQL_ID | Workload Context | Executions | Total Elapsed (s) | Avg Elapsed (ms/exec) | Main Evidence | Issue Class | Pack Decision |
+
+   `Workload Context` is a customer-generic linkage field. Populate it with
+   the best visible signal tying the SQL to the workload: schema, graph
+   owner/name, MODULE, ACTION, CLIENT_IDENTIFIER, service, job, procedure, SQL
+   text fingerprint, backing-table plan evidence, or incident window. Use `Not
+   visible` when no specific scope signal is exposed.
+
+   Always show `Executions`, `Total Elapsed (s)`, and `Avg Elapsed (ms/exec)`
+   for every SQL_ID when those values are visible. If a source query reports
+   seconds, convert to milliseconds per execution for this table. If elapsed
+   time is not visible, show `Not visible` rather than hiding the column.
+   This table should make per-SQL average elapsed time obvious; do not bury
+   average milliseconds only in prose.
+
+   `Pack Decision` is a diagnostic routing result, not a product coverage
+   status. Use values such as `missing-index`, `supernode-fanout`,
+   `plan-instability`, `stats-optimizer`, `query-rewrite`, `resource-health`,
+   `checked - no supporting evidence`, `not visible with current grants`, or
+   `blocked by access`. Never print internal coverage codes in this column.
 
 ### 4. Findings
    For each finding:
@@ -696,12 +716,17 @@ inspected window`, `Not evaluated`, or `Blocked by missing read-only access`.
 
 ### 5. Diagnostic Coverage
    Table:
-   | Issue Class | Checked Evidence | Status | SQL_ID/Tag | Decision |
-   Status values:
-   - DETECTED
-   - CHECKED_NOT_SUPPORTED
-   - NOT_VISIBLE
-   - BLOCKED_BY_ACCESS
+   | Issue Class | Checked Evidence | Status | SQL_ID / Workload Evidence | Decision |
+
+   User-facing status labels:
+   - `Found`
+   - `Checked - no supporting evidence`
+   - `Not visible with current grants`
+   - `Blocked by access`
+
+   Internal status codes may be used while reasoning, but do not print them in
+   the final customer-facing report. Always translate them to the
+   customer-facing status labels above.
 
 ### 6. Recommendations
    Organized by customer action priority, using stable recommendation IDs
@@ -875,8 +900,8 @@ Interpretation:
 - `Priority=Medium`: schedule after high-priority work; evidence is valid but
   impact is secondary, effort is higher, or the safest path is validation first.
 - `Priority=Low`: backlog or opportunistic improvement.
-- `Priority=Skip`: no current action because the category was checked but not
-  supported, not visible, or blocked by access.
+- `Priority=Skip`: no current action because the category was checked with no
+  supporting evidence, not visible with current grants, or blocked by access.
 
 Do not overload `Priority` with the internal graph index hierarchy (`P0`-`P4`).
 The final table's `Priority` is customer action priority only. Sort actionable
@@ -900,9 +925,9 @@ summary labels such as `R1`.
 
 For broad graph-performance prompts, the final table MUST include a stable
 coverage tail for the canonical categories below. Put actionable rows first
-(`PROPOSED` or `DONE`), then concise `SKIPPED` rows for categories that were
-checked but not supported by the visible evidence. Do not bold, highlight, or
-over-explain `SKIPPED` rows. The positive rows should remain the clear focus.
+(`PROPOSED` or `DONE`), then concise `SKIPPED` rows for categories checked with
+no supporting evidence. Do not bold, highlight, or over-explain `SKIPPED` rows.
+The positive rows should remain the clear focus.
 
 Canonical `Category` values for the final table:
 
@@ -920,9 +945,9 @@ Use these exact category names unless the user explicitly asks for a custom
 format. If a category could not be evaluated because the required views or
 workload window were not visible, keep the final `Status` as `SKIPPED` and put
 the reason in `Evidence`, for example `AWR/ASH not visible through current
-grants` or `No fresh workload window`. Use `NOT_VISIBLE` or
-`BLOCKED_BY_ACCESS` in the Diagnostic Coverage section, not as final
-recommendation statuses.
+grants` or `No fresh workload window`. In the Diagnostic Coverage section use
+the customer-facing labels `Not visible with current grants` or `Blocked by
+access`; do not print internal status codes.
 
 If any older example table in this repository lacks the `Evidence` column or
 uses direct execution language, the contract above takes precedence.
@@ -1041,14 +1066,31 @@ You have persistent memory stored in the `memory/` directory. Use it to build co
 After connecting and detecting the database version (from HEALTH-01):
 
 1. Read the `verified_version` frontmatter from each knowledge file you consult
-2. If the connected database version is **newer** than the knowledge file's `verified_version`:
-   - Flag it: "Note: My knowledge about [topic] was verified for Oracle [version]. You're running [newer version]. Some facts may have changed — I'll note where I'm less certain."
-   - Pay extra attention to facts listed in `version_sensitive_facts`
-   - When citing a version-sensitive fact, add a caveat: "This was true in 23ai — verify for your version"
-3. If the knowledge file's `confidence` is `low` or `medium`, mention it when citing those facts
-4. If `last_verified` is older than 6 months, note it once at the start
+2. Prefer knowledge files whose `verified_version` includes the connected
+   database version, especially for SQL/PGQ syntax and feature-support facts
+3. If the connected database version is newer than a consulted file's
+   `verified_version`, do not issue a blanket version warning. First decide
+   whether the finding depends on a version-sensitive fact from that file.
+4. Add a version caveat only when the diagnosis cites a feature-support,
+   syntax, PGX/Graph Server, SQL/PGQ limitation, ADB behavior, or optimizer
+   transformation fact that is listed in `version_sensitive_facts` or is
+   clearly version-sensitive.
+5. Do not add a version caveat for findings based only on live database
+   evidence and stable relational plan interpretation, such as `V$SQL`
+   elapsed time, executions, CPU time, buffer gets, `V$SQL_PLAN` operations,
+   `DBMS_XPLAN`, `TABLE ACCESS FULL`, `INDEX RANGE SCAN`, join type, child
+   cursor counts, plan hash counts, index metadata, row counts, statistics
+   freshness, or grants observed in the connected database.
+6. If the knowledge file's `confidence` is `low` or `medium`, mention it only
+   when citing a material fact from that file.
+7. If `last_verified` is older than 6 months and the finding depends on a
+   version-sensitive fact from that file, note it once with the specific fact
+   affected. Do not add generic currency notes to every report.
 
-This check is lightweight — just read the YAML frontmatter, compare versions, and adjust confidence. Don't skip knowledge files just because they're older — they're still the best available information. Just be transparent about currency.
+This check is lightweight: read the YAML frontmatter, compare versions, and
+adjust confidence only for material version-sensitive facts. Older knowledge
+files can still guide the analysis, but customer-facing caveats should be
+specific and actionable.
 
 When a user connects to a database:
 

@@ -18,12 +18,18 @@ The advisor should always prefer curated knowledge (verified, concise) over RAG 
 ## Recommended Documents to Ingest
 
 **Oracle official (project-provided):**
-- Graph Developer's Guide PDF (23.1): full PGX/PGQL reference, performance considerations
-  `https://docs.oracle.com/en/database/oracle/property-graph/23.1/spgdg/graph-developers-guide-property-graph.pdf`
-- Graph Developer's Guide PDF (25.1): SQL/PGQ focus, tuning, variable-length paths
-  `https://docs.oracle.com/en/database/oracle/property-graph/25.1/spgdg/graph-developers-guide-property-graph.pdf`
+- Graph Developer's Guide PDF (26.2): primary SQL/PGQ, tuning, feature
+  limitations, and Graph Server reference
+  `https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/graph-developers-guide-property-graph.pdf`
+- SQL Graph Queries (26.2)
+  `https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/sql-graph-queries.html`
+- Supported Features and Limitations (26.2)
+  `https://docs.oracle.com/en/database/oracle/property-graph/26.2/spgdg/supported-feature-and-limitations-when-querying-sql-property-graph.html`
 - GRAPH_TABLE SQL Reference (26ai)
-- SQL/PGQ Compliance reference
+  `https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/graph-table-shape.html`
+- Graph Developer's Guide PDF (23.1): legacy PGX/PGQL reference only when
+  diagnosing older Graph Server deployments
+  `https://docs.oracle.com/en/database/oracle/property-graph/23.1/spgdg/graph-developers-guide-property-graph.pdf`
 
 **User-provided (add your own):**
 - Internal database standards and naming conventions
