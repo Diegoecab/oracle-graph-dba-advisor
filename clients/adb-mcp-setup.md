@@ -100,9 +100,7 @@ BEGIN
       "instruction": "Execute a read-only SQL query against the Oracle database. Use this for all diagnostic queries from the Graph DBA Advisor sql-templates/.",
       "function": "RUN_SQL",
       "tool_inputs": [
-        {"name": "QUERY", "description": "SELECT SQL statement without trailing semicolon."},
-        {"name": "OFFSET", "description": "Pagination offset (default 0)."},
-        {"name": "LIMIT", "description": "Maximum rows to return (default 100)."}
+        {"name": "QUERY", "description": "SELECT SQL statement without trailing semicolon. The server returns the first 200 rows; narrow large result sets in the query itself."}
       ]
     }'
   );
@@ -111,9 +109,7 @@ END;
 
 -- The function that executes the query
 CREATE OR REPLACE FUNCTION run_sql(
-    query    IN CLOB,
-    offset   IN NUMBER DEFAULT 0,
-    limit    IN NUMBER DEFAULT 100
+    query IN CLOB
 ) RETURN CLOB
 AS
     v_sql  CLOB;
@@ -124,7 +120,7 @@ BEGIN
         '  SELECT * FROM ( ' || query || ' ) sub_q ' ||
         '  OFFSET :off ROWS FETCH NEXT :lim ROWS ONLY ' ||
         ')';
-    EXECUTE IMMEDIATE v_sql INTO v_json USING offset, limit;
+    EXECUTE IMMEDIATE v_sql INTO v_json USING 0, 200;
     RETURN v_json;
 END;
 /
@@ -248,6 +244,22 @@ In that case, the operator signs in interactively with the target database crede
 ### Step 4: Load the Advisor Skill
 
 The advisor skill (SYSTEM_PROMPT.md, knowledge/, sql-templates/) works the same regardless of transport. Load it the same way as with SQLcl MCP — via CLAUDE.md, .clinerules, copilot-instructions.md, or as Claude Project instructions.
+
+## Troubleshooting
+
+### `ORA-00907: missing right parenthesis` from `RUN_SQL`
+
+If the MCP error shows a wrapper such as:
+
+```text
+BEGIN :result := "GRAPH_DIAG_USER"."RUN_SQL"(QUERY => :QUERY, OFFSET => :OFFSET); END;
+```
+
+the MCP client or cached tool metadata is still using the old optional
+pagination contract. Recreate the tool with
+[adb-native-run-sql-readonly.sql](adb-native-run-sql-readonly.sql), confirm
+`tools/list` exposes only the `QUERY` input for `RUN_SQL`, then restart or
+reauthenticate the MCP client so it reloads the tool schema.
 
 ## Comparison: ADB Native MCP vs SQLcl MCP
 

@@ -69,9 +69,7 @@ call_run_sql() {
         params: {
           name: "RUN_SQL",
           arguments: {
-            QUERY: $q,
-            OFFSET: 0,
-            LIMIT: 300
+            QUERY: $q
           }
         }
       }'

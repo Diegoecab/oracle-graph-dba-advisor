@@ -2,12 +2,15 @@
 
 Last verified: 2026-06-05
 
-Runtime update verified: 2026-06-04. `RUN_SQL` was replaced with the
-literal-aware guard from `clients/adb-native-run-sql-readonly.sql` and validated
-directly in the ADB.
+Runtime update verified: 2026-06-05. `RUN_SQL` was replaced with the
+single-input, literal-aware guard from `clients/adb-native-run-sql-readonly.sql`
+and validated directly in the ADB. The ADB Native MCP tool input contract is now
+only `QUERY`; the function applies `OFFSET 0 FETCH NEXT 200 ROWS ONLY`
+internally so clients do not pass optional pagination arguments.
 
-Skill `0.2.20` adds DML/write-rate evidence before permanent index
-recommendations. This live demo ADB has the required grant applied:
+Skill `0.2.33` includes DML/write-rate evidence before permanent index
+recommendations and the single-input `RUN_SQL` contract. This live demo ADB has
+the required grant applied:
 
 ```sql
 GRANT SELECT ON DBA_TAB_MODIFICATIONS TO GRAPH_DIAG_USER;
@@ -128,6 +131,9 @@ Code, run `/mcp`, and authenticate with `GRAPH_DIAG_USER`.
   PL/SQL, comments, statement terminators, `SELECT FOR UPDATE`, and
   side-effect packages outside string literals, while allowing recommendation
   text literals that contain words such as `CREATE INDEX` or `DROP INDEX`.
+- `RUN_SQL` tool inputs: `QUERY` only. Do not pass `OFFSET` or `LIMIT` from MCP
+  clients; large result sets should be narrowed in the SQL with predicates or a
+  `FETCH FIRST` clause.
 - `SYS.V_$SYS_TIME_MODEL` is required only if the demo scope includes DB time
   vs DB CPU breakdown through `OPTIONAL-02C`. If that evidence is expected,
   request/apply `GRANT SELECT ON SYS.V_$SYS_TIME_MODEL TO GRAPH_DIAG_USER`.
@@ -140,7 +146,7 @@ DB time model grant update from 2026-06-04:
 - applied `GRANT SELECT ON SYS.V_$SYS_TIME_MODEL TO GRAPH_DIAG_USER`
 - verified in `DBA_TAB_PRIVS`
 - verified through the real diagnostic path:
-  `GRAPH_DIAG_USER.RUN_SQL('SELECT COUNT(*) AS TOTAL_ROWS FROM V$SYS_TIME_MODEL', 0, 10)`
+  `GRAPH_DIAG_USER.RUN_SQL('SELECT COUNT(*) AS TOTAL_ROWS FROM V$SYS_TIME_MODEL')`
   returned `TOTAL_ROWS=15`
 
 DML/write-rate grant update from 2026-06-05:
@@ -149,8 +155,8 @@ DML/write-rate grant update from 2026-06-05:
 - verified in `DBA_TAB_PRIVS` as owner `SYS`, table `DBA_TAB_MODIFICATIONS`,
   grantee `GRAPH_DIAG_USER`, privilege `SELECT`
 - verified through the real diagnostic path:
-  `GRAPH_DIAG_USER.RUN_SQL('SELECT COUNT(*) AS ROWS_VISIBLE FROM DBA_TAB_MODIFICATIONS', 0, 10)`
-  returned `ROWS_VISIBLE=639`
+  `GRAPH_DIAG_USER.RUN_SQL('SELECT COUNT(*) AS ROWS_VISIBLE FROM DBA_TAB_MODIFICATIONS')`
+  returned `ROWS_VISIBLE=645`
 
 Validation evidence from 2026-06-04:
 

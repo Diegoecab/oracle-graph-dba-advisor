@@ -98,12 +98,14 @@ flowchart TB
 ```
 
 For ADB Serverless Diagnostic Mode, the runtime should expose a minimal MCP tool
-surface. The recommended tool contract is `RUN_SQL`; it must accept only
-read-only diagnostic SQL and reject DDL, DML, PL/SQL, comments, statement
-terminators, client commands, side-effect packages, and `SELECT FOR UPDATE`
-when those tokens appear outside string literals. Returned recommendation text
-may safely contain words such as `CREATE INDEX`, `DROP INDEX`, or `FOR UPDATE`
-inside string literals.
+surface. The recommended tool contract is `RUN_SQL` with one input only:
+`QUERY`. It must accept only read-only diagnostic SQL and reject DDL, DML,
+PL/SQL, comments, statement terminators, client commands, side-effect packages,
+and `SELECT FOR UPDATE` when those tokens appear outside string literals.
+Returned recommendation text may safely contain words such as `CREATE INDEX`,
+`DROP INDEX`, or `FOR UPDATE` inside string literals. The recommended
+implementation applies server-side pagination internally; MCP clients should not
+send `OFFSET` or `LIMIT` arguments to `RUN_SQL`.
 
 SQLcl MCP remains a compatibility path when ADB Native MCP is not the target.
 It should not be required for the production ADB Serverless diagnostic skill.

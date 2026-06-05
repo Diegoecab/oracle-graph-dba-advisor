@@ -225,7 +225,7 @@ Expose one read-only MCP tool:
 | Tool | Requirement |
 |---|---|
 | Name | `RUN_SQL` |
-| Input | SQL text plus pagination parameters |
+| Input | SQL text only through a single `QUERY` argument |
 | Allowed SQL | `SELECT` and `WITH` only |
 | Blocked SQL | DDL, DML, PL/SQL, transaction control, SQLcl commands |
 | Blocked syntax | Semicolons, comments, `SELECT FOR UPDATE` |
@@ -235,6 +235,10 @@ Expose one read-only MCP tool:
 Recommended implementation:
 
 - [clients/adb-native-run-sql-readonly.sql](../clients/adb-native-run-sql-readonly.sql)
+
+The recommended implementation applies server-side pagination internally
+(`OFFSET 0 FETCH NEXT 200 ROWS ONLY`). MCP clients must not pass optional
+`OFFSET` or `LIMIT` arguments to `RUN_SQL`.
 
 Runtime rule: expose only `RUN_SQL` unless another tool has a documented
 approval, threat model, and validation test.
