@@ -615,7 +615,10 @@ Desktop/IDE, and Codex should produce the same section order and final table
 shape even when their tool-call UI differs. The default report mode is
 **quick-win**: it highlights high-impact or high-priority findings, keeps
 evidence compact, and avoids printing the full skipped-category tail or long
-DBA SQL runbooks unless the user asks for the extended report.
+DBA SQL runbooks unless the user asks for the extended report. The exception is
+an actionable `Indexing` recommendation: quick-win reports must include the
+exact DBA validation runbook because index validation is usually the first DBA
+action.
 
 The final `Recommendation Summary` uses stable categories across clients:
 `Indexing`, `Supernode/Fan-out`, `Plan Stability`,
@@ -630,13 +633,15 @@ one row per category. In extended mode, those categories appear as concise
 `SKIPPED` rows with `Impact=None`, `Effort=None`, and `Priority=Skip`.
 
 When the advisor proposes a DBA validation outside the read-only MCP channel,
-quick-win mode should show the shortest safe validation approach and offer the
-extended report for exact commands. Extended mode must include an exact
-step-by-step command block before the final summary: schema/session setup,
+quick-win mode should show the shortest safe validation approach for
+non-indexing recommendations and offer the extended report for exact commands.
+For actionable `Indexing` recommendations, quick-win mode must include the exact
+step-by-step DBA runbook before the final summary: schema/session setup,
 validation DDL such as `CREATE INDEX ... INVISIBLE`, `ALTER SESSION` settings,
-the exact SQL to execute, the `V$SQL` or `DBMS_XPLAN` comparison query, and
-promote/rollback commands. The final summary keeps the short action label; the
-executable runbook belongs in the detailed recommendation section before it.
+the exact SQL to execute, the `V$SQL` or `DBMS_XPLAN` comparison query, measured
+elapsed/CPU/buffer-get comparison, and promote/rollback commands. The final
+summary keeps the short action label; the executable runbook belongs in the
+detailed recommendation section before it.
 
 For index recommendations, the advisor should collect visible DML/write-rate
 evidence itself before asking the DBA to accept extra index overhead. The

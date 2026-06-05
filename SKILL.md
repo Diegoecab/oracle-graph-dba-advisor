@@ -93,9 +93,11 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   supporting evidence. In `quick-win` mode, one short follow-up question after
   the final table may ask whether the user wants the extended report.
 - When recommending out-of-band DBA validation, provide exact step-by-step SQL
-  commands before the final summary only in `extended` mode or when the user
-  asks for exact commands. In `quick-win` mode, provide the shortest safe
-  validation approach and offer the exact SQL runbook in the extended report.
+  commands before the final summary in `extended` mode or when the user asks
+  for exact commands. In `quick-win` mode, provide the shortest safe validation
+  approach for non-indexing recommendations. Exception: actionable `Indexing`
+  recommendations must include the exact DBA validation runbook even in
+  `quick-win` mode because that is usually the first DBA action.
   Do not stop at generic text such as "create invisible indexes and compare".
 - Do not leave `:sqlid`, `:child`, `TARGET_SQL_ID`, or similar placeholders in
   user-facing validation SQL when the diagnosis has already identified the

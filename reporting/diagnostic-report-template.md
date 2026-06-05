@@ -160,7 +160,8 @@ graph index strategy reasoning only.
 - Validation:
 
 ```sql
--- quick-win mode: one short validation approach, not the full SQL runbook
+-- quick-win mode, non-indexing: one short validation approach
+-- quick-win mode, Indexing: exact DBA validation runbook
 -- extended mode: exact SQL or exact numbered runbook, with real SQL_ID/child values when known
 ```
 
@@ -171,8 +172,11 @@ Recommendation rules:
 - In read-only MCP mode, recommendations are DBA/app out-of-band actions only.
   Do not say the assistant can execute DDL/DML through the diagnostic channel.
 - In `quick-win` mode, include only quick-win recommendations and the shortest
-  safe validation instruction. Do not include full DBA SQL blocks unless the
-  user asked for the extended report or exact commands.
+  safe validation instruction for non-indexing recommendations.
+- Indexing exception: when an actionable `Indexing` recommendation is proposed,
+  include the exact DBA validation runbook in this section even in `quick-win`
+  mode. Do not replace it with "short validation" and do not defer it to the
+  extended report.
 - In `extended` mode, include full validation and rollback SQL when available.
 - Before recommending permanent indexes, collect write-side evidence yourself
   when grants allow it. Do not merely tell the user to confirm INSERT rate.

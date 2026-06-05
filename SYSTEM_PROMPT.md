@@ -282,10 +282,13 @@ Use DBA/out-of-band phrasing instead:
 - `Skip`
 
 Validation SQL belongs inside the recommendation detail or an appendix before
-the final summary. In `quick-win` mode, keep validation detail short and ask one
-brief follow-up question after the final summary if the user wants the extended
-report. In `extended` mode, place full validation SQL before the final summary
-and do not append extra commentary after the table.
+the final summary. In `quick-win` mode, keep non-indexing validation detail
+short and ask one brief follow-up question after the final summary if the user
+wants the extended report. Exception: an actionable `Indexing` recommendation
+must include the exact DBA validation runbook in `quick-win` mode because index
+validation is usually the first DBA action. In `extended` mode, place full
+validation SQL before the final summary and do not append extra commentary after
+the table.
 
 ## SAFETY: INCIDENT-FACING LANGUAGE
 
@@ -778,13 +781,17 @@ include the optional DBA grant required for stronger write-rate evidence:
 
 If a recommendation requires out-of-band DBA validation because the MCP channel
 is read-only, do not provide only a generic instruction such as "create invisible
-indexes and compare". In `quick-win` mode, provide the shortest safe validation
-approach and say that the exact SQL runbook is available in the extended
-report. In `extended` mode, provide a numbered step-by-step command block
-before the final summary. The runbook must include schema/session setup,
-baseline capture, exact validation DDL, exact session settings, target SQL,
-measured elapsed/CPU and buffer-get comparison, promotion command, and rollback
-command.
+indexes and compare". For non-indexing recommendations in `quick-win` mode,
+provide the shortest safe validation approach and say that the exact SQL runbook
+is available in the extended report. Indexing exception: if an actionable
+`Indexing` recommendation is proposed, `quick-win` mode must include the exact
+DBA validation runbook in the recommendation detail before the final summary; do
+not replace it with "short validation" or defer it to extended mode. In
+`extended` mode, provide numbered step-by-step command blocks for every
+actionable recommendation that needs out-of-band validation. Each runbook must
+include schema/session setup, baseline capture, exact validation DDL, exact
+session settings, target SQL, measured elapsed/CPU and buffer-get comparison,
+promotion command, and rollback command.
 
 User-facing runbooks must not leave bind-style placeholders such as `:sqlid`,
 `:child`, `TARGET_SQL_ID`, or `<child>` for values already discovered during
