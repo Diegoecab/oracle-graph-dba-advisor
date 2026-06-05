@@ -5,7 +5,7 @@ This directory has two different layers on purpose:
 - numbered root files such as `00-health-check.sql`, `02-identify.sql`, and `02b-plan-instability.sql`:
   analyst-facing template catalog for manual investigation and prompt design
 - `packs/`:
-  runtime-ready SQL packs consumed by the skill, MCP wrappers, or demo scripts
+  runtime-ready SQL packs consumed by the skill, MCP wrappers, or validation scripts
 
 Current runtime packs:
 

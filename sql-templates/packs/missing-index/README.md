@@ -38,7 +38,8 @@ Template placeholders:
 Runtime rule:
 
 - Use this pack through `RUN_SQL` only for diagnosis.
-- Test indexes only through lab scripts outside the read-only MCP runtime.
+- Test indexes only through out-of-band DBA validation scripts outside the
+  read-only MCP runtime.
 - If this pack supports a missing-index recommendation, the advisor must output
   the exact DBA validation runbook in the recommendation detail: schema/session
   setup, invisible index DDL, `optimizer_use_invisible_indexes`, target SQL,

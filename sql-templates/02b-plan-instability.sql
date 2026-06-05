@@ -2,7 +2,7 @@
 -- PLAN INSTABILITY TEMPLATES — Child cursors / plan churn
 -- ============================================================
 -- Analyst-facing template catalog.
--- Runtime-ready query pack used by the demo/skill lives under:
+-- Runtime-ready query pack used by the advisor lives under:
 --   sql-templates/packs/plan-instability/
 -- ============================================================
 -- Use these when the symptom is:
@@ -14,7 +14,8 @@
 --
 -- Default scope:
 --   - graph workload visible in the current schema
---   - lab/demo statements tagged with PLAN_INSTABILITY_Q%
+--   - workload-scoped statements identified by module, action, SQL text marker,
+--     backing graph table, or incident window
 --
 -- Optional advanced checks:
 --   - V$SQL_SHARED_CURSOR
