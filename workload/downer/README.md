@@ -63,8 +63,17 @@ Execution order:
     `30_plan_instability_stabilization_validation.sql`.
 19. To leave all three issue classes visible together in Performance Dashboard,
     run `27_start_dashboard_load_all_issues_5_days.sql`.
-20. After the advisor recommendation, run `14_apply_visible_index_fix.sql`, then `12_start_dashboard_load_after.sql`.
-21. Stop or clean up with `13_stop_dashboard_load.sql` and `15_rollback_visible_index_fix.sql`.
+20. For a visual before/remediated comparison without SQL comments or
+    before/after tags, run the fixed-rate path:
+    `31_fixed_rate_load_setup.sql`, `35_reset_missing_index_baseline.sql`,
+    `32_start_fixed_rate_missing_index_window.sql`,
+    `36_apply_missing_index_fix.sql`, and
+    `32_start_fixed_rate_missing_index_window.sql` again.
+21. After the advisor recommendation, the older tag-based dashboard path can
+    still run `14_apply_visible_index_fix.sql`, then
+    `12_start_dashboard_load_after.sql`.
+22. Stop or clean up with `13_stop_dashboard_load.sql`,
+    `33_stop_fixed_rate_load.sql`, and the relevant rollback/reset script.
 
 The PowerShell helper can include the plan-instability setup with
 `-SetupPlanInstability`. Use `-StartPlanInstabilityDashboardLoad` only when the
@@ -168,6 +177,72 @@ Rollback the lab-only visible indexes:
 ```sql
 @workload/downer/15_rollback_visible_index_fix.sql
 ```
+
+## Fixed-rate visual impact path
+
+Use this path when the demo needs the Performance Hub chart to show impact
+clearly. The older dashboard workers run as fast as possible; once the query is
+faster, they can simply execute more often and keep database activity high. The
+fixed-rate path keeps request volume stable, so the remediation should reduce
+DB time, average elapsed time, and buffer gets for the same request rate.
+
+The fixed-rate SQL text does not include `BEFORE` or `AFTER` comments. Compare
+the result by time window:
+
+- Window 1: missing-index baseline.
+- Window 2: same request rate after the index fix.
+- Stable dashboard filter: module `MINI_DOWNER_FIXED_RATE_LOAD`.
+- Default rate: 1,200 executions/minute total across 4 workers.
+
+Install the fixed-rate support once as `DOWNER_DEMO`:
+
+```sql
+@workload/downer/31_fixed_rate_load_setup.sql
+```
+
+If the missing-index fix is already present and you need to reproduce the
+baseline, reset only this lab condition:
+
+```sql
+@workload/downer/35_reset_missing_index_baseline.sql
+```
+
+Run the baseline window:
+
+```sql
+@workload/downer/32_start_fixed_rate_missing_index_window.sql
+```
+
+Wait long enough for Performance Hub to show a visible interval. Ten to twenty
+minutes is usually enough. Then apply the lab fix:
+
+```sql
+@workload/downer/36_apply_missing_index_fix.sql
+```
+
+Run the same fixed-rate window again:
+
+```sql
+@workload/downer/32_start_fixed_rate_missing_index_window.sql
+```
+
+Check run status and SQL-level evidence:
+
+```sql
+@workload/downer/34_show_fixed_rate_load_status.sql
+```
+
+Stop the fixed-rate workload:
+
+```sql
+@workload/downer/33_stop_fixed_rate_load.sql
+```
+
+For the visual story, use Performance Hub to compare the two wall-clock
+intervals. The expected outcome is that the request rate remains roughly flat,
+while DB time/AAS and per-execution elapsed time drop after the fix. In SQL
+evidence, the current plan should stop relying on full scans of `E_USES_DEVICE`
+and should show lower average buffer gets per execution.
 
 ## Supernode / fan-out scenario
 
