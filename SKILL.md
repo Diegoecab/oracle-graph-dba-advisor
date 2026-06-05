@@ -74,6 +74,10 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   `sql-templates/packs/plan-instability/00-workload-instability-candidates.sql`.
   Load the rest of the plan-instability pack only if that query returns
   supporting evidence.
+- Do not query `DBA_SQL_PLAN_BASELINES` during broad triage. It is optional
+  plan-management visibility; use it only when SQL Plan Management state is in
+  scope or after evidence supports a plan-control recommendation. If it is not
+  visible, continue without it.
 - Use the `SYSTEM_PROMPT.md` output contract and
   `reporting/diagnostic-report-template.md` exactly in every client: connected
   context, workload scope, top SQL classification, findings, diagnostic

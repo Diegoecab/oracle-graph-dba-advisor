@@ -164,6 +164,12 @@ Bind-capture grant update from 2026-06-05:
 - verified in `DBA_TAB_PRIVS` as owner `SYS`, table `V_$SQL_BIND_CAPTURE`,
   grantee `GRAPH_DIAG_USER`, privilege `SELECT`
 
+SQL plan baseline visibility grant update from 2026-06-05:
+
+- applied `GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO GRAPH_DIAG_USER`
+- verified in `DBA_TAB_PRIVS` as owner `SYS`, table
+  `DBA_SQL_PLAN_BASELINES`, grantee `GRAPH_DIAG_USER`, privilege `SELECT`
+
 Validation evidence from 2026-06-04:
 
 - accepted `SELECT` returning a text literal containing `CREATE INDEX`,

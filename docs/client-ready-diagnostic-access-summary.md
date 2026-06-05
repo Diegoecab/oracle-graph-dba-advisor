@@ -83,7 +83,7 @@ Optional extras:
 
 ```sql
 GRANT SELECT ON DBA_HIST_ACTIVE_SESS_HISTORY TO graph_diag_user;
-GRANT SELECT ON DBA_SQL_PLAN_BASELINES TO graph_diag_user;
+GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO graph_diag_user;
 ```
 
 Use this option when the skill must:

@@ -43,6 +43,12 @@ Intended use:
   `00-workload-instability-candidates.sql` against the discovered workload
   scope; do not infer plan stability from only the SQL_IDs already selected for
   missing-index or fan-out analysis
+- do not query `DBA_SQL_PLAN_BASELINES` during broad triage. SQL plan baseline
+  visibility is optional and should be used only when SQL Plan Management state
+  is explicitly in scope or after evidence supports a plan-control
+  recommendation. If the view is not visible, report baseline state as not
+  visible and continue with child cursor, plan hash, and elapsed deviation
+  evidence.
 - choose `__PLAN_TAG__` from the customer's visible workload scope: SQL comment
   tag, module/action, named application query family, incident label, service,
   job, or procedure name

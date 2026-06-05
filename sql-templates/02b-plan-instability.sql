@@ -20,7 +20,8 @@
 -- Optional advanced checks:
 --   - V$SQL_SHARED_CURSOR
 --   - V$SQLAREA_PLAN_HASH
---   - DBA_SQL_PLAN_BASELINES (if granted)
+--   - DBA_SQL_PLAN_BASELINES (only if SQL Plan Management state is in scope
+--     and the grant is visible)
 -- ============================================================
 
 
@@ -177,7 +178,9 @@ ORDER BY last_active_time DESC, plan_hash_value;
 -- ┌──────────────────────────────────────────────────────────┐
 -- │ INSTABILITY-05: Optional SQL Plan Baseline visibility    │
 -- └──────────────────────────────────────────────────────────┘
--- Requires SELECT on DBA_SQL_PLAN_BASELINES.
+-- Requires SELECT on SYS.DBA_SQL_PLAN_BASELINES.
+-- Do not run this during broad triage. It is optional plan-management
+-- visibility, not required to detect plan instability.
 -- Replace PLAN_TAG with a distinctive fragment of the SQL text,
 -- for example: PLAN_INSTABILITY_Q03 or DEMO_FRAUD_Q05
 

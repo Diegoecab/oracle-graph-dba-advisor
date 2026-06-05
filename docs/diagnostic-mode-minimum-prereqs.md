@@ -126,7 +126,7 @@ Grant sets used in the flow:
 | Always | Session, `DBMS_XPLAN`, and dynamic performance views. |
 | Graph DBA catalog across schemas | Property graph catalog and object metadata grants. |
 | Health, AWR/ASH, Auto Indexing analysis | Health, AWR/ASH, tablespace/temp, and Auto Indexing grants. |
-| SQL plan baseline visibility | `SELECT ON DBA_SQL_PLAN_BASELINES`. |
+| SQL plan baseline visibility | `SELECT ON SYS.DBA_SQL_PLAN_BASELINES`. |
 | ADB Native MCP runtime | Expose `RUN_SQL` with read-only guardrails. |
 | Diagnostic user self-installs `RUN_SQL` | Temporary `CREATE PROCEDURE` and `DBMS_CLOUD_AI_AGENT` execute; revoke after validation. |
 
@@ -209,7 +209,7 @@ approved, the advisor must skip `OPTIONAL-02C` and continue with the default
 Grant this only when the diagnostic scope includes SQL plan baselines:
 
 ```sql
-GRANT SELECT ON DBA_SQL_PLAN_BASELINES TO graph_diag_user;
+GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO graph_diag_user;
 ```
 
 ## ADB Native MCP requirements

@@ -121,7 +121,7 @@ not needed at runtime.
 ### Optional for baseline / plan management visibility
 
 ```sql
-GRANT SELECT ON DBA_SQL_PLAN_BASELINES TO graph_diag_user;
+GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO graph_diag_user;
 ```
 
 ### Optional if the skill should execute test changes itself

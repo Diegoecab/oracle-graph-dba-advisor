@@ -182,6 +182,16 @@ loading order instead:
 If a client needs a pack inventory, list the immediate subdirectories under
 `sql-templates/packs/`; do not glob all SQL files in all packs.
 
+`DBA_SQL_PLAN_BASELINES` is optional plan-management visibility, not a default
+plan-instability prerequisite. Do not query it during broad triage or while
+checking whether Plan Stability is supported. Query it only when the diagnostic
+scope explicitly includes SQL Plan Management state, or after evidence already
+supports a plan-control recommendation. If a plan-baseline query fails with
+ORA-00942 or ORA-01031, mark SQL plan baseline state as `Not visible with
+current grants` and continue with `V$SQL`, `V$SQL_SHARED_CURSOR`,
+`V$SQLAREA_PLAN_HASH`, and plan-operation evidence. Include the optional DBA
+grant when useful: `GRANT SELECT ON SYS.DBA_SQL_PLAN_BASELINES TO <diag_user>`.
+
 ### Default behavior for vague performance prompts
 
 Most users will ask broad questions such as "this graph is slow", "the fraud
