@@ -1,14 +1,13 @@
 # Mini-DOWNER Demo Database
 
-Last verified: 2026-06-04
+Last verified: 2026-06-05
 
 Runtime update verified: 2026-06-04. `RUN_SQL` was replaced with the
 literal-aware guard from `clients/adb-native-run-sql-readonly.sql` and validated
 directly in the ADB.
 
 Skill `0.2.20` adds DML/write-rate evidence before permanent index
-recommendations. If this has not yet been applied in the live demo ADB, run as
-`ADMIN`:
+recommendations. This live demo ADB has the required grant applied:
 
 ```sql
 GRANT SELECT ON DBA_TAB_MODIFICATIONS TO GRAPH_DIAG_USER;
@@ -143,6 +142,15 @@ DB time model grant update from 2026-06-04:
 - verified through the real diagnostic path:
   `GRAPH_DIAG_USER.RUN_SQL('SELECT COUNT(*) AS TOTAL_ROWS FROM V$SYS_TIME_MODEL', 0, 10)`
   returned `TOTAL_ROWS=15`
+
+DML/write-rate grant update from 2026-06-05:
+
+- applied `GRANT SELECT ON DBA_TAB_MODIFICATIONS TO GRAPH_DIAG_USER`
+- verified in `DBA_TAB_PRIVS` as owner `SYS`, table `DBA_TAB_MODIFICATIONS`,
+  grantee `GRAPH_DIAG_USER`, privilege `SELECT`
+- verified through the real diagnostic path:
+  `GRAPH_DIAG_USER.RUN_SQL('SELECT COUNT(*) AS ROWS_VISIBLE FROM DBA_TAB_MODIFICATIONS', 0, 10)`
+  returned `ROWS_VISIBLE=639`
 
 Validation evidence from 2026-06-04:
 
