@@ -281,6 +281,13 @@ Use `workload/downer/27_start_dashboard_load_all_issues_5_days.sql` when the
 demo should show all three coexistence signals at once: missing-index,
 supernode/fan-out, and plan-instability.
 
+In customer environments, SQL comment tags may not exist. The Mini-DOWNER tags
+are demo conveniences only. The runtime skill must scope real workloads from
+connected evidence such as schema/graph owner, graph backing tables, SQL text,
+module/action, service/job/procedure, AWR/ASH window, and the user's incident
+context. The generic pack templates `00-workload-candidates.sql` are intended
+for that no-tag path.
+
 Out-of-band validation scripts:
 
 - `workload/downer/28_missing_index_exact_plan_validation.sql`: exact
@@ -290,39 +297,33 @@ Out-of-band validation scripts:
 - `workload/downer/30_plan_instability_stabilization_validation.sql`: unstable
   optimizer environment vs stable execution pattern.
 
-Current run as of 2026-06-04:
+Current run as of 2026-06-05 05:17 UTC:
 
-- run_id `9`: `DOWNER_MI_Q01_DASH_BEFORE`, status `RUNNING`, workers `2`
-- run_id `10`: `DOWNER_SN_Q01_DASH`, status `RUNNING`, workers `1`
-- run_id `11`: `DOWNER_PI_Q01_DASH`, status `RUNNING`, workers `1`
-- expected end: `2026-06-09 19:19:10 UTC`
+- run_id `12`: `DOWNER_MI_Q01_DASH_BEFORE`, status `RUNNING`, workers `2`
+- run_id `13`: `DOWNER_SN_Q01_DASH`, status `RUNNING`, workers `1`
+- run_id `14`: `DOWNER_PI_Q01_DASH`, status `RUNNING`, workers `1`
+- expected end: `2026-06-10 05:16:54 UTC`
 
-Validation evidence from the 2026-06-04 refresh:
+Validation evidence from the 2026-06-05 refresh:
 
-- `DOWNER_MI_Q01_DASH_BEFORE`: SQL_ID `7dyt3c6xcjg76` still shows two
-  `TABLE ACCESS FULL` operations on `DOWNER_DEMO.E_USES_DEVICE`, cost `478`,
-  average buffer gets around `1755` per execution.
-- `DOWNER_SN_Q01_DASH`: anchor `IP00000001` has active in-degree `12007`;
-  the online traversal expands to about `118599` joined bank-account paths and
-  currently averages about `90 ms` in the grouped fan-out query.
+- `DOWNER_MI_Q01_DASH_BEFORE`: SQL_ID `7dyt3c6xcjg76` is visible with graph
+  full scans on `DOWNER_DEMO.E_USES_DEVICE`, about `1,755` buffer gets per
+  execution, and more than `20,000` seconds cumulative elapsed time.
+- `DOWNER_SN_Q01_DASH`: anchor `IP00000001` has active in-degree `12007`, while
+  the next highest visible IP degree is `19`; the online traversal expands to
+  about `118599` joined bank-account paths.
 - `DOWNER_PI_Q01_DASH`: plan-instability evidence is positive. SQL_ID
-  `fhvn4b3bguvvr` shows `2` child cursors, `2` distinct plan hashes, optimizer
-  modes `ALL_ROWS,FIRST_ROWS`, and elapsed ratio about `55x`. SQL_ID
-  `fcs0b3h0xkh06` also shows `3` child cursors, `2` plan hashes, bind-aware
-  execution, and elapsed ratio about `2.37x`.
+  `fcs0b3h0xkh06` shows `4` child cursors, `2` distinct plan hashes,
+  `5` invalidations, and elapsed ratio about `2.62x`.
+- Scheduler jobs `DDASH_12_1`, `DDASH_12_2`, `DDASH_13_1`, and `DDASH_14_1`
+  are `RUNNING`.
 
-Live recheck on 2026-06-04 22:56 UTC:
-
-- `DOWNER_PI_Q01_DASH` is still running as run_id `11`; worker `1` was
-  `RUNNING` with more than `270k` executions.
-- Current `V$SQL` still supports a positive Plan Stability finding:
-  SQL_ID `fhvn4b3bguvvr` has `2` child cursors, `2` plan hashes, elapsed ratio
-  about `55.36x`; SQL_ID `fcs0b3h0xkh06` has `3` child cursors, `2` plan
-  hashes, bind-aware execution, and elapsed ratio about `2.18x`.
-- If a client reports Plan Stability as `SKIPPED`, the likely cause is that it
-  filtered only `GRAPH_TABLE` SQL. For Mini-DOWNER, run the plan-instability
-  pack with `__PLAN_TAG__ = DOWNER_PI_Q01`; this workload-level signal is not
-  required to be SQL/PGQ.
+If a client reports Plan Stability as `Checked - no supporting evidence`, the
+likely cause is that it filtered only SQL/PGQ `GRAPH_TABLE` statements or an
+old workload window. Plan stability is a SQL workload property, so the advisor
+must include workload-linked non-`GRAPH_TABLE` SQL when backing tables,
+module/action, service/job, procedure, SQL text, AWR/ASH window, or user scope
+connects it to the graph workload.
 
 Do not execute the out-of-band remediation validation scripts before the
 customer-facing diagnosis unless the purpose is to show the post-analysis

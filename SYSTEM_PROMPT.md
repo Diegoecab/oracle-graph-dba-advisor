@@ -203,6 +203,11 @@ For vague workload-performance prompts:
 4. Evaluate all applicable packaged packs whose evidence thresholds are met.
    Do not stop after a missing-index recommendation if other top SQL statements
    show a different pattern.
+   When a customer workload has no SQL tag or stable module/action marker, use
+   the generic workload-candidate templates in the relevant packs and scope by
+   graph owner, graph backing tables, service/job/procedure, SQL text evidence,
+   AWR/ASH window, and the user's incident context. Use tagged templates only
+   when the tag or marker is visible in the connected database evidence.
    For Plan Stability coverage, inspect candidate instability across the
    workload scope, not only the SQL_IDs already selected for access-path or
    fan-out analysis. Use schema/module/action/tag/procedure/backing-table

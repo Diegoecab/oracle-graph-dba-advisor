@@ -10,6 +10,8 @@ semicolons.
 Files:
 
 - `00-lab-summary.sql`: validates table shape, row counts, and index counts.
+- `00-workload-candidates.sql`: finds candidate SQL from the visible graph or
+  workload scope without requiring SQL tags.
 - `01-candidate-sql.sql`: finds tagged SQL candidates by elapsed time and buffer gets.
 - `02-primary-sqlid.sql`: selects the strongest tagged SQL ID for drill-down.
 - `03-hot-plan-operations.sql`: ranks plan operations by buffer gets and elapsed time.
@@ -26,7 +28,11 @@ Files:
 Template placeholders:
 
 - `__SQL_TAG__`: workload tag, module/action fragment, or SQL text marker used
-  to scope candidate SQL.
+  to scope candidate SQL when one is visible. Tags are optional convenience
+  signals, not a requirement for real workloads.
+- `__WORKLOAD_SCOPE__`: workload marker discovered from schema, module/action,
+  service/job, SQL text, application name, incident scope, or graph owner. If no
+  better scope is visible, use the graph/workload owner as the fallback scope.
 - `__SQL_ID__`: selected SQL ID.
 - `__GRAPH_OWNER__`: graph or backing-table owner.
 - `__GRAPH_NAME__`: property graph name.
@@ -38,6 +44,9 @@ Template placeholders:
 Runtime rule:
 
 - Use this pack through `RUN_SQL` only for diagnosis.
+- Prefer `00-workload-candidates.sql` when the customer workload has no SQL tag
+  or stable module/action marker. Use the tagged candidates only when the tag or
+  marker is visible in the connected database evidence.
 - Test indexes only through out-of-band DBA validation scripts outside the
   read-only MCP runtime.
 - If this pack supports a missing-index recommendation, the advisor must output
