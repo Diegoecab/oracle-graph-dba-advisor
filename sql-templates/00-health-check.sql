@@ -261,6 +261,7 @@ ORDER BY sample_count DESC;
 -- ============================================================
 
 -- HEALTH-07: Auto Indexing configuration
+-- DBA_AUTO_INDEX_CONFIG uses PARAMETER_VALUE, not VALUE.
 SELECT
     parameter_name,
     parameter_value

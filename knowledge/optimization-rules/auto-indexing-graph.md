@@ -26,6 +26,17 @@ Oracle Auto Indexing (available on ADB-S and ADB-D) monitors SQL workload via `V
 
 In 23ai, auto indexes are created as **HIDDEN** by default — they're invisible to the optimizer until validated, and instantly reversible. This is the same safety model the advisor uses with INVISIBLE indexes.
 
+Configuration status is exposed through `DBA_AUTO_INDEX_CONFIG`. Use
+`PARAMETER_NAME` and `PARAMETER_VALUE`; do not use a generic `VALUE` column for
+this view.
+
+```sql
+SELECT
+    parameter_name,
+    parameter_value
+FROM DBA_AUTO_INDEX_CONFIG
+```
+
 ## What Auto Indexing Can and Cannot Do for Graphs
 
 ### What it CAN do

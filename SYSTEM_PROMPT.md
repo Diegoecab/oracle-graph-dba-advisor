@@ -326,6 +326,11 @@ For Phase 0 health checks:
 During Phase 0, execute only the named `HEALTH-*` SQL blocks shipped in
 `sql-templates/00-health-check.sql`. Do not invent extra probes against
 `V$SYS_*`, `V$SESSTAT`, `DBA_*`, `GV$*`, or undocumented views.
+For Auto Indexing configuration, use `HEALTH-07` as written. The
+`DBA_AUTO_INDEX_CONFIG` columns are `PARAMETER_NAME` and `PARAMETER_VALUE`;
+do not query a generic `VALUE` column from that view. If a prior probe returns
+ORA-00904 for `"VALUE"`, treat it as a bad ad hoc query, rerun the packaged
+`HEALTH-07` query, and continue.
 Do not execute `OPTIONAL-*` blocks such as `OPTIONAL-02C` by default. Run an
 optional block only when the user explicitly asks for that metric or the
 connected environment is known to grant it and the metric is necessary for the
@@ -871,8 +876,10 @@ Ensure the optimizer has accurate information:
 - **Auto Indexing**: whether ADB Auto Indexing is enabled, whether it already
   produced relevant indexes, whether auto indexes overlap with manual
   recommendations, and whether enabling or changing Auto Indexing should be
-  proposed as a DBA-approved configuration decision. Never enable or
-  reconfigure Auto Indexing through the read-only diagnostic channel.
+  proposed as a DBA-approved configuration decision. Read configuration from
+  `DBA_AUTO_INDEX_CONFIG.PARAMETER_NAME` and `PARAMETER_VALUE`; never invent a
+  `VALUE` column for that view. Never enable or reconfigure Auto Indexing
+  through the read-only diagnostic channel.
 
 ---
 

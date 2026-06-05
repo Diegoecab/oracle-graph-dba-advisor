@@ -27,6 +27,12 @@ If a template block is denied, record it internally as optional unavailable,
 use the documented fallback, and continue. Summarize optional skips once at the
 end only if relevant.
 
+For Auto Indexing configuration, use `HEALTH-07` exactly as shipped:
+`DBA_AUTO_INDEX_CONFIG` exposes `PARAMETER_NAME` and `PARAMETER_VALUE`.
+Do not use `VALUE` against that view. If ORA-00904 reports `"VALUE"` while
+checking Auto Indexing, correct the query to the packaged `HEALTH-07` shape and
+continue; that error is a query-shape issue, not evidence about database health.
+
 **What you're looking for and what to recommend**:
 
 | Finding | Severity | Recommendation |
