@@ -641,7 +641,11 @@ validation DDL such as `CREATE INDEX ... INVISIBLE`, `ALTER SESSION` settings,
 the exact SQL to execute, the `V$SQL` or `DBMS_XPLAN` comparison query, measured
 elapsed/CPU/buffer-get comparison, and promote/rollback commands. The final
 summary keeps the short action label; the executable runbook belongs in the
-detailed recommendation section before it.
+detailed recommendation section before it. The advisor should not say "re-run
+the SQL_ID" or "use this value as :ANCHOR_ID"; it should print the executable
+workload SQL with exact bind setup or resolved literal values. For `GRAPH_TABLE`
+targets, that means printing the complete `GRAPH_TABLE` query, not only
+backing-table probes.
 
 For index recommendations, the advisor should collect visible DML/write-rate
 evidence itself before asking the DBA to accept extra index overhead. The

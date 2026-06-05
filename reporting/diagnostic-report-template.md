@@ -201,6 +201,12 @@ GRANT SELECT ON DBA_TAB_MODIFICATIONS TO <diag_user>
 - Index validation runbooks must include schema/session setup, invisible index
   DDL, `optimizer_use_invisible_indexes`, the target validation SQL, measured
   elapsed/CPU/buffer-get comparison, promotion command, and rollback command.
+- The target validation SQL must be executable as printed. Do not say
+  "re-run the SQL_ID", "use this value as :ANCHOR_ID", or "execute the pattern"
+  without printing the actual SQL. If the workload SQL is a `GRAPH_TABLE`
+  statement, include the complete `GRAPH_TABLE` query with either exact bind
+  setup or resolved literal values. A `SQL_ID` may be used for `DBMS_XPLAN` and
+  `V$SQL` lookup, but not as a substitute for the SQL text.
 - Measure improvements by elapsed time first, CPU time second, and buffer gets
   as supporting evidence. Do not use optimizer cost as the success metric.
 - Supernode/fan-out recommendations must include at least one concrete `AS-IS`

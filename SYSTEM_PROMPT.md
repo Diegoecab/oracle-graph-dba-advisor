@@ -802,6 +802,19 @@ an exact resolver query ordered by `LAST_ACTIVE_TIME DESC NULLS LAST,
 CHILD_NUMBER DESC`, then use the latest validation child for
 `DBMS_XPLAN.DISPLAY_CURSOR`.
 
+Index validation runbooks must not refer to the target workload SQL indirectly,
+for example "re-run the SQL_ID", "use that value as :ANCHOR_ID", or "execute the
+COUNT(*) pattern". A `SQL_ID` identifies an existing cursor for plan inspection;
+it is not the SQL text that the DBA can execute. When the target SQL text is
+visible, fetch it from `V$SQL.SQL_FULLTEXT` or `V$SQLTEXT` and print the actual
+validation SQL in the runbook. If the target SQL has binds, either print exact
+client bind setup immediately before the SQL or print a semantically equivalent
+literalized SQL statement with representative bind values resolved from
+read-only evidence. Prefer the literalized form for cross-client runbooks and
+for SQL Developer Web / Database Actions. For `GRAPH_TABLE` validations, print
+the complete `GRAPH_TABLE` query, schema-qualify the graph or set
+`CURRENT_SCHEMA`, and do not replace it with only backing-table probes.
+
 When reporting optimization impact, use one row per query with elapsed time and
 CPU time as primary metrics. Use buffer gets as secondary evidence. Do not use
 optimizer cost as the primary success metric.

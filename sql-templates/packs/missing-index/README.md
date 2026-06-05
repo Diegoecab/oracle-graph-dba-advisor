@@ -24,6 +24,9 @@ Files:
   count, proposed index count, and visible INSERT SQL from `V$SQL`.
 - `09-display-cursor-latest-child.sql`: displays the latest child cursor plan
   for the selected `SQL_ID` with `ALLSTATS LAST`.
+- `10-target-sql-fulltext.sql`: retrieves the selected cursor SQL text so the
+  DBA validation runbook can print executable SQL instead of referring to a
+  `SQL_ID` as if it were runnable text.
 
 Template placeholders:
 
@@ -59,6 +62,12 @@ Runtime rule:
   selected SQL_ID as a literal. Use the observed child cursor as a numeric
   literal, or use `09-display-cursor-latest-child.sql` when the post-validation
   latest child must be resolved from `V$SQL`.
+- Do not output "re-run the SQL_ID", "use that value as :ANCHOR_ID", or similar
+  partial instructions. Fetch the target SQL with `10-target-sql-fulltext.sql`
+  or another visible SQL text source, then print the executable validation SQL.
+  If the workload SQL uses binds, provide exact bind setup or a literalized
+  equivalent with representative values resolved from read-only evidence. For
+  `GRAPH_TABLE` targets, print the complete `GRAPH_TABLE` query.
 - Before proposing visible indexes, run `07-dml-overhead-evidence.sql` when the
   required views are available. Include the insert/DML rate and current index
   count in the evidence. If `DBA_TAB_MODIFICATIONS` is not visible, run
