@@ -228,6 +228,10 @@ GRANT SELECT ON DBA_TAB_MODIFICATIONS TO <diag_user>
   plan metadata, or pack evidence. Do not assume `anchor_id`, `NUMBER`, or any
   demo-specific table/label. If using SQLcl bind setup, use `BEGIN SELECT ...
   INTO :bind ...; END; /`, not `EXEC :bind := (SELECT ...)`.
+- If `V$SQL_BIND_CAPTURE` is not visible, state the grant limitation and use a
+  literalized validation query with representative values derived from
+  read-only evidence. Do not fail the report only because bind capture is not
+  granted.
 - Measure improvements by elapsed time first, CPU time second, and buffer gets
   as supporting evidence. Do not use optimizer cost as the success metric.
 - Supernode/fan-out recommendations must include at least one concrete `AS-IS`
