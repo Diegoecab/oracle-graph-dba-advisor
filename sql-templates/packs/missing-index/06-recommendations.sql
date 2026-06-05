@@ -22,7 +22,7 @@ UNION ALL
 SELECT
   40,
   'SELECTIVITY',
-  'For E_USES_DEVICE, compare SRC and DST degree skew before choosing single column or composite leading key order',
+  'For __GRAPH_OWNER__.__EDGE_TABLE__, compare __SOURCE_FK__ and __DESTINATION_FK__ degree skew before choosing single-column or composite leading key order',
   '05-degree-selectivity.sql'
 FROM dual
 UNION ALL

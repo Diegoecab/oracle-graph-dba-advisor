@@ -104,7 +104,10 @@ SQL/PGQ or Property Graph workloads on Oracle Database 23ai or 26ai.
   SQL_ID or child cursor. Use literal values, or include an exact child-resolver
   query and then the `DBMS_XPLAN.DISPLAY_CURSOR` command. For index validation,
   do not say "re-run the SQL_ID" or "use this value as :ANCHOR_ID"; print the
-  executable target SQL with exact bind setup or resolved literal values.
+  executable target SQL with exact bind setup or resolved literal values. Do not
+  assume demo-specific bind names, bind datatypes, table names, labels, or graph
+  names; derive them from SQL text, bind capture, catalog metadata, and pack
+  evidence.
 - Before recommending permanent indexes, collect visible DML/write-rate evidence
   yourself when the read-only grants allow it; do not merely tell the user to
   confirm INSERT rate. If the evidence is not visible, state that limitation.

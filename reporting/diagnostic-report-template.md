@@ -207,6 +207,11 @@ GRANT SELECT ON DBA_TAB_MODIFICATIONS TO <diag_user>
   statement, include the complete `GRAPH_TABLE` query with either exact bind
   setup or resolved literal values. A `SQL_ID` may be used for `DBMS_XPLAN` and
   `V$SQL` lookup, but not as a substitute for the SQL text.
+- Bind names, bind datatypes, graph names, table names, labels, and columns must
+  come from the selected SQL text, `V$SQL_BIND_CAPTURE`, graph catalog metadata,
+  plan metadata, or pack evidence. Do not assume `anchor_id`, `NUMBER`, or any
+  demo-specific table/label. If using SQLcl bind setup, use `BEGIN SELECT ...
+  INTO :bind ...; END; /`, not `EXEC :bind := (SELECT ...)`.
 - Measure improvements by elapsed time first, CPU time second, and buffer gets
   as supporting evidence. Do not use optimizer cost as the success metric.
 - Supernode/fan-out recommendations must include at least one concrete `AS-IS`

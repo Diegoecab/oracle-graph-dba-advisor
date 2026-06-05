@@ -51,7 +51,7 @@ SELECT
     ELSE 'MISSING_LEADING_INDEX'
   END AS index_status,
   CASE
-    WHEN efk.table_name = '__EDGE_TABLE__' AND lic.column_name IS NULL THEN 'DEMO_ROOT_CAUSE'
+    WHEN efk.table_name = '__EDGE_TABLE__' AND lic.column_name IS NULL THEN 'TARGET_EDGE_GAP'
     WHEN lic.column_name IS NULL THEN 'REVIEW'
     ELSE 'OK'
   END AS diagnostic_signal

@@ -815,6 +815,17 @@ for SQL Developer Web / Database Actions. For `GRAPH_TABLE` validations, print
 the complete `GRAPH_TABLE` query, schema-qualify the graph or set
 `CURRENT_SCHEMA`, and do not replace it with only backing-table probes.
 
+Do not assume demo-specific bind names, bind datatypes, graph names, table
+names, edge labels, or column names in validation runbooks. Derive them from the
+selected `SQL_ID` text, `V$SQL_BIND_CAPTURE`, graph catalog metadata, plan object
+metadata, and pack evidence. If client bind setup is printed, choose the bind
+datatype from `V$SQL_BIND_CAPTURE.DATATYPE_STRING` when visible, or from the
+referenced catalog column datatype when the bind maps clearly to a column. Do
+not default to `VARIABLE <bind> NUMBER` unless the evidence supports a numeric
+bind. In SQLcl/SQL Developer style runbooks, do not write
+`EXEC :bind := (SELECT ...)`; use a `BEGIN SELECT ... INTO :bind ...; END; /`
+block, or avoid client binds by printing a literalized validation query.
+
 When reporting optimization impact, use one row per query with elapsed time and
 CPU time as primary metrics. Use buffer gets as secondary evidence. Do not use
 optimizer cost as the primary success metric.
@@ -886,7 +897,10 @@ Broader structural changes beyond the graph definition:
 Ensure the optimizer has accurate information:
 
 - **Gather fresh statistics**: `DBMS_STATS.GATHER_TABLE_STATS` with `METHOD_OPT => 'FOR ALL COLUMNS SIZE AUTO'` — especially after bulk data loads.
-- **Extended statistics**: For composite predicates (e.g., `WHERE src = :id AND end_date IS NULL`), create column group statistics: `DBMS_STATS.CREATE_EXTENDED_STATS(USER, 'E_USES_DEVICE', '(SRC, END_DATE)')`.
+- **Extended statistics**: For composite predicates such as an edge FK plus an
+  active/temporal filter, consider column group statistics on the actual edge
+  table and columns, for example `DBMS_STATS.CREATE_EXTENDED_STATS(<owner>,
+  '<edge_table>', '(<source_fk>, <filter_column>)')`.
 - **SQL Plan Baselines**: For critical graph queries, capture and fix good plans with `DBMS_SPM` to prevent plan regression after stats refresh or index changes.
 - **Adaptive plans**: Oracle 23ai adaptive plans may switch between nested loops and hash joins at runtime. Monitor with `V$SQL_PLAN` `IS_BIND_AWARE` and `IS_SHAREABLE` columns.
 

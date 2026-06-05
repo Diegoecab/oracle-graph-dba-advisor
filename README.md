@@ -645,7 +645,11 @@ detailed recommendation section before it. The advisor should not say "re-run
 the SQL_ID" or "use this value as :ANCHOR_ID"; it should print the executable
 workload SQL with exact bind setup or resolved literal values. For `GRAPH_TABLE`
 targets, that means printing the complete `GRAPH_TABLE` query, not only
-backing-table probes.
+backing-table probes. Bind names, bind datatypes, graph names, table names,
+labels, and column names must come from the selected SQL text, bind capture,
+catalog metadata, plan metadata, or pack evidence; the runtime should not assume
+Mini-DOWNER names such as `anchor_id`, `NUMBER`, `DOWNER_GRAPH`, or
+`E_USES_DEVICE` outside the Mini-DOWNER runbooks.
 
 For index recommendations, the advisor should collect visible DML/write-rate
 evidence itself before asking the DBA to accept extra index overhead. The

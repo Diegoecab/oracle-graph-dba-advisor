@@ -27,6 +27,8 @@ Files:
 - `10-target-sql-fulltext.sql`: retrieves the selected cursor SQL text so the
   DBA validation runbook can print executable SQL instead of referring to a
   `SQL_ID` as if it were runnable text.
+- `11-target-sql-binds.sql`: retrieves captured bind names, positions, datatypes,
+  and values for the selected `SQL_ID` when visible.
 
 Template placeholders:
 
@@ -41,6 +43,12 @@ Template placeholders:
 - `__GRAPH_NAME__`: property graph name.
 - `__EDGE_TABLE__`: target vertex or edge table identified from the hot plan
   operation and graph catalog.
+- `__SOURCE_FK__`: source-side FK column on the target edge table, discovered
+  from `DBA_PG_EDGE_RELATIONSHIPS`.
+- `__DESTINATION_FK__`: destination-side FK column on the target edge table,
+  discovered from `DBA_PG_EDGE_RELATIONSHIPS`.
+- `__EDGE_FILTER_PREDICATE__`: predicate used for degree/selectivity evidence,
+  such as an active-edge filter. Use `1 = 1` when no edge filter applies.
 - `__PROPOSED_INDEX_COUNT__`: number of proposed new indexes for DML overhead
   estimation.
 
@@ -65,9 +73,11 @@ Runtime rule:
 - Do not output "re-run the SQL_ID", "use that value as :ANCHOR_ID", or similar
   partial instructions. Fetch the target SQL with `10-target-sql-fulltext.sql`
   or another visible SQL text source, then print the executable validation SQL.
-  If the workload SQL uses binds, provide exact bind setup or a literalized
-  equivalent with representative values resolved from read-only evidence. For
-  `GRAPH_TABLE` targets, print the complete `GRAPH_TABLE` query.
+  If the workload SQL uses binds, use `11-target-sql-binds.sql` and catalog
+  metadata to derive bind names and datatypes, or provide a literalized
+  equivalent with representative values resolved from read-only evidence. Do not
+  assume demo-specific bind names, bind datatypes, graph names, table names, or
+  labels. For `GRAPH_TABLE` targets, print the complete `GRAPH_TABLE` query.
 - Before proposing visible indexes, run `07-dml-overhead-evidence.sql` when the
   required views are available. Include the insert/DML rate and current index
   count in the evidence. If `DBA_TAB_MODIFICATIONS` is not visible, run
